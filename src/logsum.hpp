@@ -8,7 +8,7 @@ class LogSum {
   public:
     static const double SUM_LOG_THRESHOLD;
 
-    static LogSum * create(const int capacity, const bool optimize);
+    static LogSum * create(const int capacity, const bool optimize = true);
     // for benchmarks
     static LogSum * createType(const int type, const int capacity, const bool optimize);
     
