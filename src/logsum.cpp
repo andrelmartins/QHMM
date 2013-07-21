@@ -21,10 +21,17 @@ class LogSum2 : public LogSum {
       if (b == -std::numeric_limits<double>::infinity())
         return a;
       
-      if (a > b)
-        return a + log(exp(b - a));
-      else
-        return b + log(exp(a - b));
+      if (a > b) {
+        if (b - a < SUM_LOG_THRESHOLD)
+          return a;
+        else
+          return a + log(exp(b - a));
+      } else {
+        if (a - b < SUM_LOG_THRESHOLD)
+          return b;
+        else
+          return b + log(exp(a - b));
+      }
     }
 };
 
@@ -44,8 +51,9 @@ class LogSumSmall : public LogSum {
         return max;
       
       for (i = 0, dptr = _values; i < _count; ++i, ++dptr) {
-        if (*dptr != -std::numeric_limits<double>::infinity())
-          expsum += exp(*dptr - max);
+        double logdiff = (*dptr - max);
+        if (logdiff > SUM_LOG_THRESHOLD)
+          expsum += exp(logdiff);
       }
       
       return max + log(expsum);
@@ -86,6 +94,9 @@ double LogSum::compute() {
   double log_diff;
   
   max = _values[0];
+  if (max == -std::numeric_limits<double>::infinity())
+    return max;
+  
   expsum = 1;
   for (i = 1, dptr = _values + 1, log_diff = 0;
        i < _count && (log_diff = *dptr - max) > SUM_LOG_THRESHOLD;
