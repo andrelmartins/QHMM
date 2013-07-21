@@ -9,7 +9,10 @@ class LogSum2 : public LogSum {
     LogSum2(const int capacity, const bool optimize) : LogSum(capacity, optimize) {}
     
     virtual double compute() {
-      assert(_count == 2);
+      assert(_count > 0);
+      
+      if (_count == 1)
+        return _values[0];
       
       double a = _values[0];
       double b = _values[1];
