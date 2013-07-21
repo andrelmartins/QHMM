@@ -47,24 +47,33 @@ int main(int argc, char ** argv) {
   /* output time for each implementation type */
   srand48((unsigned long)time(NULL));
   
+  /* optimized and non-optimized version */
+  
   if (size == 2) { /* type 1 */
-    LogSum * lg2 = LogSum::createType(1, 2);
-    run_test(lg2, repeats, 2, fraction, "LogSum2");
-    delete lg2;
+    {
+      LogSum * lg2 = LogSum::createType(1, 2, true);
+      run_test(lg2, repeats, 2, fraction, "LogSum2(opt)");
+      delete lg2;
+    }
+    {
+      LogSum * lg2 = LogSum::createType(1, 2, false);
+      run_test(lg2, repeats, 2, fraction, "LogSum2");
+      delete lg2;
+    }
   }
   
-  /* type 2 */
+  /* optimized */
   {
-    LogSum * lgSmall = LogSum::createType(2, size);
-    run_test(lgSmall, repeats, size, fraction, "LogSumSmall");
-    delete lgSmall;
+    LogSum * lg = LogSum::createType(2, size, true);
+    run_test(lg, repeats, size, fraction, "LogSum(opt)");
+    delete lg;
   }
   
-  /* type 3 */
+  /* non-optimized */
   {
-    LogSum * lgGen = LogSum::createType(3, size);
-    run_test(lgGen, repeats, size, fraction, "LogSum");
-    delete lgGen;
+    LogSum * lg = LogSum::createType(2, size, false);
+    run_test(lg, repeats, size, fraction, "LogSum");
+    delete lg;
   }
   
   return EXIT_SUCCESS;
