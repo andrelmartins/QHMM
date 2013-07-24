@@ -1,5 +1,5 @@
-#ifndef LOGSUM_H
-#define LOGSUM_H
+#ifndef LOGSUM_HPP
+#define LOGSUM_HPP
 
 #include <cassert>
 #include <limits>

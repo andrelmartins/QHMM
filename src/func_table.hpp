@@ -1,5 +1,5 @@
-#ifndef TRANS_TMPL_HPP
-#define TRANS_TMPL_HPP
+#ifndef FUNC_TABLE_HPP
+#define FUNC_TABLE_HPP
 
 #include <vector>
 #include <cassert>
