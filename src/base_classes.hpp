@@ -12,7 +12,7 @@ class TransitionFunction {
 
 class EmissionFunction {
   public:
-    virtual double log_probability(Iter const & iter) const = 0;
+    virtual double log_probability(Iter const & iter, int slot) const = 0;
     virtual ~EmissionFunction() {};
 };
 
