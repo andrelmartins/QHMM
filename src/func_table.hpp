@@ -5,24 +5,25 @@
 #include <cassert>
 #include "base_classes.hpp"
 
-class TransitionTable {
+template<typename T>
+class FunctionTable {
   protected:
-    TransitionTable(int n_states) : _n_states(n_states) {
+    FunctionTable(int n_states) : _n_states(n_states) {
       _funcs.reserve(n_states);
     }
     
-    void insert(TransitionFunction * func) {
+    void insert(T * func) {
       assert(_funcs.size() < _n_states);
       _funcs.push_back(func);
     }
   
     const int _n_states;
-    std::vector<TransitionFunction*> _funcs;
+    std::vector<T *> _funcs;
 };
 
-class HomogeneousTransitions : public TransitionTable {
+class HomogeneousTransitions : public FunctionTable<TransitionFunction> {
 	public:
-		HomogeneousTransitions(int n_states) : TransitionTable(n_states) {
+		HomogeneousTransitions(int n_states) : FunctionTable<TransitionFunction>(n_states) {
 		  _m = new double*[n_states];
 		  for (int i = 0; i < n_states; ++i)
 		    _m[i] = new double[n_states];
@@ -51,13 +52,21 @@ class HomogeneousTransitions : public TransitionTable {
 		double ** _m;
 };
 
-class NonHomogeneousTransitions : public TransitionTable {
+class NonHomogeneousTransitions : public FunctionTable<TransitionFunction> {
 	public:
-		NonHomogeneousTransitions(int n_states) : TransitionTable(n_states) {}
+		NonHomogeneousTransitions(int n_states) : FunctionTable<TransitionFunction>(n_states) {}
 		
 		double operator() (Iter const & iter, int i, int j) const {
 			return _funcs[i]->log_probability(iter, j);
 		}
+};
+
+class Emissions : public FunctionTable<EmissionFunction> {
+  Emissions(int n_states) : FunctionTable<EmissionFunction>(n_states) {}
+  
+  double operator() (Iter const & iter, int i) const {
+    return _funcs[i]->log_probability(iter);
+  }
 };
 
 #endif
