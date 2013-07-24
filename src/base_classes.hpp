@@ -5,6 +5,7 @@
 
 class TransitionFunction {
 	public:
+	  virtual double log_probability(int target) const = 0;
 		virtual double log_probability(Iter const & iter, int target) const = 0;
     virtual ~TransitionFunction() {};
 };
