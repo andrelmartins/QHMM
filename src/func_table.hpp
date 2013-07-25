@@ -1,6 +1,7 @@
 #ifndef FUNC_TABLE_HPP
 #define FUNC_TABLE_HPP
 
+#include <limits>
 #include <vector>
 #include <cassert>
 #include "base_classes.hpp"
@@ -47,6 +48,40 @@ class HomogeneousTransitions : public FunctionTable<TransitionFunction> {
 		  }
 		}
 		
+		bool isSparse() {
+		  int invalid_count = 0;
+		  for (int i = 0; i < _n_states; ++i)
+		    for (int j = 0; j < _n_states; ++j)
+		      if (_m[i][j] == -std::numeric_limits<double>::infinity())
+		        ++invalid_count;
+		  return invalid_count >= (_n_states * _n_states / 2); // heuristic threshold
+		}
+		
+		int ** previousStates() {
+		  int ** previous = new int*[_n_states];
+		  
+		  for (int j = 0; j < _n_states; ++j) {
+		    int length = 0;
+		    
+		    // count valid transitions
+		    for (int i = 0; i < _n_states; ++i)
+		      if (_m[i][j] != -std::numeric_limits<double>::infinity())
+		        ++length;
+		    
+		    // record valid transitions
+		    previous[j] = new int[length + 1];
+		    previous[j][length] = -1; // termination mark
+		    int k = 0;
+		    for (int i = 0; i < _n_states; ++i)
+		      if (_m[i][j] != -std::numeric_limits<double>::infinity())
+		        previous[j][k++] = i;
+		  }
+		  
+		  return previous;
+		}
+		
+		// TODO: Check if it's worth it to transpose this matrix, since we'll be accessing
+		//       it column by columns
 		double operator() (Iter const & iter, int i, int j) const {
 			return _m[i][j];
 		}
@@ -61,6 +96,12 @@ class NonHomogeneousTransitions : public FunctionTable<TransitionFunction> {
 		
 		double operator() (Iter const & iter, int i, int j) const {
 			return _funcs[i]->log_probability(iter, j);
+		}
+		
+		bool isSparse() {
+		  return false; // For now assume non-homogeneous means not-sparse
+		                // this is not strictly true, we could have constraints on valid
+		                // transitions that make things sparse ...
 		}
 };
 
