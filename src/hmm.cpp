@@ -5,8 +5,7 @@ HMM * HMM::Create(TransTableT * transitions, EmissionTableT * emissions, double 
 
   // determine appropriate inner loop type (Sparse vs Dense)
   if (transitions->isSparse()) {
-    int ** previous = transitions->previousStates();
-    InnerFwdSparse<TransTableT *> * innerFwd = new InnerFwdSparse<TransTableT *>(previous, transitions->n_states());
+    InnerFwdSparse<TransTableT *> * innerFwd = new InnerFwdSparse<TransTableT *>(transitions);
     
     return new_hmm_instance(innerFwd, transitions, emissions, init_log_probs);
   }

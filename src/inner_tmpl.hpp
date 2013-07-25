@@ -1,4 +1,4 @@
-#ifndef INNER_MPL_HPP
+#ifndef INNER_TMPL_HPP
 #define INNER_TMPL_HPP
 
 #include "iter.hpp"
@@ -20,7 +20,7 @@ public:
 template<typename FuncType>
 class InnerFwdSparse {
 public:
-  InnerFwdSparse(const int ** previous, int n_states) : _previous(previous), _n_states(n_states) {}
+  InnerFwdSparse(FuncType transitions) : _previous(transitions->previousState()), _n_states(transitions->n_states()) {}
   ~InnerFwdSparse() { // TODO: clean up memory management responsibilities
     for (int i = 0; i < _n_states; ++i)
       delete[] _previous[i];
