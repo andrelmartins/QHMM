@@ -80,6 +80,29 @@ class HomogeneousTransitions : public FunctionTable<TransitionFunction> {
 		  return previous;
 		}
 		
+		int ** nextStates() {
+		  int ** next = new int*[_n_states];
+		  
+		  for (int i = 0; i < _n_states; ++i) {
+		    int length = 0;
+		    
+		    // count valid transitions
+		    for (int j = 0; j < _n_states; ++j)
+		      if (_m[i][j] != -std::numeric_limits<double>::infinity())
+		        ++length;
+		    
+		    // record valid transitions
+		    next[i] = new int[length + 1];
+		    next[i][length] = -1; // termination mark
+		    int k = 0;
+		    for (int j = 0; j < _n_states; ++j)
+		      if (_m[i][j] != -std::numeric_limits<double>::infinity())
+		        next[i][k++] = i;
+		  }
+		  
+		  return next;
+		}
+		
 		// TODO: Check if it's worth it to transpose this matrix, since we'll be accessing
 		//       it column by columns
 		double operator() (Iter const & iter, int i, int j) const {
