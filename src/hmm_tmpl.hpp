@@ -93,6 +93,86 @@ class HMMImpl : public HMM {
       return loglik;
     }
 
+#define AT(M, I, J) M[(I) + (J)*rows]
+
+    void viterbi(Iter & iter, int * path) {
+      int rows = _n_states; /* needed by AT macro */
+      int cols = iter.length();
+      double * m_col, * m_col_prev;
+      int * b_col;
+      int * backptr;
+      int * pptr;
+      double * matrix;
+
+      /* setup matrices */
+      matrix = new double[rows*cols];
+      backptr = new int[rows*cols];
+
+      /* fill first column */
+      for (int l = 0; l < _n_states; ++l) {
+        AT(matrix, l, 0) = (*_logEkb)(iter, l) + _init_log_probs[l];
+        AT(backptr, l, 0) = -1; /* stop */
+      }
+
+      /* inner columns */
+      m_col_prev = matrix;
+      m_col = matrix + rows;
+      b_col = backptr + rows;
+      iter.resetFirst();
+      for ( ; iter.next(); m_col += rows, m_col_prev += rows, b_col += rows) {
+
+        for (int l = 0; l < _n_states; ++l) {
+          double max = -std::numeric_limits<double>::infinity();
+          int argmax = -1;
+
+          for (int k = 0; k < _n_states; ++k) {
+            double value = m_col_prev[k] + (*_logAkl)(iter, k, l);
+            
+            if (value > max) {
+              max = value;
+              argmax = k;
+            }
+          }
+
+          /* assert(argmax != -1); */
+          m_col[l] = (*_logEkb)(iter, l) + max;
+          b_col[l] = argmax;
+        }
+      }
+
+      /* backtrace */
+
+      /* last state */
+      iter.resetLast();
+      pptr = path + iter.length() - 1;
+      {
+        double max = -std::numeric_limits<double>::infinity();
+        int argmax = -1;
+        m_col = matrix + (iter.length() - 1)*rows;
+
+        for (int k = 0; k < _n_states; ++k) { // TODO: Consider inner loop sparse optimization
+          double value = m_col[k];
+          if (value > max) {
+            max = value;
+            argmax = k;
+          }
+        }
+        /* assert(argmax != -1); */
+        *pptr = argmax;
+      }
+
+      /* other states */
+      int z = *pptr;
+      for (int l = iter.length() - 1; iter.prev() ; --pptr) {
+        z = AT(backptr, z, l);
+        *pptr = z;
+        /* assert(prev >= 0); */
+      }
+      
+      // clean up
+      delete[] matrix;
+      delete[] backptr;
+    }
 };
 
 // auxiliary function to enable type inference
