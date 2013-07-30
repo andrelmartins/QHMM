@@ -24,7 +24,7 @@ public:
 template<typename FuncType>
 class InnerFwdSparse {
 public:
-  InnerFwdSparse(FuncType transitions) : _previous(transitions->previousState()), _n_states(transitions->n_states()) {}
+  InnerFwdSparse(FuncType transitions) : _previous(transitions->previousStates()), _n_states(transitions->n_states()) {}
   ~InnerFwdSparse() { // TODO: clean up memory management responsibilities
     for (int i = 0; i < _n_states; ++i)
       delete[] _previous[i];
@@ -41,7 +41,7 @@ public:
   }
 
 private:
-  const int ** _previous;
+  int ** _previous;
   const int _n_states;
 };
 
@@ -66,7 +66,7 @@ public:
 template<typename FuncAkl, typename FuncEkb>
 class InnerBckSparse {
 public:
-  InnerBckSparse(FuncAkl transitions) : _next(transitions->nextState()), _n_states(transitions->n_states()) {}
+  InnerBckSparse(FuncAkl transitions) : _next(transitions->nextStates()), _n_states(transitions->n_states()) {}
   ~InnerBckSparse() { // TODO: clean up memory management responsibilities
     for (int i = 0; i < _n_states; ++i)
       delete[] _next[i];
@@ -85,7 +85,7 @@ public:
   }
 
 private:
-  const int ** _next;
+  int ** _next;
   const int _n_states;
 };
 
