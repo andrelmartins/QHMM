@@ -13,15 +13,15 @@ class FunctionTable {
       _funcs.reserve(n_states);
     }
     
-    void insert(T * func) {
-      assert(_funcs.size() < _n_states);
-      _funcs.push_back(func);
-    }
-  
     const int _n_states;
     std::vector<T *> _funcs;
     
   public:
+    void insert(T * func) {
+      assert((int) _funcs.size() < _n_states);
+      _funcs.push_back(func);
+    }
+
     int n_states() const { return _n_states; }
 };
 
@@ -142,10 +142,10 @@ class MultiEmissions {
   }
   
   void insert(std::vector<EmissionFunction *> funcs) {
-      assert(_funcs.size() < _n_states);
-      assert(funcs.size() == _n_slots);
-      _funcs.push_back(funcs);
-    }
+    assert((int)_funcs.size() < _n_states);
+    assert((int) funcs.size() == _n_slots);
+    _funcs.push_back(funcs);
+  }
   
   double operator() (Iter const & iter, int i) const {
     double log_prob = 0;
