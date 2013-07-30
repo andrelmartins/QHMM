@@ -12,6 +12,11 @@ class FunctionTable {
     FunctionTable(int n_states) : _n_states(n_states) {
       _funcs.reserve(n_states);
     }
+
+    ~FunctionTable() { // TODO: review memory management responsabilities
+      for (unsigned int i = 0; i < _funcs.size(); ++i)
+	delete _funcs[i];
+    }
     
     const int _n_states;
     std::vector<T *> _funcs;
@@ -31,7 +36,6 @@ class HomogeneousTransitions : public FunctionTable<TransitionFunction> {
 		  _m = new double*[n_states];
 		  for (int i = 0; i < n_states; ++i)
 		    _m[i] = new double[n_states];
-		  updateTransitions();
 		}
 		
 		~HomogeneousTransitions() {
