@@ -12,7 +12,7 @@ class LogSum {
     // for benchmarks
     static LogSum * createType(const int type, const int capacity, const bool optimize);
     
-    virtual ~LogSum() { delete _values; }
+    virtual ~LogSum() { delete[] _values; }
     
     void store(const double logValue) {
       assert(_count < _length);
