@@ -133,6 +133,7 @@ class NonHomogeneousTransitions : public FunctionTable<TransitionFunction> {
 };
 
 class Emissions : public FunctionTable<EmissionFunction> {
+public:
   Emissions(int n_states) : FunctionTable<EmissionFunction>(n_states) {}
   
   double operator() (Iter const & iter, int i) const {
@@ -141,6 +142,7 @@ class Emissions : public FunctionTable<EmissionFunction> {
 };
 
 class MultiEmissions {
+public:
   MultiEmissions(int n_states, int n_slots) : _n_states(n_states), _n_slots(n_slots) {
     _funcs.reserve(n_states);
   }
