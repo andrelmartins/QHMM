@@ -163,14 +163,54 @@ int main(int argc, char ** argv) {
   // for debug only
   //print_matrix(fwd, n_states, seq_len);
 
-  cout << loglik/repeats << "\t" << (end - start)*1000.0/CLOCKS_PER_SEC << endl;
+  cout << "T1:A\t" << loglik/repeats << "\t" << (end - start)*1000.0/CLOCKS_PER_SEC << endl;
 
   delete hmm1;
+  
+  /* explicit HMM: sparse mode */
+  HMM * hmm1_sparse = new_hmm_instance(new InnerFwdSparse<HomogeneousTransitions *>(trans),
+                                       new InnerBckSparse<HomogeneousTransitions *, Emissions *>(trans),
+                                       trans,
+                                       emissions,
+                                       init_log_probs);
+  loglik = 0;
+  
+  start = clock();
+  for (int r = 0; r < repeats; ++r)
+    loglik += hmm1_sparse->forward((*iter1), fwd);
+  
+  end = clock();
+  
+  cout << "T1:S\t" << loglik/repeats << "\t" << (end - start)*1000.0/CLOCKS_PER_SEC << endl;
+  
+  delete hmm1_sparse;
+  
+  /* explicit HMM: dense mode */
+  HMM * hmm1_dense = new_hmm_instance(new InnerFwdDense<HomogeneousTransitions *>(),
+                                       new InnerBckDense<HomogeneousTransitions *, Emissions *>(),
+                                       trans,
+                                       emissions,
+                                       init_log_probs);
+  loglik = 0;
+  
+  start = clock();
+  for (int r = 0; r < repeats; ++r)
+    loglik += hmm1_dense->forward((*iter1), fwd);
+  
+  end = clock();
+  
+  cout << "T1:D\t" << loglik/repeats << "\t" << (end - start)*1000.0/CLOCKS_PER_SEC << endl;
+  
+  delete hmm1_dense;
+  
+  
+  
+  /* clean up */
+  
   delete iter1;
   delete trans;
   delete emissions;
   delete[] fwd;
-
 
 
   /* clean up */
