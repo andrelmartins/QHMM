@@ -85,6 +85,15 @@ Emissions * create_poisson_emissions(int n_states, double lambda) {
   return result;
 }
 
+Emissions * create_poisson_covar_emissions(int n_states, int covar_slot) {
+  Emissions * result = new Emissions(n_states);
+  
+  for (int i = 0; i < n_states; ++i)
+    result->insert(new PoissonCovar(covar_slot));
+  
+  return result;
+}
+
 void print_matrix(double * ptr, int n, int m) {
   for (int j = 0; j < m; ++j) {
     cout << *ptr;
@@ -94,6 +103,66 @@ void print_matrix(double * ptr, int n, int m) {
     }
     cout << endl;
   }
+}
+
+template<typename TransTableT, typename EmissionTableT>
+void run_test(Iter & iter, TransTableT * transitions, EmissionTableT * emissions, double * init_log_probs, double * fwd, int repeats, int test_number) {
+
+  double loglik = 0;
+  clock_t start, end;
+
+  //
+  // HMM with default settings (decided by HMM::Create)
+  //
+  HMM * hmm_auto = HMM::create(transitions, emissions, init_log_probs);
+  
+  
+  start = clock();
+  for (int r = 0; r < repeats; ++r)
+    loglik += hmm_auto->forward(iter, fwd);
+  
+  end = clock();
+  
+  cout << "T" << test_number << ":A\t" << loglik/repeats << "\t" << (end - start)*1000.0/CLOCKS_PER_SEC << endl;
+  
+  delete hmm_auto;
+  
+  //
+  // HMM with explicit sparse mode
+  //
+  HMM * hmm_sparse = new_hmm_instance(new InnerFwdSparse<HomogeneousTransitions *>(transitions),
+                                      new InnerBckSparse<HomogeneousTransitions *, Emissions *>(transitions),
+                                      transitions,
+                                      emissions,
+                                      init_log_probs);
+  loglik = 0;
+  start = clock();
+  for (int r = 0; r < repeats; ++r)
+    loglik += hmm_sparse->forward(iter, fwd);
+  
+  end = clock();
+  cout << "T" << test_number << ":S\t" << loglik/repeats << "\t" << (end - start)*1000.0/CLOCKS_PER_SEC << endl;
+  
+  delete hmm_sparse;
+  
+  //
+  // HMM with explicit dense mode
+  //
+  HMM * hmm_dense = new_hmm_instance(new InnerFwdDense<HomogeneousTransitions *>(),
+                                     new InnerBckDense<HomogeneousTransitions *, Emissions *>(),
+                                     transitions,
+                                     emissions,
+                                     init_log_probs);
+  loglik = 0;
+  
+  start = clock();
+  for (int r = 0; r < repeats; ++r)
+    loglik += hmm_dense->forward(iter, fwd);
+  
+  end = clock();
+  cout << "T" << test_number << ":D\t" << loglik/repeats << "\t" << (end - start)*1000.0/CLOCKS_PER_SEC << endl;
+ 
+  delete hmm_dense;
 }
 
 int main(int argc, char ** argv) {
@@ -138,6 +207,8 @@ int main(int argc, char ** argv) {
   for (int i = 1; i < n_states; ++i)
     init_log_probs[i] = -std::numeric_limits<double>::infinity();
 
+  double * fwd = new double[seq_len * n_states];
+  
   /* Test 1: Poisson emission, AutoCorr transition
    *
    */
@@ -148,72 +219,33 @@ int main(int argc, char ** argv) {
   HomogeneousTransitions * trans = create_homogeneous_transitions(n_states, auto_corr, sparseness);
   Emissions * emissions = create_poisson_emissions(n_states, lambda);
 
-  /* create HMMs */
-  HMM * hmm1 = HMM::create(trans, emissions, init_log_probs);
-  double * fwd = new double[seq_len * n_states];
-  
-  double loglik = 0;
-
-  clock_t start = clock();
-  for (int r = 0; r < repeats; ++r)
-    loglik += hmm1->forward((*iter1), fwd);
-
-  clock_t end = clock();
-
-  // for debug only
-  //print_matrix(fwd, n_states, seq_len);
-
-  cout << "T1:A\t" << loglik/repeats << "\t" << (end - start)*1000.0/CLOCKS_PER_SEC << endl;
-
-  delete hmm1;
-  
-  /* explicit HMM: sparse mode */
-  HMM * hmm1_sparse = new_hmm_instance(new InnerFwdSparse<HomogeneousTransitions *>(trans),
-                                       new InnerBckSparse<HomogeneousTransitions *, Emissions *>(trans),
-                                       trans,
-                                       emissions,
-                                       init_log_probs);
-  loglik = 0;
-  
-  start = clock();
-  for (int r = 0; r < repeats; ++r)
-    loglik += hmm1_sparse->forward((*iter1), fwd);
-  
-  end = clock();
-  
-  cout << "T1:S\t" << loglik/repeats << "\t" << (end - start)*1000.0/CLOCKS_PER_SEC << endl;
-  
-  delete hmm1_sparse;
-  
-  /* explicit HMM: dense mode */
-  HMM * hmm1_dense = new_hmm_instance(new InnerFwdDense<HomogeneousTransitions *>(),
-                                       new InnerBckDense<HomogeneousTransitions *, Emissions *>(),
-                                       trans,
-                                       emissions,
-                                       init_log_probs);
-  loglik = 0;
-  
-  start = clock();
-  for (int r = 0; r < repeats; ++r)
-    loglik += hmm1_dense->forward((*iter1), fwd);
-  
-  end = clock();
-  
-  cout << "T1:D\t" << loglik/repeats << "\t" << (end - start)*1000.0/CLOCKS_PER_SEC << endl;
-  
-  delete hmm1_dense;
-  
-  
+  run_test(*iter1, trans, emissions, init_log_probs, fwd, repeats, 1);
   
   /* clean up */
-  
   delete iter1;
   delete trans;
   delete emissions;
-  delete[] fwd;
+
+  /* Test 2: PoissonCovar emission, AutoCorr transition
+   *
+   */
+  int cslot_dim = 1;
+  Iter * iter2 = new Iter(seq_len, 1, &eslot_dim, data, 1, &cslot_dim, lambda_covar);
+  
+  /* create states */
+  trans = create_homogeneous_transitions(n_states, auto_corr, sparseness);
+  emissions = create_poisson_covar_emissions(n_states, 0);
+  
+  run_test(*iter2, trans, emissions, init_log_probs, fwd, repeats, 2);
+  
+  /* clean up */
+  delete iter2;
+  delete trans;
+  delete emissions;
 
 
   /* clean up */
+  delete[] fwd;
   delete[] data;
   delete[] auto_corr_covar;
   delete[] lambda_covar;
