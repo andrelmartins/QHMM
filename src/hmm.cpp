@@ -1,7 +1,8 @@
+#include "inner_tmpl.hpp"
 #include "hmm_tmpl.hpp"
 
 template<typename TransTableT, typename EmissionTableT>
-HMM * HMM::Create(TransTableT * transitions, EmissionTableT * emissions, double * init_log_probs) {
+HMM * HMM::create(TransTableT * transitions, EmissionTableT * emissions, double * init_log_probs) {
 
   // determine appropriate inner loop type (Sparse vs Dense)
   if (transitions->isSparse()) {

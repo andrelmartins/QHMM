@@ -1,10 +1,10 @@
 #ifndef HMMTMPL_HPP
 #define HMMTMPL_HPP
 
-#include "hmm.hpp"
 #include "logsum.hpp"
 #include "inner_tmpl.hpp"
 #include "func_table.hpp"
+#include "hmm.hpp"
 
 template <typename InnerFwd, typename InnerBck, typename FuncAkl, typename FuncEkb>
 class HMMImpl : public HMM {
@@ -22,6 +22,7 @@ class HMMImpl : public HMM {
 
     ~HMMImpl() {
       delete _innerFwd; // TODO: clean up memory management responsibilities
+      delete _innerBck; // ""
     }
           
     double forward(Iter & iter, double * matrix) {
@@ -177,7 +178,7 @@ class HMMImpl : public HMM {
 
 // auxiliary function to enable type inference
 template <typename InnerFwd, typename InnerBck, typename FuncAkl, typename FuncEkb>
-HMM * new_hmm_instante(InnerFwd innerFwd, InnerBck innerBck, FuncAkl logAkl, FuncEkb logEkb, double * init_log_probs) {
+HMM * new_hmm_instance(InnerFwd innerFwd, InnerBck innerBck, FuncAkl logAkl, FuncEkb logEkb, double * init_log_probs) {
   return new HMMImpl<InnerFwd, InnerBck, FuncAkl, FuncEkb>(innerFwd, innerBck, logAkl, logEkb, init_log_probs);
 }
 
