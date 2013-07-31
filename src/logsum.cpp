@@ -27,12 +27,12 @@ class LogSum2 : public LogSum {
         if (b - a < _threshold)
           return a;
         else
-          return a + log(1 + exp(b - a));
+          return a + log1p(exp(b - a));
       } else {
         if (a - b < _threshold)
           return b;
         else
-          return b + log(1 + exp(a - b));
+          return b + log1p(exp(a - b));
       }
     }
 };
@@ -54,8 +54,9 @@ LogSum * LogSum::createType(const int type, const int capacity, const bool optim
    
 double LogSum::compute() {
   assert(_count > 0);
-    
-  double max = *(std::max_element(_values, _values + _count));
+
+  double * mptr = std::max_element(_values, _values + _count);
+  double max = *mptr;
   int i;
   double * dptr;
   double expsum = 0;
@@ -65,9 +66,9 @@ double LogSum::compute() {
 
   for (i = 0, dptr = _values; i < _count; ++i, ++dptr) {
     double logdiff = (*dptr - max);
-    if (logdiff > _threshold)
+    if (logdiff > _threshold && mptr != dptr)
       expsum += exp(logdiff);
   }
 
-  return max + log(expsum);
-}      
+  return max + log1p(expsum);
+}
