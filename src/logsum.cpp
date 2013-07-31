@@ -27,12 +27,12 @@ class LogSum2 : public LogSum {
         if (b - a < _threshold)
           return a;
         else
-          return a + log(exp(b - a));
+          return a + log(1 + exp(b - a));
       } else {
         if (a - b < _threshold)
           return b;
         else
-          return b + log(exp(a - b));
+          return b + log(1 + exp(a - b));
       }
     }
 };
@@ -58,7 +58,7 @@ double LogSum::compute() {
   double max = *(std::max_element(_values, _values + _count));
   int i;
   double * dptr;
-  double expsum = 1;
+  double expsum = 0;
 
   if (max == -std::numeric_limits<double>::infinity())
     return max;
