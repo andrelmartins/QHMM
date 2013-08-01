@@ -15,7 +15,7 @@ class FunctionTable {
 
     ~FunctionTable() { // TODO: review memory management responsabilities
       for (unsigned int i = 0; i < _funcs.size(); ++i)
-	delete _funcs[i];
+        delete _funcs[i];
     }
     
     const int _n_states;
@@ -145,6 +145,15 @@ class MultiEmissions {
 public:
   MultiEmissions(int n_states, int n_slots) : _n_states(n_states), _n_slots(n_slots) {
     _funcs.reserve(n_states);
+  }
+  
+  ~MultiEmissions() { // TODO: review memory management responsabilities
+    for (unsigned int i = 0; i < _funcs.size(); ++i) {
+      std::vector<EmissionFunction *> funcs_i = _funcs[i];
+      
+      for (unsigned int j = 0; j < funcs_i.size(); ++j)
+        delete funcs_i[j];
+    }
   }
   
   void insert(std::vector<EmissionFunction *> funcs) {
