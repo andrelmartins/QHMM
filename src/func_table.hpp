@@ -1,6 +1,7 @@
 #ifndef FUNC_TABLE_HPP
 #define FUNC_TABLE_HPP
 
+#include <stdexcept>
 #include <limits>
 #include <vector>
 #include <cassert>
@@ -130,6 +131,14 @@ class NonHomogeneousTransitions : public FunctionTable<TransitionFunction> {
 		                // this is not strictly true, we could have constraints on valid
 		                // transitions that make things sparse ...
 		}
+  
+    int ** previousStates() {
+      throw std::logic_error("called previousStates on non-homogeneous class (not supported)");
+    }
+  
+    int ** nextStates() {
+      throw std::logic_error("called nextStates on non-homogeneous class (not supported)");      
+    }
 };
 
 class Emissions : public FunctionTable<EmissionFunction> {

@@ -76,6 +76,43 @@ HomogeneousTransitions * create_homogeneous_transitions(int n_states, double alp
   return result;
 }
 
+/* non-homogeneous transition table */
+NonHomogeneousTransitions * create_nonhomogeneous_transitions(int n_states, int covar_slot, int k) {
+  NonHomogeneousTransitions * result = new NonHomogeneousTransitions(n_states);
+  
+  int n_targets = 2 + k; /* k = 0 :: self + next */
+  
+  if (n_targets > n_states)
+    n_targets = n_states;
+  
+  if (n_states == 1) {
+    n_targets = 1;
+    int target = 0;
+    
+    AutoCorrCovar * state = new AutoCorrCovar(n_states, covar_slot, n_targets, &target);
+    result->insert(state);
+    return result;
+  }
+  
+  int * targets = new int[n_targets];
+  
+  /* add states */
+  for (int i = 0; i < n_states; ++i) {
+    AutoCorrCovar * state_i;
+    
+    /* fill target vector */
+    for (int j = 0; j < n_targets; ++j)
+      targets[j] = (i + j) % n_states;
+    
+    state_i = new AutoCorrCovar(n_states, covar_slot, n_targets, targets);
+    result->insert(state_i);
+  }
+  
+  delete[] targets;
+  return result;
+}
+
+
 Emissions * create_poisson_emissions(int n_states, double lambda) {
   Emissions * result = new Emissions(n_states);
 
@@ -120,7 +157,7 @@ void print_matrix(double * ptr, int n, int m) {
 }
 
 template<typename TransTableT, typename EmissionTableT>
-void run_test(Iter & iter, TransTableT * transitions, EmissionTableT * emissions, double * init_log_probs, double * fwd, int repeats, int test_number) {
+void run_test(Iter & iter, TransTableT * transitions, EmissionTableT * emissions, double * init_log_probs, double * fwd, int repeats, int test_number, bool try_sparse = true) {
 
   double loglik = 0;
   clock_t start, end;
@@ -141,42 +178,44 @@ void run_test(Iter & iter, TransTableT * transitions, EmissionTableT * emissions
   
   delete hmm_auto;
   
-  //
-  // HMM with explicit sparse mode
-  //
-  HMM * hmm_sparse = new_hmm_instance(new InnerFwdSparse<TransTableT *>(transitions),
-                                      new InnerBckSparse<TransTableT *, EmissionTableT *>(transitions),
-                                      transitions,
-                                      emissions,
-                                      init_log_probs);
-  loglik = 0;
-  start = clock();
-  for (int r = 0; r < repeats; ++r)
-    loglik += hmm_sparse->forward(iter, fwd);
-  
-  end = clock();
-  cout << "T" << test_number << ":S\t" << loglik/repeats << "\t" << (end - start)*1000.0/CLOCKS_PER_SEC << endl;
-  
-  delete hmm_sparse;
-  
-  //
-  // HMM with explicit dense mode
-  //
-  HMM * hmm_dense = new_hmm_instance(new InnerFwdDense<TransTableT *>(),
-                                     new InnerBckDense<TransTableT *, EmissionTableT *>(),
-                                     transitions,
-                                     emissions,
-                                     init_log_probs);
-  loglik = 0;
-  
-  start = clock();
-  for (int r = 0; r < repeats; ++r)
-    loglik += hmm_dense->forward(iter, fwd);
-  
-  end = clock();
-  cout << "T" << test_number << ":D\t" << loglik/repeats << "\t" << (end - start)*1000.0/CLOCKS_PER_SEC << endl;
- 
-  delete hmm_dense;
+  if (try_sparse) {
+    //
+    // HMM with explicit sparse mode
+    //
+    HMM * hmm_sparse = new_hmm_instance(new InnerFwdSparse<TransTableT *>(transitions),
+                                        new InnerBckSparse<TransTableT *, EmissionTableT *>(transitions),
+                                        transitions,
+                                        emissions,
+                                        init_log_probs);
+    loglik = 0;
+    start = clock();
+    for (int r = 0; r < repeats; ++r)
+      loglik += hmm_sparse->forward(iter, fwd);
+    
+    end = clock();
+    cout << "T" << test_number << ":S\t" << loglik/repeats << "\t" << (end - start)*1000.0/CLOCKS_PER_SEC << endl;
+    
+    delete hmm_sparse;
+    
+    //
+    // HMM with explicit dense mode
+    //
+    HMM * hmm_dense = new_hmm_instance(new InnerFwdDense<TransTableT *>(),
+                                       new InnerBckDense<TransTableT *, EmissionTableT *>(),
+                                       transitions,
+                                       emissions,
+                                       init_log_probs);
+    loglik = 0;
+    
+    start = clock();
+    for (int r = 0; r < repeats; ++r)
+      loglik += hmm_dense->forward(iter, fwd);
+    
+    end = clock();
+    cout << "T" << test_number << ":D\t" << loglik/repeats << "\t" << (end - start)*1000.0/CLOCKS_PER_SEC << endl;
+    
+    delete hmm_dense;
+  }
 }
 
 int main(int argc, char ** argv) {
@@ -273,6 +312,22 @@ int main(int argc, char ** argv) {
   delete iter3;
   delete trans;
   delete m_emissions;
+
+  /* Test 4: Poisson emission, AutoCorrCovar transition
+   *
+   */
+  Iter * iter4 = new Iter(seq_len, 1, &eslot_dim, data, 1, &cslot_dim, auto_corr_covar);
+  
+  /* create states */
+  NonHomogeneousTransitions * nh_trans = create_nonhomogeneous_transitions(n_states, 0, sparseness);
+  emissions = create_poisson_emissions(n_states, lambda);
+  
+  run_test(*iter4, nh_trans, emissions, init_log_probs, fwd, repeats, 4, false);
+  
+  /* clean up */
+  delete iter4;
+  delete nh_trans;
+  delete emissions;
 
 
   /* clean up */
