@@ -329,6 +329,22 @@ int main(int argc, char ** argv) {
   delete nh_trans;
   delete emissions;
 
+  /* Test 5: PoissonCovar emission, AutoCorrCovar transition
+   *
+   */
+  int cslot_dim2[2] = {1, 1};
+  Iter * iter5 = new Iter(seq_len, 1, &eslot_dim, data, 2, cslot_dim2, covar_2d);
+  
+  /* create states */
+  nh_trans = create_nonhomogeneous_transitions(n_states, 0, sparseness);
+  emissions = create_poisson_covar_emissions(n_states, 1);
+  
+  run_test(*iter5, nh_trans, emissions, init_log_probs, fwd, repeats, 5, false);
+  
+  /* clean up */
+  delete iter5;
+  delete nh_trans;
+  delete emissions;
 
   /* clean up */
   delete[] fwd;
