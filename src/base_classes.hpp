@@ -16,4 +16,21 @@ class EmissionFunction {
     virtual ~EmissionFunction() {};
 };
 
+class MissingEmissionFunction : EmissionFunction {
+  public:
+    MissingEmissionFunction(EmissionFunction * func) : _func(func) {}
+    ~MissingEmissionFunction() { // TODO: review memory management responsabilities
+      delete _func;
+    }
+  
+    double log_probability(Iter const & iter, int slot) const {
+      if (iter.is_missing(slot))
+        return 0.0; /* log(1) */
+      return _func->log_probability(iter, slot);
+    }
+  
+  private:
+    EmissionFunction * _func;
+};
+
 #endif

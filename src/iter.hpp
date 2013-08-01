@@ -10,7 +10,7 @@ class Iter {
     // 
     Iter(int length, int emission_slots, int * e_slot_dim, double * emissions,
          int covar_slots, int * c_slot_dim, double * covars);
-    ~Iter();
+    virtual ~Iter();
   
     // control ops
     void resetFirst() {
@@ -65,8 +65,10 @@ class Iter {
     }
     
     int length() const { return _length; }
+  
+    virtual bool is_missing(int slot) const { return false; }
     
-  private:
+  protected:
     int _length;
   
     double * _emission_ptr;
@@ -84,6 +86,25 @@ class Iter {
     // could also store slot descriptions and add asserts to data ops
     // ideally, there should be a non-performance penalty way to add the
     // checks at runtime for debug purposes ... (exceptions ?)
+};
+
+// Missing data must follow the same slot count as emissions
+class IterMissing : public Iter {
+  public:
+    IterMissing(int length, int emission_slots, int * e_slot_dim, double * emissions,
+                int covar_slots, int * c_slot_dim, double * covars, int * missing) : Iter(length, emission_slots, e_slot_dim, emissions, covar_slots, c_slot_dim, covars), _missing(missing), _missing_step(emission_slots) {
+      assert(_missing != NULL);
+      assert(_emission_start != NULL);
+    }
+
+    virtual bool is_missing(int slot) const {
+      int offset = (_emission_ptr - _emission_start) / _emission_step * _missing_step + slot;
+      return (_missing[offset] != 0);
+    }
+  
+  private:
+    int * _missing;
+    int _missing_step;
 };
 
 #endif
