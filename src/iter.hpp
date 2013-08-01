@@ -49,12 +49,12 @@ class Iter {
     }
     
     double covar(const int slot) const {
-      assert(_covar_ptr != NULL);
+      assert(_covar_start != NULL);
       return _covar_ptr[_covar_offsets[slot]];
     }
     
     double covar_i(const int slot, const int i) const {
-      assert(_covar_ptr != NULL);
+      assert(_covar_start != NULL);
       return _covar_ptr[_covar_offsets[slot] + i];
     }
     
