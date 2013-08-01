@@ -94,6 +94,20 @@ Emissions * create_poisson_covar_emissions(int n_states, int covar_slot) {
   return result;
 }
 
+MultiEmissions * create_poisson_both_emissions(int n_states, double lambda, int covar_slot) {
+  MultiEmissions * result = new MultiEmissions(n_states, 2);
+  
+  for (int i = 0; i < n_states; ++i) {
+    std::vector<EmissionFunction *> funcs;
+    funcs.push_back(new Poisson(lambda));
+    funcs.push_back(new PoissonCovar(covar_slot));
+    
+    result->insert(funcs);
+  }
+  
+  return result;
+}
+
 void print_matrix(double * ptr, int n, int m) {
   for (int j = 0; j < m; ++j) {
     cout << *ptr;
@@ -130,8 +144,8 @@ void run_test(Iter & iter, TransTableT * transitions, EmissionTableT * emissions
   //
   // HMM with explicit sparse mode
   //
-  HMM * hmm_sparse = new_hmm_instance(new InnerFwdSparse<HomogeneousTransitions *>(transitions),
-                                      new InnerBckSparse<HomogeneousTransitions *, Emissions *>(transitions),
+  HMM * hmm_sparse = new_hmm_instance(new InnerFwdSparse<TransTableT *>(transitions),
+                                      new InnerBckSparse<TransTableT *, EmissionTableT *>(transitions),
                                       transitions,
                                       emissions,
                                       init_log_probs);
@@ -148,8 +162,8 @@ void run_test(Iter & iter, TransTableT * transitions, EmissionTableT * emissions
   //
   // HMM with explicit dense mode
   //
-  HMM * hmm_dense = new_hmm_instance(new InnerFwdDense<HomogeneousTransitions *>(),
-                                     new InnerBckDense<HomogeneousTransitions *, Emissions *>(),
+  HMM * hmm_dense = new_hmm_instance(new InnerFwdDense<TransTableT *>(),
+                                     new InnerBckDense<TransTableT *, EmissionTableT *>(),
                                      transitions,
                                      emissions,
                                      init_log_probs);
@@ -242,6 +256,23 @@ int main(int argc, char ** argv) {
   delete iter2;
   delete trans;
   delete emissions;
+  
+  /* Test 3: (Poisson, PoissonCovar emission), AutoCorr transition
+   *
+   */
+  int eslot_dim2[2] = {1, 1};
+  Iter * iter3 = new Iter(seq_len, 2, eslot_dim2, emission_2d, 1, &cslot_dim, lambda_covar);
+  
+  /* create states */
+  trans = create_homogeneous_transitions(n_states, auto_corr, sparseness);
+  MultiEmissions * m_emissions = create_poisson_both_emissions(n_states, lambda, 0);
+  
+  run_test(*iter3, trans, m_emissions, init_log_probs, fwd, repeats, 3);
+  
+  /* clean up */
+  delete iter3;
+  delete trans;
+  delete m_emissions;
 
 
   /* clean up */
