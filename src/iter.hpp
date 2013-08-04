@@ -98,7 +98,7 @@ class IterMissing : public Iter {
     }
 
     virtual bool is_missing(int slot) const {
-      int offset = (_emission_ptr - _emission_start) / _emission_step * _missing_step + slot;
+      long offset = (_emission_ptr - _emission_start) / _emission_step * _missing_step + slot;
       return (_missing[offset] != 0);
     }
   

@@ -292,9 +292,9 @@ class Poisson : public EmissionFunction {
       // log prob(x) = log( lambda^x exp(-lambda) / x!)
       //             = x log(lambda) - lambda - log(x!)
       if (x == 0)
-	return -_lambda - LogFactorial::logFactorial(x);
+        return -_lambda - LogFactorial::logFactorial(x);
       else
-	return x * _log_lambda - _lambda - LogFactorial::logFactorial(x);
+        return x * _log_lambda - _lambda - LogFactorial::logFactorial(x);
     }
   
   private:
@@ -313,9 +313,9 @@ class PoissonCovar : public EmissionFunction {
       // log prob(x) = log( lambda^x exp(-lambda) / x!)
       //             = x log(lambda) - lambda - log(x!)
       if (x == 0)
-	return - lambda - LogFactorial::logFactorial(x);
+        return - lambda - LogFactorial::logFactorial(x);
       else
-	return x * log(lambda) - lambda - LogFactorial::logFactorial(x);
+        return x * log(lambda) - lambda - LogFactorial::logFactorial(x);
     }
   
   private:

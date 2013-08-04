@@ -1,0 +1,15 @@
+Package: rqhmm
+Type: Package
+Title: Quick Hidden Markov Model package
+Version: 0.1
+Date: 2013-08-03
+Author: Andre L. Martins
+Maintainer: Andre L. Martins <alm253@cornell.edu>
+Description: Quick Hidden Markov Model package
+  R Interface into the C++ QHMM library. Enables description of the HMM
+  structure from R and calling the common algorithms (forward, backward,
+  posterior, viterbi and EM). 
+Depends: R(>= 2.4.0)
+License: BSD
+LazyLoad: No
+NeedsCompilation: yes
