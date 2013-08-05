@@ -286,7 +286,7 @@ class Poisson : public EmissionFunction {
   public:
     Poisson(double lambda) : _lambda(lambda), _log_lambda(log(lambda)) {}
 
-    virtual bool validParams(Params const & params) {
+    virtual bool validParams(Params const & params) const {
       return params.length() == 1 && params[0] > 0;
     }
   

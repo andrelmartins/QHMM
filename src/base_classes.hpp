@@ -6,7 +6,7 @@
 
 class TransitionFunction {
 	public:
-    virtual bool validParams(Params const & params) { return true; }
+    virtual bool validParams(Params const & params) const { return true; }
     virtual void setParams(Params const & params)  {}
     virtual double log_probability(int target) const = 0;
 		virtual double log_probability(Iter const & iter, int target) const = 0;
@@ -15,7 +15,7 @@ class TransitionFunction {
 
 class EmissionFunction {
   public:
-    virtual bool validParams(Params const & params) { return true; }
+    virtual bool validParams(Params const & params) const { return true; }
     virtual void setParams(Params const & params)  {}
     virtual double log_probability(Iter const & iter, int slot) const = 0;
     virtual ~EmissionFunction() {};
@@ -28,7 +28,7 @@ class MissingEmissionFunction : EmissionFunction {
       delete _func;
     }
 
-    bool validParams(Params const & params) {
+    bool validParams(Params const & params) const {
       return _func->validParams(params);
     }
   

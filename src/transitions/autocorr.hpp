@@ -25,9 +25,10 @@ class AutoCorr : public TransitionFunction {
     
     ~AutoCorr() {
       delete[] _log_probs;
+      delete[] _targets;
     }
   
-    virtual bool validParams(Params const & params) {
+    virtual bool validParams(Params const & params) const {
       return params.length() == 1 && params[0] >= 0 && params[0] <= 1;
     }
   
