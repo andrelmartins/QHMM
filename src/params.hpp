@@ -14,7 +14,7 @@ public:
     _values = new double[length];
     for (int i = 0; i < length; ++i) {
       _fixed[i] = false;
-      _values[i] = value[i];
+      _values[i] = values[i];
     }
   }
   
@@ -23,11 +23,11 @@ public:
     delete _fixed;
   }
   
-  bool isAllFixed() {
+  bool isAllFixed() const {
     return _allFixed;
   }
   
-  bool isFixed(unsigned int index) {
+  bool isFixed(unsigned int index) const {
     INDEX_CHECK(index);
     return _fixed[index];
   }
@@ -45,12 +45,17 @@ public:
     }
   }
   
-  double operator[](unsigned int index) {
+  double & operator[](unsigned int index) {
+    INDEX_CHECK(index);
+    return _values[index];
+  }
+
+  const double & operator[](unsigned int index) const {
     INDEX_CHECK(index);
     return _values[index];
   }
   
-  int length() {
+  int length() const {
     return _length;
   }
   

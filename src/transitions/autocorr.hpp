@@ -13,27 +13,28 @@
 class AutoCorr : public TransitionFunction {
   public:
     // first target in `targets` must the source state
-    AutoCorr(double alpha, int n_states, int n_targets, int * targets) {
+  AutoCorr(double alpha, int n_states, int n_targets, int * targets) : _n_states(n_states), _n_targets(n_targets) {
       _log_probs = new double[n_states];
-      
-      // set all to -Inf
-      for (int i = 0; i < n_states; ++i)
-        _log_probs[i] = -std::numeric_limits<double>::infinity();
-      
-      // set actual probabilities
-      _log_probs[targets[0]] = log(alpha); // self transition
-      
-      if (n_targets > 1) {
-        double other = log(1 - alpha) - log(n_targets - 1);
-        for (int i = 1; i < n_targets; ++i)
-          _log_probs[targets[i]] = other;
-      }
+      _targets = new int[n_states];
+
+      for (int i = 0; i < n_targets; ++i)
+        _targets[i] = targets[i];
+
+      update_log_probs(alpha);
     }
     
     ~AutoCorr() {
       delete[] _log_probs;
     }
-    
+  
+    virtual bool validParams(Params const & params) {
+      return params.length() == 1 && params[0] >= 0 && params[0] <= 1;
+    }
+  
+    virtual void setParams(Params const & params) {
+      update_log_probs(params[0]);
+    }
+  
     virtual double log_probability(int target) const {
       return _log_probs[target];
     }
@@ -43,7 +44,25 @@ class AutoCorr : public TransitionFunction {
     }
     
   private:
+    int _n_states;
+    int _n_targets;
+    int * _targets;
     double * _log_probs;
+  
+    void update_log_probs(double alpha) {
+      // set all to -Inf
+      for (int i = 0; i < _n_states; ++i)
+        _log_probs[i] = -std::numeric_limits<double>::infinity();
+      
+      // set actual probabilities
+      _log_probs[_targets[0]] = log(alpha); // self transition
+      
+      if (_n_targets > 1) {
+        double other = log(1 - alpha) - log(_n_targets - 1);
+        for (int i = 1; i < _n_targets; ++i)
+          _log_probs[_targets[i]] = other;
+      }
+    }
 };
 
 
