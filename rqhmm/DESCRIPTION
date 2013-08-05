@@ -11,5 +11,4 @@ Description: Quick Hidden Markov Model package
   posterior, viterbi and EM). 
 Depends: R(>= 2.4.0)
 License: BSD
-LazyLoad: No
 NeedsCompilation: yes
