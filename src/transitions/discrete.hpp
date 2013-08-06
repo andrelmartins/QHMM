@@ -58,24 +58,6 @@ private:
   int _n_targets;
   int * _targets;
   double * _log_probs;
-
-  void update_log_probs(double alpha) {
-    // set all to -Inf
-    for (int i = 0; i < _n_states; ++i)
-      _log_probs[i] = -std::numeric_limits<double>::infinity();
-    
-    // set actual probabilities
-    for (int i = 0; i < _n_targets; ++i)
-      _log_probs[_targets[i]] = log(
-      _log_probs[_targets[0]] = log(alpha); // self transition
-      
-      if (_n_targets > 1) {
-        double other = log(1 - alpha) - log(_n_targets - 1);
-        for (int i = 1; i < _n_targets; ++i)
-          _log_probs[_targets[i]] = other;
-      }
-
-
 };
 
 #endif
