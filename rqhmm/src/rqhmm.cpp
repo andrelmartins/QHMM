@@ -15,20 +15,101 @@ static std::vector<FuncEntry*> __transitions;
 
 class RQHMMData {
 public:
-  RQHMMData(int n_states) {
+  RQHMMData(int n_states, SEXP data_shape) {
     /* initial state probabilities */
     double lp = -log(n_states);
     
     init_log_probs = new double[n_states];
     for (int i = 0; i < n_states; ++i)
       init_log_probs[i] = lp;
+    
+    /* store copy of data shape for Iterator instantiation */
+    SEXP emission_shape = VECTOR_ELT(data_shape, 0);
+    SEXP covar_shape = VECTOR_ELT(data_shape, 1);
+
+    emission_slots = length(emission_shape);
+    emission_size = 0;
+    if (emission_slots == 0)
+      e_slot_dim = NULL;
+    else {
+      e_slot_dim = new int[emission_slots];
+      for (int i = 0; i < emission_slots; ++i) {
+        e_slot_dim[i] = INTEGER(emission_shape)[i];
+        emission_size += e_slot_dim[i];
+      }
+    }
+    
+    covar_slots = length(covar_shape);
+    covar_size = 0;
+    if (covar_slots == 0)
+      c_slot_dim = NULL;
+    else {
+      c_slot_dim = new int[covar_slots];
+      for (int i = 0; i < covar_slots; ++i) {
+        c_slot_dim[i] = INTEGER(covar_shape)[i];
+        covar_size += c_slot_dim[i];
+      }
+    }
   }
   
   ~RQHMMData() {
     delete hmm;
     delete[] init_log_probs;
+    if (e_slot_dim)
+      delete[] e_slot_dim;
+    if (c_slot_dim)
+      delete[] c_slot_dim;
   }
   
+  void get_dims(SEXP data, int & n, int & m) {
+    if (data == R_NilValue) {
+      n = 0;
+      m = 0;
+    }
+      
+    if (isMatrix(data)) {
+      n = nrows(data);
+      m = ncols(data);
+    } else {
+      n = 1;
+      m = length(data);
+    }
+  }
+  
+  Iter * create_iterator(SEXP emissions, SEXP covars) {
+    /* validate emissions & covars */
+    double * eptr;
+    double * cptr = NULL;
+    int L, N;
+    get_dims(emissions, N, L);
+
+    if (N != emission_size)
+      error("emissions don't match data shape: n.rows = %d, required = %d", N, emission_size);
+
+    eptr = REAL(emissions);
+    
+    if (covar_size > 0) {
+      int Lc, Nc;
+      get_dims(covars, Nc, Lc);
+      
+      if (Lc != L)
+        error("covars length must match emissions length: %d != %d\n", Lc, L);
+      if (Nc != covar_size)
+        error("covars don't match data shape: n.rows = %d, required = %d", Nc, covar_size);
+      
+      cptr = REAL(covars);
+    }
+    
+    return new Iter(L, emission_slots, e_slot_dim, eptr,
+                    covar_slots, c_slot_dim, cptr);
+  }
+  
+  int emission_size;
+  int emission_slots;
+  int * e_slot_dim;
+  int covar_size;
+  int covar_slots;
+  int * c_slot_dim;
   HMM * hmm;
   double * init_log_probs;
 };
@@ -76,11 +157,11 @@ void fill_transitions(TType * ttable, int n_states, SEXP valid_transitions, SEXP
 }
 
 template<typename EType>
-RQHMMData * _create_hmm_transitions(EType * emissions, SEXP valid_transitions, SEXP transitions) {
+RQHMMData * _create_hmm_transitions(SEXP data_shape, EType * emissions, SEXP valid_transitions, SEXP transitions) {
   /* make choice about transition table */
   int n_states = length(transitions);
   bool needs_covars = false;
-  RQHMMData * data = new RQHMMData(n_states);
+  RQHMMData * data = new RQHMMData(n_states, data_shape);
     
   /* first pass: check if any transition function needs covars */
   for (int i = 0; i < n_states; ++i) {
@@ -115,7 +196,7 @@ RQHMMData * _create_hmm_transitions(EType * emissions, SEXP valid_transitions, S
 RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transitions, SEXP emissions) {
   /* make choice about emission table */
   SEXP emission_shape = VECTOR_ELT(data_shape, 0);
-  SEXP covar_shape = VECTOR_ELT(data_shape, 0);
+  SEXP covar_shape = VECTOR_ELT(data_shape, 1);
   int n_emissions = length(emission_shape);
   int n_covars = length(covar_shape);
   int n_states = length(transitions);
@@ -130,7 +211,7 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
       etable->insert(efunc->create_emission_instance(dim));
     }
     
-    return _create_hmm_transitions(etable, valid_transitions, transitions);
+    return _create_hmm_transitions(data_shape, etable, valid_transitions, transitions);
   } else {
     MultiEmissions * etable = new MultiEmissions(n_states, n_emissions);
     
@@ -148,7 +229,7 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
       etable->insert(funcs_i);
     }
     
-    return _create_hmm_transitions(etable, valid_transitions, transitions);
+    return _create_hmm_transitions(data_shape, etable, valid_transitions, transitions);
   }
 }
 
