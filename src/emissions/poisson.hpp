@@ -284,7 +284,7 @@ const double LogFactorial::logFactorialTable[256] = { 0.000000000000000,
 
 class Poisson : public EmissionFunction {
   public:
-    Poisson(double lambda) : _lambda(lambda), _log_lambda(log(lambda)) {}
+    Poisson(double lambda = 1.0) : _lambda(lambda), _log_lambda(log(lambda)) {}
 
     virtual bool validParams(Params const & params) const {
       return params.length() == 1 && params[0] > 0;

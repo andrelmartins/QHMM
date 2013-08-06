@@ -6,6 +6,7 @@
 #include "func_entry.hpp"
 #include <transitions/discrete.hpp>
 #include <transitions/autocorr.hpp>
+#include <emissions/poisson.hpp>
 #include <vector>
 
 static std::vector<FuncEntry*> __emissions;
@@ -105,6 +106,9 @@ extern "C" {
     // add our basic transition functions
     register_transition(new TransitionEntry<Discrete>("discrete", "rqhmm_base"));
     register_transition(new TransitionEntry<AutoCorr>("autocorr", "rqhmm_base"));
+
+    // add our basic emission functions
+    register_emission(new EmissionEntry<Poisson>("poisson", "rqhmm_base"));
   }
   
   void attr_default R_unload_rqhmm(DllInfo * info) {
