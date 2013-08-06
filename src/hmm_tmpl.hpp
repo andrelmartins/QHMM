@@ -164,6 +164,7 @@ class HMMImpl : public HMM {
 
       /* other states */
       int z = *pptr;
+      --pptr;
       for (int l = iter.length() - 1; iter.prev() ; --pptr) {
         z = AT(backptr, z, l);
         *pptr = z;

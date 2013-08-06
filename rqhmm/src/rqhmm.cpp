@@ -415,6 +415,33 @@ extern "C" {
     return result;
   }
   
+  SEXP rqhmm_viterbi(SEXP rqhmm, SEXP emissions, SEXP covars) {
+    SEXP result;
+    RQHMMData * data;
+    Iter * iter;
+    SEXP ptr;
+    
+    /* retrieve rqhmm pointer */
+    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
+    if (ptr == R_NilValue)
+      error("invalid rqhmm object");
+    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+    
+    /* create data structures */
+    iter = data->create_iterator(emissions, covars);
+    PROTECT(result = NEW_INTEGER(iter->length()));
+    
+    /* invoke viterbi */
+    data->hmm->viterbi((*iter), INTEGER(result));
+    
+    /* clean up */
+    delete iter;
+    
+    UNPROTECT(2);
+    
+    return result;
+  }
+  
   // R Entry points
   void attr_default R_init_rqhmm(DllInfo * info) {
     Rprintf("rqhmm init called\n");

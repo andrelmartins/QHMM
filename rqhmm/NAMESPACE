@@ -1,4 +1,6 @@
-useDynLib(rqhmm, rqhmm_transition_exists, rqhmm_emission_exists, rqhmm_create_hmm, rqhmm_forward, rqhmm_backward)
+useDynLib(rqhmm, rqhmm_transition_exists, rqhmm_emission_exists, rqhmm_create_hmm, rqhmm_forward, rqhmm_backward, rqhmm_viterbi)
 export(new.qhmm)
 export(forward.qhmm)
 export(backward.qhmm)
+export(viterbi.qhmm)
+

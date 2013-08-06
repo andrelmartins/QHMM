@@ -124,3 +124,7 @@ forward.qhmm <- function(hmm, emissions, covars = NULL) {
 backward.qhmm <- function(hmm, emissions, covars = NULL) {
   .Call(rqhmm_backward, hmm, emissions, covars);
 }
+
+viterbi.qhmm <- function(hmm, emissions, covars = NULL) {
+  .Call(rqhmm_viterbi, hmm, emissions, covars);
+}
