@@ -7,6 +7,7 @@
 #include <transitions/discrete.hpp>
 #include <transitions/autocorr.hpp>
 #include <emissions/poisson.hpp>
+#include <emissions/discrete.hpp>
 #include <hmm.hpp>
 #include <vector>
 
@@ -457,6 +458,7 @@ extern "C" {
 
     // add our basic emission functions
     register_emission(new EmissionEntry<Poisson>("poisson", "rqhmm_base"));
+    register_emission(new EmissionEntry<DiscreteEmissions>("discrete", "rqhmm_base"));
   }
   
   void attr_default R_unload_rqhmm(DllInfo * info) {
