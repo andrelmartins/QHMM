@@ -48,7 +48,7 @@ HomogeneousTransitions * create_homogeneous_transitions(int n_states, double alp
     n_targets = 1;
     int target = 0;
 
-    AutoCorr * state = new AutoCorr(alpha, n_states, n_targets, &target);
+    AutoCorr * state = new AutoCorr(n_states, n_targets, &target, alpha);
     result->insert(state);
     result->updateTransitions();
     return result;
@@ -64,7 +64,7 @@ HomogeneousTransitions * create_homogeneous_transitions(int n_states, double alp
     for (int j = 0; j < n_targets; ++j)
       targets[j] = (i + j) % n_states;
     
-    state_i = new AutoCorr(alpha, n_states, n_targets, targets);
+    state_i = new AutoCorr(n_states, n_targets, targets, alpha);
     result->insert(state_i);
   }
 
@@ -89,7 +89,7 @@ NonHomogeneousTransitions * create_nonhomogeneous_transitions(int n_states, int 
     n_targets = 1;
     int target = 0;
     
-    AutoCorrCovar * state = new AutoCorrCovar(n_states, covar_slot, n_targets, &target);
+    AutoCorrCovar * state = new AutoCorrCovar(n_states, n_targets, &target, covar_slot);
     result->insert(state);
     return result;
   }
@@ -104,7 +104,7 @@ NonHomogeneousTransitions * create_nonhomogeneous_transitions(int n_states, int 
     for (int j = 0; j < n_targets; ++j)
       targets[j] = (i + j) % n_states;
     
-    state_i = new AutoCorrCovar(n_states, covar_slot, n_targets, targets);
+    state_i = new AutoCorrCovar(n_states, n_targets, targets, covar_slot);
     result->insert(state_i);
   }
   

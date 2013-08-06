@@ -4,7 +4,8 @@
 #include <R_ext/Rdynload.h>
 
 #include "func_entry.hpp"
-
+#include <transitions/discrete.hpp>
+#include <transitions/autocorr.hpp>
 #include <vector>
 
 static std::vector<FuncEntry*> __emissions;
@@ -100,6 +101,10 @@ extern "C" {
     RREGDEF(register_emission);
     RREGDEF(register_transition);
     RREGDEF(unregister_all);
+    
+    // add our basic transition functions
+    register_transition(new TransitionEntry<Discrete>("discrete", "rqhmm_base"));
+    register_transition(new TransitionEntry<AutoCorr>("autocorr", "rqhmm_base"));
   }
   
   void attr_default R_unload_rqhmm(DllInfo * info) {

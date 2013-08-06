@@ -7,7 +7,7 @@
 
 class Discrete : public TransitionFunction {
 public:
-  Discrete(int n_states, int n_targets, int * targets) : _n_states(n_states), _n_targets(n_targetes) {
+  Discrete(int n_states, int n_targets, int * targets) : _n_states(n_states), _n_targets(n_targets) {
 
     _log_probs = new double[n_states];
     _targets = new int[n_states];
@@ -37,7 +37,7 @@ public:
       sum = sum + params[i];
 
     // TODO: maybe allow some tolerance ??
-    return params.length() == _n_states; && sum == 1.0;
+    return params.length() == _n_states && sum == 1.0;
   }
   
   virtual void setParams(Params const & params) {
