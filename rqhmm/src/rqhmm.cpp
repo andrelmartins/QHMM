@@ -50,6 +50,8 @@ public:
         covar_size += c_slot_dim[i];
       }
     }
+    
+    this->n_states = n_states;
   }
   
   ~RQHMMData() {
@@ -112,6 +114,7 @@ public:
   int * c_slot_dim;
   HMM * hmm;
   double * init_log_probs;
+  int n_states;
 };
 
 FuncEntry * get_entry(std::vector<FuncEntry*> & table, const char * name) {
@@ -344,6 +347,72 @@ extern "C" {
     UNPROTECT(3);
     
     return ans;
+  }
+  
+  SEXP rqhmm_forward(SEXP rqhmm, SEXP emissions, SEXP covars) {
+    SEXP result;
+    RQHMMData * data;
+    Iter * iter;
+    SEXP ptr;
+    SEXP loglik;
+    
+    /* retrieve rqhmm pointer */
+    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
+    if (ptr == R_NilValue)
+      error("invalid rqhmm object");
+    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+    
+    /* create data structures */
+    iter = data->create_iterator(emissions, covars);
+    PROTECT(result = allocMatrix(REALSXP, data->n_states, iter->length()));
+    
+    /* invoke forward */
+    double log_lik = data->hmm->forward((*iter), REAL(result));
+
+    /* clean up */
+    delete iter;
+    
+    /* prepare result */
+    PROTECT(loglik = NEW_NUMERIC(1));
+    REAL(loglik)[0] = log_lik;
+    setAttrib(result, install("loglik"), loglik);
+    
+    UNPROTECT(3);
+    
+    return result;
+  }
+  
+  SEXP rqhmm_backward(SEXP rqhmm, SEXP emissions, SEXP covars) {
+    SEXP result;
+    RQHMMData * data;
+    Iter * iter;
+    SEXP ptr;
+    SEXP loglik;
+    
+    /* retrieve rqhmm pointer */
+    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
+    if (ptr == R_NilValue)
+      error("invalid rqhmm object");
+    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+    
+    /* create data structures */
+    iter = data->create_iterator(emissions, covars);
+    PROTECT(result = allocMatrix(REALSXP, data->n_states, iter->length()));
+    
+    /* invoke backward */
+    double log_lik = data->hmm->backward((*iter), REAL(result));
+    
+    /* clean up */
+    delete iter;
+    
+    /* prepare result */
+    PROTECT(loglik = NEW_NUMERIC(1));
+    REAL(loglik)[0] = log_lik;
+    setAttrib(result, install("loglik"), loglik);
+    
+    UNPROTECT(3);
+    
+    return result;
   }
   
   // R Entry points

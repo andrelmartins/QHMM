@@ -116,3 +116,11 @@ new.qhmm <- function(data.shape, valid.transitions, transition.functions, emissi
   class(res) <- "rqhmm"
   return(res)
 }
+
+forward.qhmm <- function(hmm, emissions, covars = NULL) {
+  .Call(rqhmm_forward, hmm, emissions, covars);
+}
+
+backward.qhmm <- function(hmm, emissions, covars = NULL) {
+  .Call(rqhmm_backward, hmm, emissions, covars);
+}
