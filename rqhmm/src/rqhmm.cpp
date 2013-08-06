@@ -435,6 +435,11 @@ extern "C" {
     /* invoke viterbi */
     data->hmm->viterbi((*iter), INTEGER(result));
     
+    /* 0-based -> 1-based state numbers */
+    int * rptr = INTEGER(result);
+    for (int i = 0; i < iter->length(); ++i)
+      ++rptr[i];
+
     /* clean up */
     delete iter;
     
