@@ -1,2 +1,2 @@
-useDynLib(rqhmm, rqhmm_transition_exists, rqhmm_emission_exists)
+useDynLib(rqhmm, rqhmm_transition_exists, rqhmm_emission_exists, rqhmm_create_hmm)
 export(new.qhmm)

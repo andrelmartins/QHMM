@@ -5,10 +5,11 @@
 
 class FuncEntry {
 public:
-  FuncEntry(const char * fname, const char * pkg) : package(pkg), name(fname) {}
+  FuncEntry(const char * fname, const char * pkg, const bool req_covars) : package(pkg), name(fname), needs_covars(req_covars) {}
   virtual EmissionFunction * create_emission_instance(int dim) const = 0;
   virtual TransitionFunction * create_transition_instance(int n_states, int n_targets, int * targets) const = 0;
   
+  const bool needs_covars;
   const char * package;
   const char * name;
 };
@@ -16,7 +17,7 @@ public:
 template<typename T>
 class EmissionEntry : public FuncEntry {
 public:
-  EmissionEntry(const char * name, const char * package) : FuncEntry(name, package) {
+  EmissionEntry(const char * name, const char * package) : FuncEntry(name, package, false) {
   }
   
   TransitionFunction * create_transition_instance(int n_states, int n_targets, int * targets) const {
@@ -32,7 +33,7 @@ public:
 template<typename T>
 class TransitionEntry : public FuncEntry {
 public:
-  TransitionEntry(const char * name, const char * package) : FuncEntry(name, package) {
+  TransitionEntry(const char * name, const char * package, const bool req_covars) : FuncEntry(name, package, req_covars) {
   }
   
   TransitionFunction * create_transition_instance(int n_states, int n_targets, int * targets) const {

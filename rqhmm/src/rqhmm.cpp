@@ -7,10 +7,151 @@
 #include <transitions/discrete.hpp>
 #include <transitions/autocorr.hpp>
 #include <emissions/poisson.hpp>
+#include <hmm.hpp>
 #include <vector>
 
 static std::vector<FuncEntry*> __emissions;
 static std::vector<FuncEntry*> __transitions;
+
+class RQHMMData {
+public:
+  RQHMMData(int n_states) {
+    /* initial state probabilities */
+    double lp = -log(n_states);
+    
+    init_log_probs = new double[n_states];
+    for (int i = 0; i < n_states; ++i)
+      init_log_probs[i] = lp;
+  }
+  
+  ~RQHMMData() {
+    delete hmm;
+    delete[] init_log_probs;
+  }
+  
+  HMM * hmm;
+  double * init_log_probs;
+};
+
+FuncEntry * get_entry(std::vector<FuncEntry*> & table, const char * name) {
+  std::vector<FuncEntry*>::iterator it;
+  for (it = table.begin(); it != table.end(); ++it)
+    if (!strcmp((*it)->name, name)) {
+      return *it;
+    }
+  return NULL;
+}
+
+int * create_target_vector(int * transition_row, int n_states, int & out_n_targets) {
+  /* first pass: get number of targets */
+  out_n_targets = 0;
+  for (int i = 0; i < n_states; ++i)
+    if (transition_row[i] > out_n_targets)
+      out_n_targets = transition_row[i];
+  
+  /* second pass: create target array */
+  int * targets = new int[out_n_targets];
+  for (int i = 0; i < n_states; ++i)
+    if (transition_row[i] > 0)
+      targets[transition_row[i] - 1] = i;
+  
+  return targets;
+}
+
+template<typename TType>
+void fill_transitions(TType * ttable, int n_states, SEXP valid_transitions, SEXP transitions) {
+  for (int i = 0; i < n_states; ++i) {
+    const char * tfunc_name = CHAR(STRING_ELT(transitions, i));
+    FuncEntry * tfunc = get_entry(__transitions, tfunc_name);
+    int n_targets = 0;
+    int * targets;
+    int * row = INTEGER(valid_transitions) + i * n_states;
+    
+    targets = create_target_vector(row, n_states, n_targets);
+    
+    ttable->insert(tfunc->create_transition_instance(n_states, n_targets, targets));
+    
+    delete[] targets;
+  }
+}
+
+template<typename EType>
+RQHMMData * _create_hmm_transitions(EType * emissions, SEXP valid_transitions, SEXP transitions) {
+  /* make choice about transition table */
+  int n_states = length(transitions);
+  bool needs_covars = false;
+  RQHMMData * data = new RQHMMData(n_states);
+    
+  /* first pass: check if any transition function needs covars */
+  for (int i = 0; i < n_states; ++i) {
+    const char * tfunc_name = CHAR(STRING_ELT(transitions, i));
+    FuncEntry * tfunc = get_entry(__transitions, tfunc_name);
+    
+    if (tfunc->needs_covars) {
+      needs_covars = true;
+      break;
+    }
+  }
+
+  /* second pass: create instances */
+  if (needs_covars) {
+    NonHomogeneousTransitions * ttable = new NonHomogeneousTransitions(n_states);
+    
+    fill_transitions(ttable, n_states, valid_transitions, transitions);
+    
+    data->hmm = HMM::create(ttable, emissions, data->init_log_probs);
+  } else {
+    HomogeneousTransitions * ttable = new HomogeneousTransitions(n_states);
+    
+    fill_transitions(ttable, n_states, valid_transitions, transitions);
+    ttable->updateTransitions(); // default initialization ...
+    
+    data->hmm = HMM::create(ttable, emissions, data->init_log_probs);
+  }
+  
+  return data;
+}
+
+RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transitions, SEXP emissions) {
+  /* make choice about emission table */
+  SEXP emission_shape = VECTOR_ELT(data_shape, 0);
+  SEXP covar_shape = VECTOR_ELT(data_shape, 0);
+  int n_emissions = length(emission_shape);
+  int n_covars = length(covar_shape);
+  int n_states = length(transitions);
+  
+  if (n_emissions == 1) {
+    Emissions * etable = new Emissions(n_states);
+    int dim = INTEGER(emission_shape)[0];
+    
+    for (int i = 0; i < n_states; ++i) {
+      const char * efunc_name = CHAR(STRING_ELT(VECTOR_ELT(emissions, i), 0));
+      FuncEntry * efunc = get_entry(__emissions, efunc_name);
+      etable->insert(efunc->create_emission_instance(dim));
+    }
+    
+    return _create_hmm_transitions(etable, valid_transitions, transitions);
+  } else {
+    MultiEmissions * etable = new MultiEmissions(n_states, n_emissions);
+    
+    for (int i = 0; i < n_states; ++i) {
+      std::vector<EmissionFunction *> funcs_i;
+      SEXP emissions_i = VECTOR_ELT(emissions, i);
+      
+      for (int j = 0; j < n_emissions; ++j) {
+        int dim = INTEGER(emission_shape)[j];
+        const char * efunc_name = CHAR(STRING_ELT(emissions_i, j));
+        FuncEntry * efunc = get_entry(__emissions, efunc_name);
+        funcs_i.push_back(efunc->create_emission_instance(dim));
+      }
+      
+      etable->insert(funcs_i);
+    }
+    
+    return _create_hmm_transitions(etable, valid_transitions, transitions);
+  }
+}
+
 
 extern "C" {
 #ifdef HAVE_VISIBILITY_ATTRIBUTE
@@ -94,6 +235,36 @@ extern "C" {
     return fentry_exists(name, __emissions);
   }
   
+  void rqhmm_finalizer(SEXP ptr) {
+    RQHMMData * data;
+    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+    if (!data) return;
+    delete data;
+    R_ClearExternalPtr(ptr);
+  }
+  
+  // TODO: add support for missing data
+  SEXP rqhmm_create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transitions, SEXP emissions) {
+    RQHMMData * data = _create_hmm(data_shape, valid_transitions, transitions, emissions);
+    SEXP ans;
+    SEXP ptr;
+    SEXP n_states;
+    
+    PROTECT(ans = NEW_LIST(1));
+    ptr = R_MakeExternalPtr(data, install("RQHMM_struct"), R_NilValue);
+    PROTECT(ptr);
+    R_RegisterCFinalizerEx(ptr, rqhmm_finalizer, (Rboolean) TRUE);
+    setAttrib(ans, install("handle_ptr"), ptr);
+
+    PROTECT(n_states = NEW_INTEGER(1));
+    INTEGER(n_states)[0] = length(transitions);
+    SET_VECTOR_ELT(ans, 0, n_states);
+    
+    UNPROTECT(3);
+    
+    return ans;
+  }
+  
   // R Entry points
   void attr_default R_init_rqhmm(DllInfo * info) {
     Rprintf("rqhmm init called\n");
@@ -104,8 +275,8 @@ extern "C" {
     RREGDEF(unregister_all);
     
     // add our basic transition functions
-    register_transition(new TransitionEntry<Discrete>("discrete", "rqhmm_base"));
-    register_transition(new TransitionEntry<AutoCorr>("autocorr", "rqhmm_base"));
+    register_transition(new TransitionEntry<Discrete>("discrete", "rqhmm_base", false));
+    register_transition(new TransitionEntry<AutoCorr>("autocorr", "rqhmm_base", false));
 
     // add our basic emission functions
     register_emission(new EmissionEntry<Poisson>("poisson", "rqhmm_base"));

@@ -34,6 +34,23 @@ new.qhmm <- function(data.shape, valid.transitions, transition.functions, emissi
   n.slots = length(emission.slot.dims)
   stopifnot(all(sapply(emission.functions, length) == n.slots))
   
+  # coerce valid transition matrix to integer
+  storage.mode(valid.transitions) <- "integer"
+  
+  # valid transition setup
+  for (i in 1:n.states) {
+    low.i = min(valid.transitions[i,])
+    max.i = max(valid.transitions[i,])
+    
+    stopifnot(low.i >= 0)
+    stopifnot(max.i <= n.states)
+    if (max.i > 0) {
+      for (j in 1:max.i)
+        stopifnot(sum(valid.transitions[i,] == j) == 1)
+    } else if (max.i == 0)
+      warning("state ", i, " has no valid outgoing transitions")
+  }
+  
   # transition.groups
   if (!is.null(transition.groups)) {
     stopifnot(is.list(transition.groups))
@@ -90,6 +107,12 @@ new.qhmm <- function(data.shape, valid.transitions, transition.functions, emissi
         stop("unknown emission function: ", fname)
   }
   
-  # create instance
+  # check if emission functions accept given dimensions
   
+  # create instance
+  res = .Call(rqhmm_create_hmm,
+              list(emission.slot.dims, covar.slot.dims),
+              t(valid.transitions), transition.functions, emission.functions) # missing group information
+  class(res) <- "rqhmm"
+  return(res)
 }
