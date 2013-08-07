@@ -37,7 +37,7 @@ public:
       sum = sum + params[i];
 
     // TODO: maybe allow some tolerance ??
-    return params.length() == _n_states && sum == 1.0;
+    return params.length() == _n_targets && sum == 1.0;
   }
   
   virtual void setParams(Params const & params) {

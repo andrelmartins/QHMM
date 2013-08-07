@@ -24,7 +24,23 @@ class HMMImpl : public HMM {
       delete _innerFwd; // TODO: clean up memory management responsibilities
       delete _innerBck; // ""
     }
-          
+  
+    virtual bool valid_transition_params(int state, Params const & params) const {
+      return _logAkl->validParams(state, params);
+    }
+  
+    virtual bool valid_emission_params(int state, int slot, Params const & params) const {
+      return _logEkb->validSlotParams(state, slot, params);
+    }
+
+    virtual void set_transition_params(int state, Params const & params) {
+      _logAkl->setParams(state, params);
+    }
+  
+    virtual void set_emission_params(int state, int slot, Params const & params) {
+      _logEkb->setSlotParams(state, slot, params);
+    }
+
     double forward(Iter & iter, double * matrix) {
       double * m_col, * m_col_prev;
       LogSum * logsum = LogSum::create(_n_states);

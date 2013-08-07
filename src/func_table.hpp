@@ -27,7 +27,15 @@ class FunctionTable {
       assert((int) _funcs.size() < _n_states);
       _funcs.push_back(func);
     }
+  
+    bool validParams(int state, Params const & params) const {
+      return _funcs[state]->validParams(params);
+    }
 
+    virtual void setParams(int state, Params const & params) {
+      _funcs[state]->setParams(params);
+    }
+  
     int n_states() const { return _n_states; }
 };
 
@@ -52,6 +60,15 @@ class HomogeneousTransitions : public FunctionTable<TransitionFunction> {
 		      row[j] = _funcs[i]->log_probability(j);
 		  }
 		}
+  
+    virtual void setParams(int state, Params const & params) {
+      FunctionTable<TransitionFunction>::setParams(state, params);
+      
+      /* partial update */
+      double * row = _m[state];
+      for (int j = 0; j < _n_states; ++j)
+        row[j] = _funcs[state]->log_probability(j);
+    }
 		
 		bool isSparse() {
 		  int invalid_count = 0;
@@ -144,6 +161,14 @@ class NonHomogeneousTransitions : public FunctionTable<TransitionFunction> {
 class Emissions : public FunctionTable<EmissionFunction> {
 public:
   Emissions(int n_states) : FunctionTable<EmissionFunction>(n_states) {}
+
+  bool validSlotParams(int state, int slot, Params const & params) const {
+    return validParams(state, params);
+  }
+  
+  void setSlotParams(int state, int slot, Params const & params) {
+    setParams(state, params);
+  }
   
   double operator() (Iter const & iter, int i) const {
     return _funcs[i]->log_probability(iter, 0);
@@ -163,6 +188,14 @@ public:
       for (unsigned int j = 0; j < funcs_i.size(); ++j)
         delete funcs_i[j];
     }
+  }
+  
+  bool validSlotParams(int state, int slot, Params const & params) const {
+    return _funcs[state][slot]->validParams(params);
+  }
+  
+  void setSlotParams(int state, int slot, Params const & params) {
+    _funcs[state][slot]->setParams(params);
   }
   
   void insert(std::vector<EmissionFunction *> funcs) {

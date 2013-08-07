@@ -448,6 +448,77 @@ extern "C" {
     return result;
   }
   
+  void rqhmm_set_transition_params(SEXP rqhmm, SEXP state, SEXP params) {
+    RQHMMData * data;
+    SEXP ptr;
+    int snum;
+    int n;
+    Params params_obj = Params(length(params), REAL(params));
+    
+    /* retrieve rqhmm pointer */
+    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
+    if (ptr == R_NilValue)
+      error("invalid rqhmm object");
+    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+    
+    n = length(state); /* allow setting multiple states to the same parameter values */
+    for (int i = 0; i < n; ++i) {
+      snum = INTEGER(state)[i] - 1;
+      
+      if (snum < 0 || snum >= data->n_states)
+        error("invalid state number: %d", INTEGER(state)[i]);
+    
+      /* check if valid */
+      bool is_valid = data->hmm->valid_transition_params(snum, params_obj);
+      if (!is_valid)
+        error("param vector not valid for state: %d", INTEGER(state)[i]);
+      else
+        data->hmm->set_transition_params(snum, params_obj);
+    }
+    
+    UNPROTECT(1);
+  }
+  
+  void rqhmm_set_emission_params(SEXP rqhmm, SEXP state, SEXP slot, SEXP params) {
+    RQHMMData * data;
+    SEXP ptr;
+    int snum;
+    int slot_num;
+    int n, m;
+    Params params_obj = Params(length(params), REAL(params));
+    
+    /* retrieve rqhmm pointer */
+    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
+    if (ptr == R_NilValue)
+      error("invalid rqhmm object");
+    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+    
+    n = length(state); /* allow setting multiple states to the same parameter values */
+    m = length(slot);
+    for (int i = 0; i < n; ++i) {
+      snum = INTEGER(state)[i] - 1;
+      
+      if (snum < 0 || snum >= data->n_states)
+        error("invalid state number: %d", INTEGER(state)[i]);
+    
+      for (int j = 0; j < m; ++j) {
+        slot_num = INTEGER(slot)[j] - 1;
+
+        if (slot_num < 0 || slot_num >= data->emission_slots)
+          error("invalid slot number: %d", INTEGER(slot)[j]);
+        
+        /* check if valid */
+        bool is_valid = data->hmm->valid_emission_params(snum, slot_num, params_obj);
+        if (!is_valid)
+          error("param vector not valid for state: %d slot: %d", INTEGER(state)[i], INTEGER(slot)[j]);
+        else
+          data->hmm->set_emission_params(snum, slot_num, params_obj);
+      }
+    }
+    
+    UNPROTECT(1);
+  }
+  
   // R Entry points
   void attr_default R_init_rqhmm(DllInfo * info) {
     Rprintf("rqhmm init called\n");

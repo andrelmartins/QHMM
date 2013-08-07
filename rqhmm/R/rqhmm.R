@@ -117,6 +117,26 @@ new.qhmm <- function(data.shape, valid.transitions, transition.functions, emissi
   return(res)
 }
 
+# actually, you can pass more than one state to set multiple states
+# to the same params
+set.transition.params.qhmm <- function(hmm, state, params) {
+  params = as.numeric(params)
+  state = as.integer(state)
+  stopifnot(all(state > 0))
+  stopifnot(length(params) > 0)
+  invisible(.Call(rqhmm_set_transition_params, hmm, state, params))
+}
+
+set.emission.params.qhmm <- function(hmm, state, params, slot = 1) {
+  params = as.numeric(params)
+  state = as.integer(state)
+  slot = as.integer(slot)
+  stopifnot(all(state > 0))
+  stopifnot(all(slot > 0))
+  stopifnot(length(params) > 0)
+  invisible(.Call(rqhmm_set_emission_params, hmm, state, slot, params))
+}
+
 forward.qhmm <- function(hmm, emissions, covars = NULL) {
   .Call(rqhmm_forward, hmm, emissions, covars);
 }
