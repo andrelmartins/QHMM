@@ -519,6 +519,24 @@ extern "C" {
     UNPROTECT(1);
   }
   
+  void rqhmm_set_initial_probs(SEXP rqhmm, SEXP probs) {
+    RQHMMData * data;
+    SEXP ptr;
+    
+    /* retrieve rqhmm pointer */
+    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
+    if (ptr == R_NilValue)
+      error("invalid rqhmm object");
+    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+
+    if (length(probs) != data->n_states)
+      error("probability vector length must be equal to the number of states");
+    
+    data->hmm->set_initial_probs(REAL(probs));
+    
+    UNPROTECT(1);
+  }
+  
   // R Entry points
   void attr_default R_init_rqhmm(DllInfo * info) {
     Rprintf("rqhmm init called\n");

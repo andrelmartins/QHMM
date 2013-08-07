@@ -137,6 +137,14 @@ set.emission.params.qhmm <- function(hmm, state, params, slot = 1) {
   invisible(.Call(rqhmm_set_emission_params, hmm, state, slot, params))
 }
 
+set.initial.probs.qhmm <- function(hmm, probs) {
+  probs = as.double(probs)
+  stopifnot(sum(probs) == 1)
+  stopifnot(all(probs >= 0 & probs <= 1))
+  
+  invisible(.Call(rqhmm_set_initial_probs, hmm, probs))
+}
+
 forward.qhmm <- function(hmm, emissions, covars = NULL) {
   .Call(rqhmm_forward, hmm, emissions, covars);
 }

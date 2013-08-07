@@ -6,6 +6,8 @@
 #include "func_table.hpp"
 #include "hmm.hpp"
 
+#include <cmath>
+
 template <typename InnerFwd, typename InnerBck, typename FuncAkl, typename FuncEkb>
 class HMMImpl : public HMM {
   private:
@@ -41,6 +43,11 @@ class HMMImpl : public HMM {
       _logEkb->setSlotParams(state, slot, params);
     }
 
+    virtual void set_initial_probs(double * probs) {
+      for (int i = 0; i < _n_states; ++i)
+        _init_log_probs[i] = log(probs[i]);
+    }
+  
     double forward(Iter & iter, double * matrix) {
       double * m_col, * m_col_prev;
       LogSum * logsum = LogSum::create(_n_states);
