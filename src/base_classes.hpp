@@ -4,6 +4,13 @@
 #include "iter.hpp"
 #include "params.hpp"
 
+#include <cmath>
+#include <limits>
+
+bool same_probability(double a, double b) {
+  return fabs(a - b) < std::numeric_limits<double>::epsilon();
+}
+
 class TransitionFunction {
 	public:
     virtual bool validParams(Params const & params) const { return true; }

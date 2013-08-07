@@ -133,6 +133,7 @@ class HMMImpl : public HMM {
       backptr = new int[rows*cols];
 
       /* fill first column */
+      iter.resetFirst();
       for (int l = 0; l < _n_states; ++l) {
         AT(matrix, l, 0) = (*_logEkb)(iter, l) + _init_log_probs[l];
         AT(backptr, l, 0) = -1; /* stop */
@@ -142,7 +143,6 @@ class HMMImpl : public HMM {
       m_col_prev = matrix;
       m_col = matrix + rows;
       b_col = backptr + rows;
-      iter.resetFirst();
       for ( ; iter.next(); m_col += rows, m_col_prev += rows, b_col += rows) {
 
         for (int l = 0; l < _n_states; ++l) {
@@ -188,7 +188,7 @@ class HMMImpl : public HMM {
       /* other states */
       int z = *pptr;
       --pptr;
-      for (int l = iter.length() - 1; iter.prev() ; --pptr) {
+      for (int l = iter.length() - 1; l > 0 ; --pptr, --l) {
         z = AT(backptr, z, l);
         *pptr = z;
         /* assert(prev >= 0); */

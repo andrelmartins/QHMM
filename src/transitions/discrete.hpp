@@ -36,8 +36,7 @@ public:
     for (int i = 0; i < params.length(); ++i)
       sum = sum + params[i];
 
-    // TODO: maybe allow some tolerance ??
-    return params.length() == _n_targets && sum == 1.0;
+    return params.length() == _n_targets && same_probability(sum, 1.0);
   }
   
   virtual void setParams(Params const & params) {

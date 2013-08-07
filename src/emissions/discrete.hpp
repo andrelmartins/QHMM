@@ -19,7 +19,7 @@ public:
     for (int i = 0; i < params.length(); ++i)
       sum += params[i];
 
-    return params.length() > 0 && sum == 1.0;
+    return params.length() > 0 && same_probability(sum, 1.0);
   }
 
   virtual void setParams(Params const & params) {
