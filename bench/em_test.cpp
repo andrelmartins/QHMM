@@ -1,11 +1,13 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
 class EM_SS {
 public:
+  virtual ~EM_SS() {}
   virtual void reset() = 0;
   
   virtual void ss_collect_stream(double * posterior, double * emissions, unsigned int length) = 0;
@@ -82,73 +84,87 @@ private:
   double _sum;
 };
 
-void test_stream(EM_SS * ss1, EM_SS * ss2, double * posterior1, double * posterior2, double * emissions, unsigned int length) {
-  ss1->reset();
-  ss2->reset();
+void test_stream(vector<EM_SS*> & ss_states, int n_states, double ** posts, double * emissions, unsigned int length) {
   
-  ss1->ss_collect_stream(posterior1, emissions, length);
-  ss2->ss_collect_stream(posterior2, emissions, length);
-  
-  cout << "Stream: " << "[1] = " << ss1->value() << " [2] = " << ss2->value() << endl;
+  for (unsigned int i = 0; i < n_states; ++i)
+    ss_states[i]->reset();
+
+  for (unsigned int i = 0; i < n_states; ++i)
+    ss_states[i]->ss_collect_stream(posts[i], emissions, length);
 }
 
-void test_step(EM_SS * ss1, EM_SS * ss2, double * posterior12, double * emissions, unsigned int length) {
-  ss1->reset();
-  ss2->reset();
+void test_step(vector<EM_SS*> & ss_states, unsigned int n_states, double * posterior, double * emissions, unsigned int length) {
+
+  for (unsigned int i = 0; i < n_states; ++i)
+    ss_states[i]->reset();
   
-  for (unsigned int i = 0; i < length; ++i) {
-    ss1->ss_collect_step(posterior12, emissions);
-    ++posterior12;
-    ss2->ss_collect_step(posterior12, emissions);
-    ++posterior12;
-    ++emissions;
+  for (unsigned int i = 0; i < length; ++i, ++emissions) {
+    for (unsigned int j = 0; j < n_states; ++j, ++posterior)
+      ss_states[j]->ss_collect_step(posterior, emissions);
+  }
+}
+
+double ** generate_data(unsigned int n_states, unsigned int length, double ** out_table) {
+  double ** out;
+  out = new double*[n_states];
+  *out_table = new double[n_states * length];
+  
+  for (unsigned int i = 0; i < n_states; ++i) {
+    out[i] = new double[length];
+    
+    for (unsigned int j = 0; j < length; ++j) {
+      double u = drand48(); // value in [0, 1)
+
+      out[i][j] = u;
+      (*out_table)[n_states * j + i] = u;
+    }
+    
   }
   
-  cout << "Step: " << "[1] = " << ss1->value() << " [2] = " << ss2->value() << endl;
+  return out;
 }
 
 int main(int argc, char ** argv) {
   unsigned int length;
-  EM_SS_A ss1;
-  EM_SS_B ss2;
+  unsigned int n_states;
+  vector<EM_SS*> ss_states;
   double * emissions;
-  double * post1;
-  double * post2;
-  double * post12;
+  double ** posts;
+  double * post_tbl;
   double time1, time2;
   
   /* length must be bigger than the combined CPU cache sizes */
 //length = 16000000; /* 1600k * 8 ~ 120 MB */
 //length = 1000;
   length = atoi(argv[1]);
+  n_states = atoi(argv[2]);
+  
+  /*  EM SS vector */
+  for (unsigned int i = 0; i < n_states; ++i) {
+    if (i % 2 == 0)
+      ss_states.push_back(new EM_SS_A());
+    else
+      ss_states.push_back(new EM_SS_B());
+  }
   
   /* generate data */
-  emissions = new double[length];
-  post1 = new double[length];
-  post2 = new double[length];
-  post12 = new double[2*length];
-  
   srand48((unsigned long)time(NULL));
-
-  for (unsigned int i = 0; i < length; ++i) {
-    double u = drand48(); // value in [0, 1)
-
-    post1[i] = u;
-    post2[i] = 1.0 - u;
-    post12[2*i] = u;
-    post12[2*i + 1] = 1.0 - u;
+  emissions = new double[length];
+  
+  for (unsigned int i = 0; i < length; ++i)
     emissions[i] = i % 10;
-  }
+  
+  posts = generate_data(n_states, length, &post_tbl);
   
   /* tests */
   clock_t start = clock();
-  test_stream(&ss1, &ss2, post1, post2, emissions, length);
+  test_stream(ss_states, n_states, posts, emissions, length);
   clock_t end = clock();
 
   time1 = (end - start)*1000.0/CLOCKS_PER_SEC;
   
   start = clock();
-  test_step(&ss1, &ss2, post12, emissions, length);
+  test_step(ss_states, n_states, post_tbl, emissions, length);
   end = clock();
   
   time2 = (end - start)*1000.0/CLOCKS_PER_SEC;
@@ -158,9 +174,12 @@ int main(int argc, char ** argv) {
   
   /* clean up */
   delete[] emissions;
-  delete[] post1;
-  delete[] post2;
-  delete[] post12;
+  delete[] post_tbl;
+  for (unsigned int i = 0; i < n_states; ++i) {
+    delete[] posts[i];
+    delete ss_states[i];
+  }
+  delete[] posts;
   
   return EXIT_SUCCESS;
 }
