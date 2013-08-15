@@ -199,7 +199,7 @@ class HMMImpl : public HMM {
       delete[] backptr;
     }
   
-    void state_posterior(Iter & iter, double * fw, double * bk, double * matrix) {
+    void state_posterior(Iter & iter, const double * const fw, const double * const bk, double * matrix) {
       /* posterior matrix is filled, state by state */
       LogSum * logsum = LogSum::create(_n_states);
       
