@@ -198,6 +198,30 @@ class HMMImpl : public HMM {
       delete[] matrix;
       delete[] backptr;
     }
+  
+    void state_posterior(Iter & iter, double * fw, double * bk, double * matrix) {
+      /* posterior matrix is filled, state by state */
+      LogSum * logsum = LogSum::create(_n_states);
+      
+      /* posterior_i,k = exp(fw[i,k] + bk[i,k] - logPx_i)
+       
+         logPx_i = log sum_k exp(fw[i, k] + bk[i,k])
+       */
+      
+      /* TODO: optimize this */
+      for (int i = 0; i < iter.length(); ++i) {
+        
+        /* compute local log-lik */
+        logsum->clear();
+        for (int j = 0; j < _n_states; ++j)
+          logsum->store(fw[i*_n_states + j] + bk[i*_n_states + j]);
+        double logPx = logsum->compute();
+        
+        /* fill posterior */
+        for (int j = 0; j < _n_states; ++j)
+          matrix[j*iter.length() + i] = exp(fw[i*_n_states + j] + bk[i*_n_states + j] - logPx);
+      }
+    }
 };
 
 // auxiliary function to enable type inference

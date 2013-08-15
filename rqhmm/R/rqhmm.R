@@ -156,3 +156,7 @@ backward.qhmm <- function(hmm, emissions, covars = NULL) {
 viterbi.qhmm <- function(hmm, emissions, covars = NULL) {
   .Call(rqhmm_viterbi, hmm, emissions, covars);
 }
+
+posterior.qhmm <- function(hmm, emissions, covars = NULL) {
+  .Call(rqhmm_posterior, hmm, emissions, covars);
+}

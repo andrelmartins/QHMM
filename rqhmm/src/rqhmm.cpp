@@ -519,6 +519,44 @@ extern "C" {
     UNPROTECT(1);
   }
   
+  SEXP rqhmm_posterior(SEXP rqhmm, SEXP emissions, SEXP covars) {
+    SEXP result;
+    RQHMMData * data;
+    Iter * iter;
+    SEXP ptr;
+    SEXP loglik;
+    double * fw, * bk;
+    
+    /* retrieve rqhmm pointer */
+    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
+    if (ptr == R_NilValue)
+      error("invalid rqhmm object");
+    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+    
+    /* create data structures */
+    iter = data->create_iterator(emissions, covars);
+    fw = (double*) R_alloc(data->n_states * iter->length(), sizeof(double));
+    bk = (double*) R_alloc(data->n_states * iter->length(), sizeof(double));
+    PROTECT(result = allocMatrix(REALSXP, iter->length(), data->n_states));
+    
+    /* invoke forward, backward and posterior */
+    double log_lik = data->hmm->forward((*iter), fw);
+    log_lik = data->hmm->backward((*iter), bk);
+    data->hmm->state_posterior((*iter), fw, bk, REAL(result));
+    
+    /* clean up */
+    delete iter;
+    
+    /* prepare result */
+    PROTECT(loglik = NEW_NUMERIC(1));
+    REAL(loglik)[0] = log_lik;
+    setAttrib(result, install("loglik"), loglik);
+    
+    UNPROTECT(3);
+    
+    return result;
+  }
+  
   void rqhmm_set_initial_probs(SEXP rqhmm, SEXP probs) {
     RQHMMData * data;
     SEXP ptr;
