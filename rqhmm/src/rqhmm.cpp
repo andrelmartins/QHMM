@@ -107,6 +107,22 @@ public:
                     covar_slots, c_slot_dim, cptr);
   }
   
+  void fill_iterator_list(std::vector<Iter*> & iterators, SEXP emission_list, SEXP covar_list) {
+    int len = Rf_length(emission_list);
+
+    for (int i = 0; i < len; ++i) {
+      Iter * iter_i;
+
+      if (covar_list == R_NilValue)
+        iter_i = create_iterator(VECTOR_ELT(emission_list, i), R_NilValue);
+      else
+        iter_i = create_iterator(VECTOR_ELT(emission_list, i), VECTOR_ELT(covar_list, i));
+
+      iterators.push_back(iter_i);
+    }
+
+  }
+
   int emission_size;
   int emission_slots;
   int * e_slot_dim;
@@ -561,6 +577,60 @@ extern "C" {
     return result;
   }
   
+  SEXP rqhmm_em(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP tolerance) {
+    SEXP result;
+    SEXP ptr;
+    RQHMMData * data;
+    std::vector<Iter*> iterators;
+    double loglik;
+
+    /* retrieve rqhmm pointer */
+    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
+    if (ptr == R_NilValue)
+      error("invalid rqhmm object");
+    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+
+    /* create iterator vector */
+    data->fill_iterator_list(iterators, emissions, covars);
+
+    /* invoke */
+    //loglik = data->hmm->em(iterators, REAL(tolerance)[0]);
+    loglik = 1;
+
+    /* clean up */
+    for (int i = 0; i < iterators.size(); ++i)
+      delete iterators[i];
+
+    /* prepare result */
+    PROTECT(result = NEW_NUMERIC(1));
+    REAL(result)[0] = loglik;
+
+    UNPROTECT(2);
+
+    return result;
+  }
+
+  SEXP rqhmm_get_initial_probs(SEXP rqhmm, SEXP probs) {
+    RQHMMData * data;
+    SEXP ptr;
+    SEXP result;
+
+    /* retrieve rqhmm pointer */
+    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
+    if (ptr == R_NilValue)
+      error("invalid rqhmm object");
+    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+
+    PROTECT(result = NEW_NUMERIC(data->n_states));
+
+    for (int i = 0; i < data->n_states; ++i)
+      REAL(result)[i] = exp(data->init_log_probs[i]);
+
+    UNPROTECT(2);
+
+    return result;
+   }
+
   SEXP rqhmm_set_initial_probs(SEXP rqhmm, SEXP probs) {
     RQHMMData * data;
     SEXP ptr;

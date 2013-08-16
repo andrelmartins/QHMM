@@ -80,19 +80,19 @@ new.qhmm <- function(data.shape, valid.transitions, transition.functions, emissi
       stop("invalid emission groups: groups must be prefixed by valid slot numbers")
 
     # per slot number, a state can only appear in a single group
-    for (slot in 1:n.slots) {
-      groups = emission.groups[sapply(emission.groups, function(grp) grp[1] == slot)]
+    for (slotId in 1:n.slots) {
+      groups = emission.groups[sapply(emission.groups, function(grp) grp[1] == slotId)]
       group.states = lapply(groups, function(grp) grp[2:length(grp)])
       flat = do.call("c", group.states)
       
       # no duplicates
       if (length(unique(flat)) != length(flat))
-        stop("invalid slot groups for slot ", slot, ": a state appears in more than one group")
+        stop("invalid slot groups for slot ", slotId, ": a state appears in more than one group")
       
       # all valid state numbers
       valid.states = is.finite(flat) & flat > 0 & flat <= n.states
       if (!all(valid.states))
-        stop("in slot ", slot, ", invalid state numbers in emission groups: ", do.call("paste", as.list(flat[!valid.states])))
+        stop("in slot ", slotId, ", invalid state numbers in emission groups: ", do.call("paste", as.list(flat[!valid.states])))
     }
   }
   
@@ -137,6 +137,10 @@ set.emission.params.qhmm <- function(hmm, state, params, slot = 1) {
   invisible(.Call(rqhmm_set_emission_params, hmm, state, slot, params))
 }
 
+get.initial.probs.qhmm <- function(hmm) {
+  .Call(rqhmm_get_initial_probs, hmm)
+}
+
 set.initial.probs.qhmm <- function(hmm, probs) {
   probs = as.double(probs)
   stopifnot(sum(probs) == 1)
@@ -159,4 +163,13 @@ viterbi.qhmm <- function(hmm, emissions, covars = NULL) {
 
 posterior.qhmm <- function(hmm, emissions, covars = NULL) {
   .Call(rqhmm_posterior, hmm, emissions, covars);
+}
+
+em.qhmm <- function(hmm, emission.lst, covar.lst = NULL, tolerance = 1e-5) {
+  stopifnot(is.list(emission.lst) && (is.null(covar.lst) || is.list(covar.lst)))
+  if (!is.null(covar.lst))
+	  stopifnot(length(emission.lst) == length(covar.lst))
+
+  # do the actual call
+  .Call(rqhmm_em, hmm, emission.lst, covar.lst, tolerance)
 }
