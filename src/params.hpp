@@ -19,8 +19,8 @@ public:
   }
   
   ~Params() {
-    delete _values;
-    delete _fixed;
+    delete[] _values;
+    delete[] _fixed;
   }
   
   bool isAllFixed() const {
