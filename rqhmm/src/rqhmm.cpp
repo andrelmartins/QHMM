@@ -448,7 +448,7 @@ extern "C" {
     return result;
   }
   
-  void rqhmm_set_transition_params(SEXP rqhmm, SEXP state, SEXP params) {
+  SEXP rqhmm_set_transition_params(SEXP rqhmm, SEXP state, SEXP params) {
     RQHMMData * data;
     SEXP ptr;
     int snum;
@@ -477,9 +477,11 @@ extern "C" {
     }
     
     UNPROTECT(1);
+
+    return R_NilValue;
   }
   
-  void rqhmm_set_emission_params(SEXP rqhmm, SEXP state, SEXP slot, SEXP params) {
+  SEXP rqhmm_set_emission_params(SEXP rqhmm, SEXP state, SEXP slot, SEXP params) {
     RQHMMData * data;
     SEXP ptr;
     int snum;
@@ -517,6 +519,8 @@ extern "C" {
     }
     
     UNPROTECT(1);
+
+    return R_NilValue;
   }
   
   SEXP rqhmm_posterior(SEXP rqhmm, SEXP emissions, SEXP covars) {
@@ -557,7 +561,7 @@ extern "C" {
     return result;
   }
   
-  void rqhmm_set_initial_probs(SEXP rqhmm, SEXP probs) {
+  SEXP rqhmm_set_initial_probs(SEXP rqhmm, SEXP probs) {
     RQHMMData * data;
     SEXP ptr;
     
@@ -573,6 +577,8 @@ extern "C" {
     data->hmm->set_initial_probs(REAL(probs));
     
     UNPROTECT(1);
+
+    return R_NilValue;
   }
   
   // R Entry points
