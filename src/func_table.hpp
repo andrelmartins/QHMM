@@ -171,7 +171,7 @@ public:
   }
   
   Params * getSlotParams(int state, int slot) const {
-    getParams(state);
+    return getParams(state);
   }
 
   void setSlotParams(int state, int slot, Params const & params) {
