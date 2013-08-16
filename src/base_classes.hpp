@@ -14,7 +14,8 @@ bool inline same_probability(double a, double b) {
 class TransitionFunction {
 	public:
     virtual bool validParams(Params const & params) const { return true; }
-    virtual void setParams(Params const & params)  {}
+    virtual Params * getParams() const { return NULL; }
+    virtual void setParams(Params const & params) {};
     virtual double log_probability(int target) const = 0;
 		virtual double log_probability(Iter const & iter, int target) const = 0;
     virtual ~TransitionFunction() {};
@@ -23,7 +24,8 @@ class TransitionFunction {
 class EmissionFunction {
   public:
     virtual bool validParams(Params const & params) const { return true; }
-    virtual void setParams(Params const & params)  {}
+    virtual Params * getParams() const { return NULL; }
+    virtual void setParams(Params const & params) {};
     virtual double log_probability(Iter const & iter, int slot) const = 0;
     virtual ~EmissionFunction() {};
 };

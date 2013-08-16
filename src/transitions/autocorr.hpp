@@ -32,6 +32,11 @@ class AutoCorr : public TransitionFunction {
       return params.length() == 1 && params[0] >= 0 && params[0] <= 1;
     }
   
+    virtual Params * getParams() const {
+      double alpha = exp(_log_probs[_targets[0]]);
+      return new Params(1, &alpha);
+    }
+
     virtual void setParams(Params const & params) {
       update_log_probs(params[0]);
     }

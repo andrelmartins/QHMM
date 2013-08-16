@@ -464,6 +464,40 @@ extern "C" {
     return result;
   }
   
+  SEXP rqhmm_get_transition_params(SEXP rqhmm, SEXP state) {
+    RQHMMData * data;
+    SEXP ptr;
+    int snum;
+    SEXP result = R_NilValue;
+
+    /* retrieve rqhmm pointer */
+    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
+    if (ptr == R_NilValue)
+      error("invalid rqhmm object");
+    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+
+    snum = INTEGER(state)[0] - 1;
+    if (snum < 0 || snum >= data->n_states)
+      error("invalid state number: %d", INTEGER(state)[0]);
+
+    Params * params = data->hmm->get_transition_params(snum);
+
+    /* convert parameters into result vector */
+    if (params != NULL) {
+      PROTECT(result = NEW_NUMERIC(params->length()));
+
+      for (int i = 0; i < params->length(); ++i)
+        REAL(result)[i] = (*params)[i];
+
+      delete params;
+      UNPROTECT(1);
+    }
+
+    UNPROTECT(1);
+
+    return result;
+  }
+
   SEXP rqhmm_set_transition_params(SEXP rqhmm, SEXP state, SEXP params) {
     RQHMMData * data;
     SEXP ptr;

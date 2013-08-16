@@ -39,6 +39,18 @@ public:
     return params.length() == _n_targets && same_probability(sum, 1.0);
   }
   
+  virtual Params * getParams() const {
+    double * probs = new double[_n_targets];
+
+    for (int i = 0; i < _n_targets; ++i)
+      probs[i] = exp(_log_probs[_targets[i]]);
+
+    Params * result = new Params(_n_targets, probs);
+
+    delete probs;
+    return result;
+  }
+
   virtual void setParams(Params const & params) {
     for (int i = 0; i < _n_targets; ++i)
       _log_probs[_targets[i]] = log(params[i]);

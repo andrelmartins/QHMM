@@ -32,6 +32,10 @@ class FunctionTable {
       return _funcs[state]->validParams(params);
     }
 
+    virtual Params * getParams(int state) const {
+      return _funcs[state]->getParams();
+    }
+
     virtual void setParams(int state, Params const & params) {
       _funcs[state]->setParams(params);
     }

@@ -35,6 +35,10 @@ class HMMImpl : public HMM {
       return _logEkb->validSlotParams(state, slot, params);
     }
 
+    virtual Params * get_transition_params(int state) const {
+      return _logAkl->getParams(state);
+    }
+
     virtual void set_transition_params(int state, Params const & params) {
       _logAkl->setParams(state, params);
     }

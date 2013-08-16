@@ -117,6 +117,13 @@ new.qhmm <- function(data.shape, valid.transitions, transition.functions, emissi
   return(res)
 }
 
+get.transition.params.qhmm <- function(hmm, state) {
+  state = as.integer(state)
+  stopifnot(length(state) == 1)
+  stopifnot(state >= 1)
+  .Call(rqhmm_get_transition_params, hmm, state);
+}
+
 # actually, you can pass more than one state to set multiple states
 # to the same params
 set.transition.params.qhmm <- function(hmm, state, params) {
