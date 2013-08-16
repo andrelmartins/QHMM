@@ -28,7 +28,7 @@ public:
     SEXP emission_shape = VECTOR_ELT(data_shape, 0);
     SEXP covar_shape = VECTOR_ELT(data_shape, 1);
 
-    emission_slots = length(emission_shape);
+    emission_slots = Rf_length(emission_shape);
     emission_size = 0;
     if (emission_slots == 0)
       e_slot_dim = NULL;
@@ -40,7 +40,7 @@ public:
       }
     }
     
-    covar_slots = length(covar_shape);
+    covar_slots = Rf_length(covar_shape);
     covar_size = 0;
     if (covar_slots == 0)
       c_slot_dim = NULL;
@@ -75,7 +75,7 @@ public:
       m = ncols(data);
     } else {
       n = 1;
-      m = length(data);
+      m = Rf_length(data);
     }
   }
   
@@ -163,7 +163,7 @@ void fill_transitions(TType * ttable, int n_states, SEXP valid_transitions, SEXP
 template<typename EType>
 RQHMMData * _create_hmm_transitions(SEXP data_shape, EType * emissions, SEXP valid_transitions, SEXP transitions) {
   /* make choice about transition table */
-  int n_states = length(transitions);
+  int n_states = Rf_length(transitions);
   bool needs_covars = false;
   RQHMMData * data = new RQHMMData(n_states, data_shape);
     
@@ -201,9 +201,9 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
   /* make choice about emission table */
   SEXP emission_shape = VECTOR_ELT(data_shape, 0);
   SEXP covar_shape = VECTOR_ELT(data_shape, 1);
-  int n_emissions = length(emission_shape);
-  int n_covars = length(covar_shape);
-  int n_states = length(transitions);
+  int n_emissions = Rf_length(emission_shape);
+  int n_covars = Rf_length(covar_shape);
+  int n_states = Rf_length(transitions);
   
   if (n_emissions == 1) {
     Emissions * etable = new Emissions(n_states);
@@ -342,7 +342,7 @@ extern "C" {
     setAttrib(ans, install("handle_ptr"), ptr);
 
     PROTECT(n_states = NEW_INTEGER(1));
-    INTEGER(n_states)[0] = length(transitions);
+    INTEGER(n_states)[0] = Rf_length(transitions);
     SET_VECTOR_ELT(ans, 0, n_states);
     
     UNPROTECT(3);
@@ -453,7 +453,7 @@ extern "C" {
     SEXP ptr;
     int snum;
     int n;
-    Params params_obj = Params(length(params), REAL(params));
+    Params params_obj = Params(Rf_length(params), REAL(params));
     
     /* retrieve rqhmm pointer */
     PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
@@ -461,7 +461,7 @@ extern "C" {
       error("invalid rqhmm object");
     data = (RQHMMData*) R_ExternalPtrAddr(ptr);
     
-    n = length(state); /* allow setting multiple states to the same parameter values */
+    n = Rf_length(state); /* allow setting multiple states to the same parameter values */
     for (int i = 0; i < n; ++i) {
       snum = INTEGER(state)[i] - 1;
       
@@ -485,7 +485,7 @@ extern "C" {
     int snum;
     int slot_num;
     int n, m;
-    Params params_obj = Params(length(params), REAL(params));
+    Params params_obj = Params(Rf_length(params), REAL(params));
     
     /* retrieve rqhmm pointer */
     PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
@@ -493,8 +493,8 @@ extern "C" {
       error("invalid rqhmm object");
     data = (RQHMMData*) R_ExternalPtrAddr(ptr);
     
-    n = length(state); /* allow setting multiple states to the same parameter values */
-    m = length(slot);
+    n = Rf_length(state); /* allow setting multiple states to the same parameter values */
+    m = Rf_length(slot);
     for (int i = 0; i < n; ++i) {
       snum = INTEGER(state)[i] - 1;
       
@@ -567,7 +567,7 @@ extern "C" {
       error("invalid rqhmm object");
     data = (RQHMMData*) R_ExternalPtrAddr(ptr);
 
-    if (length(probs) != data->n_states)
+    if (Rf_length(probs) != data->n_states)
       error("probability vector length must be equal to the number of states");
     
     data->hmm->set_initial_probs(REAL(probs));
