@@ -7,7 +7,7 @@
 #include <cmath>
 #include <limits>
 
-bool same_probability(double a, double b) {
+bool inline same_probability(double a, double b) {
   return fabs(a - b) < std::numeric_limits<double>::epsilon();
 }
 
