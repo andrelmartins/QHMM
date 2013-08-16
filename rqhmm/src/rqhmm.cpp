@@ -669,8 +669,7 @@ extern "C" {
     data->fill_iterator_list(iterators, emissions, covars);
 
     /* invoke */
-    //loglik = data->hmm->em(iterators, REAL(tolerance)[0]);
-    loglik = 1;
+    loglik = data->hmm->em(iterators, REAL(tolerance)[0]);
 
     /* clean up */
     for (int i = 0; i < iterators.size(); ++i)
