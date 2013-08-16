@@ -134,6 +134,14 @@ set.transition.params.qhmm <- function(hmm, state, params) {
   invisible(.Call(rqhmm_set_transition_params, hmm, state, params))
 }
 
+get.emission.params.qhmm <- function(hmm, state, slot = 1) {
+	state = as.integer(state)
+	slot = as.integer(slot)
+	stopifnot(length(state) == 1 && state >= 1)
+	stopifnot(length(slot) == 1 && slot >= 1)
+	.Call(rqhmm_get_emission_params, hmm, state, slot)
+}
+
 set.emission.params.qhmm <- function(hmm, state, params, slot = 1) {
   params = as.numeric(params)
   state = as.integer(state)

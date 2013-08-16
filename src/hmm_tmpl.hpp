@@ -42,6 +42,10 @@ class HMMImpl : public HMM {
     virtual void set_transition_params(int state, Params const & params) {
       _logAkl->setParams(state, params);
     }
+
+    virtual Params * get_emission_params(int state, int slot) const {
+      return _logEkb->getSlotParams(state, slot);
+    }
   
     virtual void set_emission_params(int state, int slot, Params const & params) {
       _logEkb->setSlotParams(state, slot, params);

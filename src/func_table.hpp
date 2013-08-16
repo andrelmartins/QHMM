@@ -170,6 +170,10 @@ public:
     return validParams(state, params);
   }
   
+  Params * getSlotParams(int state, int slot) const {
+    getParams(state);
+  }
+
   void setSlotParams(int state, int slot, Params const & params) {
     setParams(state, params);
   }
@@ -198,6 +202,10 @@ public:
     return _funcs[state][slot]->validParams(params);
   }
   
+  Params * getSlotParams(int state, int slot) const {
+    return _funcs[state][slot]->getParams();
+  }
+
   void setSlotParams(int state, int slot, Params const & params) {
     _funcs[state][slot]->setParams(params);
   }

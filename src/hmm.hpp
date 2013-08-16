@@ -14,6 +14,7 @@ class HMM {
   
     virtual Params * get_transition_params(int state) const = 0;
     virtual void set_transition_params(int state, Params const & params) = 0;
+    virtual Params * get_emission_params(int state, int slot) const = 0;
     virtual void set_emission_params(int state, int slot, Params const & params) = 0;
     virtual void set_initial_probs(double * probs) = 0;
   

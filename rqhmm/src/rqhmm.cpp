@@ -530,6 +530,47 @@ extern "C" {
 
     return R_NilValue;
   }
+
+  SEXP rqhmm_get_emission_params(SEXP rqhmm, SEXP state, SEXP slot) {
+    RQHMMData * data;
+    SEXP ptr;
+    SEXP result = R_NilValue;
+    int snum;
+    int slot_num;
+
+    /* retrieve rqhmm pointer */
+    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
+    if (ptr == R_NilValue)
+      error("invalid rqhmm object");
+    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+
+    snum = INTEGER(state)[0] - 1;
+
+    if (snum < 0 || snum >= data->n_states)
+      error("invalid state number: %d", INTEGER(state)[0]);
+
+    slot_num = INTEGER(slot)[0] - 1;
+
+    if (slot_num < 0 || slot_num >= data->emission_slots)
+      error("invalid slot number: %d", INTEGER(slot)[0]);
+
+    Params * params = data->hmm->get_emission_params(snum, slot_num);
+
+    /* convert parameters into result vector */
+    if (params != NULL) {
+      PROTECT(result = NEW_NUMERIC(params->length()));
+
+      for (int i = 0; i < params->length(); ++i)
+        REAL(result)[i] = (*params)[i];
+
+      delete params;
+      UNPROTECT(1);
+    }
+
+    UNPROTECT(1);
+
+    return result;
+  }
   
   SEXP rqhmm_set_emission_params(SEXP rqhmm, SEXP state, SEXP slot, SEXP params) {
     RQHMMData * data;

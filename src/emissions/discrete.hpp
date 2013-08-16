@@ -22,6 +22,19 @@ public:
     return params.length() > 0 && same_probability(sum, 1.0);
   }
 
+  virtual Params * getParams() const {
+    double * probs = new double[_alphabetSize];
+
+    for (int i = 0; i < _alphabetSize; ++i)
+      probs[i] = exp(_log_probs[i]);
+
+    Params * result = new Params(_alphabetSize, probs);
+
+    delete probs;
+
+    return result;
+  }
+
   virtual void setParams(Params const & params) {
     if (_alphabetSize != params.length()) {
       delete[] _log_probs;

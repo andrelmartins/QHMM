@@ -289,7 +289,11 @@ class Poisson : public EmissionFunction {
     virtual bool validParams(Params const & params) const {
       return params.length() == 1 && params[0] > 0;
     }
-  
+
+    virtual Params * getParams() const {
+      return new Params(1, &_lambda);
+    }
+
     virtual void setParams(Params const & params) {
       _lambda = params[0];
       _log_lambda = log(_lambda);
