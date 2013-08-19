@@ -3,6 +3,7 @@
 
 #include <cstdlib> // for NULL
 #include <cassert>
+#include <vector>
 
 class Iter {
 
@@ -75,16 +76,32 @@ class Iter {
         return false;
       return (_missing_ptr[slot] != 0);
     }
-    
+
+    bool has_missing() const { return _missing_ptr != NULL; }
+
+    // Partition sequence into blocks with no missing data (for a given slot)
+    // NOTES: 1. These wull share data with the parent iterator and, as such, are not valid
+    //           after the parent iterator is destroyed.
+    //        2. Sub-iterators always report no missing data. That is only valid from the
+    //           perspective of the indicated slot (if missing data does not align across
+    //           emission slots, then a separate set of sub-iterators must be created per
+    //           emission slot).
+    std::vector<Iter> * sub_iterators(int slot);
+  
   protected:
+    Iter(Iter * parent, int start, int end); // constructor for sub_iterator() function
+  
+    bool _is_subiterator;
     int _length;
   
+    int _emission_slot_count;
     double * _emission_ptr;
     double * _emission_start;
     double * _emission_end;
     int _emission_step;
     int * _emission_offsets;
-    
+  
+    int _covar_slot_count;
     double * _covar_ptr;
     double * _covar_start;
     double * _covar_end;

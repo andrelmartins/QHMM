@@ -7,7 +7,10 @@ Iter::Iter(int length, int emission_slots, int * e_slot_dim, double * emissions,
   assert(e_slot_dim != NULL);
   assert(emissions != NULL);
   
+  _is_subiterator = false;
   _length = length;
+  _emission_slot_count = emission_slots;
+  _covar_slot_count = covar_slots;
   
   _emission_step = 0;
   _emission_offsets = new int[emission_slots];
@@ -36,6 +39,56 @@ Iter::Iter(int length, int emission_slots, int * e_slot_dim, double * emissions,
 }
 
 Iter::~Iter() {
-  delete[] _emission_offsets;
-  delete[] _covar_offsets;
+  if (!_is_subiterator) {
+    delete[] _emission_offsets;
+    delete[] _covar_offsets;
+  }
+}
+
+Iter::Iter(Iter * parent, int start, int end) : _is_subiterator(true), _missing_ptr(NULL), _missing_start(NULL), _missing_end(NULL), _missing_step(0) {
+  // set length
+  _length = end - start + 1;
+  
+  // copy shared information
+  _emission_slot_count = parent->_emission_slot_count;
+  _covar_slot_count = parent->_covar_slot_count;
+  _emission_offsets = parent->_emission_offsets;
+  _covar_offsets = parent->_covar_offsets;
+  _emission_step = parent->_emission_step;
+  _covar_step = parent->_covar_step;
+
+  // start/end/ptr pointers
+  _emission_start = parent->_emission_start + parent->_emission_step * start;
+  _emission_end = parent->_emission_end + parent->_emission_step * end;
+  _emission_ptr = _emission_start;
+  
+  _covar_start = parent->_covar_start + parent->_covar_step * start;
+  _covar_end = parent->_covar_end + parent->_covar_step * end;
+  _covar_ptr = _covar_start;
+}
+
+std::vector<Iter> * Iter::sub_iterators(int slot) {
+  assert(!_is_subiterator);
+  assert(slot >= 0 && slot < _emission_slot_count);
+  std::vector<Iter> * result = new std::vector<Iter>();
+  
+  if (has_missing()) {
+    int start = -1;
+    int * mptr = _missing_start + slot;
+    
+    for (int i = 0; i < _length; ++i, mptr += _missing_step) {
+      if (*mptr != 0 && start >= 0) {
+        result->push_back(Iter(this, start, i - 1));
+        start = -1;
+      } else if (start < 0)
+        start = i;
+    }
+    
+    // close last, if any
+    if (start >= 0)
+      result->push_back(Iter(this, start, _length - 1));
+  } else
+    result->push_back(Iter(this, 0, _length - 1));
+
+  return result;
 }
