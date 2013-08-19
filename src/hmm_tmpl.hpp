@@ -26,6 +26,10 @@ class HMMImpl : public HMM {
       delete _innerFwd; // TODO: clean up memory management responsibilities
       delete _innerBck; // ""
     }
+
+    virtual int state_count() const {
+      return _n_states;
+    }
   
     virtual bool valid_transition_params(int state, Params const & params) const {
       return _logAkl->validParams(state, params);

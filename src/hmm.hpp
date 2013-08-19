@@ -23,10 +23,13 @@ class HMM {
     virtual void viterbi(Iter & iter, int * path) = 0;
     virtual void state_posterior(Iter & iter, const double * const fw, const double * const bk, double * matrix) = 0;
 
-    virtual double em(std::vector<Iter*> iters, double tolerance);
+    virtual double em(std::vector<Iter*> & iters, double tolerance);
 
     template<typename TransTableT, typename EmissionTableT>
     static HMM * create(TransTableT * transitions, EmissionTableT * emissions, double * init_log_probs);
+
+    // properties
+    virtual int state_count() const = 0;
 };
 
 #include "hmm.cpp"

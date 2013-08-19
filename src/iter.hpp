@@ -87,11 +87,15 @@ class Iter {
     //           emission slots, then a separate set of sub-iterators must be created per
     //           emission slot).
     std::vector<Iter> * sub_iterators(int slot);
+
+    int emission_slot_count() { return _emission_slot_count; }
+    int iter_offset() { return _offset; }
   
   protected:
     Iter(Iter * parent, int start, int end); // constructor for sub_iterator() function
   
     bool _is_subiterator;
+    int _offset;
     int _length;
   
     int _emission_slot_count;
