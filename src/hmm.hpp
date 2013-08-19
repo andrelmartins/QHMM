@@ -29,7 +29,11 @@ class HMM {
     static HMM * create(TransTableT * transitions, EmissionTableT * emissions, double * init_log_probs);
 
     // properties
+    virtual int n_slots() const = 0;
     virtual int state_count() const = 0;
+
+    // sufficient statistics methods
+    virtual EmissionSuffStat * emission_suff_stats_instance(int state, int slot) const = 0;
 };
 
 #include "hmm.cpp"

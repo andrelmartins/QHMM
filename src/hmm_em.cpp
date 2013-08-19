@@ -17,6 +17,26 @@ double HMM::em(std::vector<Iter*> & iters, double tolerance) {
 
   /* initialize sufficient statistic instances */
 
+  /* . emissions */
+  std::vector<std::vector<EmissionSuffStat*> > single_pass_emissions;
+
+  for (int i = 0; i < this->n_slots(); ++i) {
+    std::vector<EmissionSuffStat*> slot_i_single;
+
+    for (int k = 0; k < this->state_count(); ++k) {
+      EmissionSuffStat * ss_i = this->emission_suff_stats_instance(k, i);
+
+      if (ss_i != NULL) {
+	if (ss_i->suff_stats_type() == SinglePass)
+	  slot_i_single.push_back(ss_i);
+	else if (ss_i->suff_stats_type() == MultiPass) {
+	  /* TODO: implement this */
+	}
+      }
+    }
+
+    single_pass_emissions.push_back(slot_i_single);
+  }
 
   /* main EM loop */
   prev_loglik = -std::numeric_limits<double>::infinity();

@@ -30,7 +30,15 @@ class HMMImpl : public HMM {
     virtual int state_count() const {
       return _n_states;
     }
-  
+
+    virtual int n_slots() const {
+      return _logEkb->n_slots();
+    }
+
+    virtual EmissionSuffStat * emission_suff_stats_instance(int state, int slot) const {
+      return _logEkb->suff_stats_instance(state, slot);
+    }
+
     virtual bool valid_transition_params(int state, Params const & params) const {
       return _logAkl->validParams(state, params);
     }

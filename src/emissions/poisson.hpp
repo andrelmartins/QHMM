@@ -309,6 +309,11 @@ class Poisson : public EmissionFunction {
       else
         return x * _log_lambda - _lambda - LogFactorial::logFactorial(x);
     }
+
+    virtual EmissionSuffStat * suff_stats_instance() const {
+      /* stub: not implemented yet */
+      return NULL;
+    }
   
   private:
     double _lambda;
@@ -331,6 +336,11 @@ class PoissonCovar : public EmissionFunction {
         return x * log(lambda) - lambda - LogFactorial::logFactorial(x);
     }
   
+    virtual EmissionSuffStat * suff_stats_instance() const {
+      /* no parameters, so nothing to do */
+      return NULL;
+    }
+
   private:
     const int _covar_slot;
 };

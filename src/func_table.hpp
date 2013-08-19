@@ -181,6 +181,12 @@ public:
   double operator() (Iter const & iter, int i) const {
     return _funcs[i]->log_probability(iter, 0);
   }
+
+  EmissionSuffStat * suff_stats_instance(int state, int slot) const {
+    return _funcs[state]->suff_stats_instance();
+  }
+
+  int n_slots() const { return 1; }
 };
 
 class MultiEmissions {
@@ -224,9 +230,13 @@ public:
     
     return log_prob;
   }
+
+  EmissionSuffStat * suff_stats_instance(int state, int slot) const {
+    return _funcs[state][slot]->suff_stats_instance();
+  }
   
-  int n_states() { return _n_states; }
-  int n_slots() { return _n_slots; }
+  int n_states() const { return _n_states; }
+  int n_slots() const { return _n_slots; }
   
   private:
     const int _n_states;

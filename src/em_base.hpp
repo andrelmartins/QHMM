@@ -5,13 +5,6 @@
 #include "iter.hpp"
 #include <vector>
 
-class EmissionSuffStat {
-public:
-  virtual int state() = 0;
-  virtual void accum(Iter & iter, double * posterior) = 0;
-};
-
-
 class EMSequence {
 public:
   EMSequence(HMM * hmm, Iter * iter);

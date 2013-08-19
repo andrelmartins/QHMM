@@ -56,6 +56,11 @@ public:
     return _log_probs[y];
   }
 
+  virtual EmissionSuffStat * suff_stats_instance() const {
+    /* stub: not implemented yet */
+    return NULL;
+  }
+
 private:
   int _offset;
   int _alphabetSize;

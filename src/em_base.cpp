@@ -73,7 +73,7 @@ void EMSequence::emission_suff_stats(int slot, std::vector<EmissionSuffStat*> * 
 	 ++sub_it) {
       double * post_j = post_state + (*sub_it).iter_offset();
 
-      ss_i->accum(*sub_it, post_j);
+      ss_i->accum(*sub_it, slot, post_j);
     }
   }
 }
