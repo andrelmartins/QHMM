@@ -1,7 +1,7 @@
 #include "iter.hpp"
 
 Iter::Iter(int length, int emission_slots, int * e_slot_dim, double * emissions,
-         int covar_slots, int * c_slot_dim, double * covars) {
+         int covar_slots, int * c_slot_dim, double * covars, int * missing) {
   assert(length > 0);
   assert(emission_slots > 0);
   assert(e_slot_dim != NULL);
@@ -29,6 +29,10 @@ Iter::Iter(int length, int emission_slots, int * e_slot_dim, double * emissions,
   _covar_start = covars;
   _covar_end = covars + (length - 1) * _covar_step;
 
+  _missing_step = (missing == NULL ? 0 : emission_slots);
+  _missing_ptr = missing;
+  _missing_start = missing;
+  _missing_end = missing + (length - 1) * _missing_step;
 }
 
 Iter::~Iter() {

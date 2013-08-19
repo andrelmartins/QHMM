@@ -7,20 +7,22 @@
 class Iter {
 
   public:
-    // 
+    // Missing data must follow the same slot count as emissions
     Iter(int length, int emission_slots, int * e_slot_dim, double * emissions,
-         int covar_slots, int * c_slot_dim, double * covars);
+         int covar_slots, int * c_slot_dim, double * covars, int * missing = NULL);
     virtual ~Iter();
   
     // control ops
     void resetFirst() {
       _emission_ptr = _emission_start;
       _covar_ptr = _covar_start;
+      _missing_ptr = _missing_start;
     }
     
     void resetLast() {
       _emission_ptr = _emission_end;
       _covar_ptr = _covar_end;
+      _missing_ptr = _missing_end;
     }
     
     bool next() {
@@ -28,6 +30,7 @@ class Iter {
         return false;
       _emission_ptr += _emission_step;
       _covar_ptr += _covar_step;
+      _missing_ptr += _missing_step;
       return true;
     }
     
@@ -36,6 +39,7 @@ class Iter {
         return false;
       _emission_ptr -= _emission_step;
       _covar_ptr -= _covar_step;
+      _missing_ptr -= _missing_step;
       return true;
     }
         
@@ -66,7 +70,11 @@ class Iter {
     
     int length() const { return _length; }
   
-    virtual bool is_missing(int slot) const { return false; }
+    bool is_missing(int slot) const {
+      if (_missing_ptr == NULL)
+        return false;
+      return (_missing_ptr[slot] != 0);
+    }
     
   protected:
     int _length;
@@ -82,29 +90,15 @@ class Iter {
     double * _covar_end;
     int _covar_step;
     int * _covar_offsets;
-    
+  
+    int * _missing_ptr;
+    int * _missing_start;
+    int * _missing_end;
+    int _missing_step;
+  
     // could also store slot descriptions and add asserts to data ops
     // ideally, there should be a non-performance penalty way to add the
     // checks at runtime for debug purposes ... (exceptions ?)
-};
-
-// Missing data must follow the same slot count as emissions
-class IterMissing : public Iter {
-  public:
-    IterMissing(int length, int emission_slots, int * e_slot_dim, double * emissions,
-                int covar_slots, int * c_slot_dim, double * covars, int * missing) : Iter(length, emission_slots, e_slot_dim, emissions, covar_slots, c_slot_dim, covars), _missing(missing), _missing_step(emission_slots) {
-      assert(_missing != NULL);
-      assert(_emission_start != NULL);
-    }
-
-    virtual bool is_missing(int slot) const {
-      long offset = (_emission_ptr - _emission_start) / _emission_step * _missing_step + slot;
-      return (_missing[offset] != 0);
-    }
-  
-  private:
-    int * _missing;
-    int _missing_step;
 };
 
 #endif
