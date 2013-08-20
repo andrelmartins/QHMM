@@ -7,7 +7,7 @@
 
 class DiscreteEmissions : public EmissionFunction {
 public:
-  DiscreteEmissions(int offset = 1) : _offset(offset), _log_probs(NULL), _alphabetSize(0) {}
+  DiscreteEmissions(int stateID, int slotID, int offset = 1) : EmissionFunction(stateID, slotID), _offset(offset), _log_probs(NULL), _alphabetSize(0) {}
   ~DiscreteEmissions() {
     if (_log_probs)
       delete[] _log_probs;
@@ -46,8 +46,8 @@ public:
       _log_probs[i] = log(params[i]);
   }
 
-  virtual double log_probability(Iter const & iter, int slot) const {
-    int x = (int) iter.emission(slot); // cast to integer
+  virtual double log_probability(Iter const & iter) const {
+    int x = (int) iter.emission(_slotID); // cast to integer
     int y = x - _offset;
     
     if (y < 0 || y >= _alphabetSize)

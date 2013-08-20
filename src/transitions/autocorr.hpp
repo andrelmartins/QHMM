@@ -13,7 +13,7 @@
 class AutoCorr : public TransitionFunction {
   public:
     // first target in `targets` must the source state
-  AutoCorr(int n_states, int n_targets, int * targets, double alpha = 0.5) : _n_states(n_states), _n_targets(n_targets) {
+  AutoCorr(int n_states, int n_targets, int * targets, double alpha = 0.5) : TransitionFunction(targets[0]), _n_states(n_states), _n_targets(n_targets) {
       _log_probs = new double[n_states];
       _targets = new int[n_states];
 
@@ -78,7 +78,7 @@ class AutoCorr : public TransitionFunction {
 class AutoCorrCovar : public TransitionFunction {
   public:
     // first target in `targets` must the source state
-    AutoCorrCovar(int n_states, int n_targets, int * targets, int covar_slot = 0) : _covar_slot(covar_slot), _self(*targets), _log_base(log(n_targets - 1)) {
+  AutoCorrCovar(int n_states, int n_targets, int * targets, int covar_slot = 0) : TransitionFunction(targets[0]), _covar_slot(covar_slot), _self(*targets), _log_base(log(n_targets - 1)) {
       _valid_states = new bool[n_states];
       
       // set all to false

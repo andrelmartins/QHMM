@@ -6,7 +6,7 @@
 class FuncEntry {
 public:
   FuncEntry(const char * fname, const char * pkg, const bool req_covars) : package(pkg), name(fname), needs_covars(req_covars) {}
-  virtual EmissionFunction * create_emission_instance(int dim) const = 0;
+  virtual EmissionFunction * create_emission_instance(int stateID, int slotID, int dim) const = 0;
   virtual TransitionFunction * create_transition_instance(int n_states, int n_targets, int * targets) const = 0;
   
   const bool needs_covars;
@@ -24,9 +24,9 @@ public:
     return NULL;
   }
   
-  EmissionFunction * create_emission_instance(int dim) const {
+  EmissionFunction * create_emission_instance(int stateID, int slotID, int dim) const {
     // TODO: do something with 'dim', like maybe pass it along or check it's valid
-    return new T();
+    return new T(stateID, slotID);
   }
 };
 
@@ -40,7 +40,7 @@ public:
     return new T(n_states, n_targets, targets);
   }
   
-  EmissionFunction * create_emission_instance(int dim) const {
+  EmissionFunction * create_emission_instance(int stateID, int slotID, int dim) const {
     return NULL;
   }
 };

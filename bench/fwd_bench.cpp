@@ -117,7 +117,7 @@ Emissions * create_poisson_emissions(int n_states, double lambda) {
   Emissions * result = new Emissions(n_states);
 
   for (int i = 0; i < n_states; ++i)
-    result->insert(new Poisson(lambda));
+    result->insert(new Poisson(i, 0, lambda));
 
   return result;
 }
@@ -126,7 +126,7 @@ Emissions * create_poisson_covar_emissions(int n_states, int covar_slot) {
   Emissions * result = new Emissions(n_states);
   
   for (int i = 0; i < n_states; ++i)
-    result->insert(new PoissonCovar(covar_slot));
+    result->insert(new PoissonCovar(i, 0, covar_slot));
   
   return result;
 }
@@ -136,8 +136,8 @@ MultiEmissions * create_poisson_both_emissions(int n_states, double lambda, int 
   
   for (int i = 0; i < n_states; ++i) {
     std::vector<EmissionFunction *> funcs;
-    funcs.push_back(new Poisson(lambda));
-    funcs.push_back(new PoissonCovar(covar_slot));
+    funcs.push_back(new Poisson(i, 0, lambda));
+    funcs.push_back(new PoissonCovar(i, 1, covar_slot));
     
     result->insert(funcs);
   }

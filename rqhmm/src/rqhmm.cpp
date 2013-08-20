@@ -228,7 +228,7 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
     for (int i = 0; i < n_states; ++i) {
       const char * efunc_name = CHAR(STRING_ELT(VECTOR_ELT(emissions, i), 0));
       FuncEntry * efunc = get_entry(__emissions, efunc_name);
-      etable->insert(efunc->create_emission_instance(dim));
+      etable->insert(efunc->create_emission_instance(i, 0, dim));
     }
     
     return _create_hmm_transitions(data_shape, etable, valid_transitions, transitions);
@@ -243,7 +243,7 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
         int dim = INTEGER(emission_shape)[j];
         const char * efunc_name = CHAR(STRING_ELT(emissions_i, j));
         FuncEntry * efunc = get_entry(__emissions, efunc_name);
-        funcs_i.push_back(efunc->create_emission_instance(dim));
+        funcs_i.push_back(efunc->create_emission_instance(i, j, dim));
       }
       
       etable->insert(funcs_i);

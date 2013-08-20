@@ -284,7 +284,7 @@ const double LogFactorial::logFactorialTable[256] = { 0.000000000000000,
 
 class Poisson : public EmissionFunction {
   public:
-    Poisson(double lambda = 1.0) : _lambda(lambda), _log_lambda(log(lambda)) {}
+  Poisson(int stateID, int slotID, double lambda = 1.0) : EmissionFunction(stateID, slotID), _lambda(lambda), _log_lambda(log(lambda)) {}
 
     virtual bool validParams(Params const & params) const {
       return params.length() == 1 && params[0] > 0;
@@ -299,8 +299,8 @@ class Poisson : public EmissionFunction {
       _log_lambda = log(_lambda);
     }
   
-    virtual double log_probability(Iter const & iter, int slot) const {
-      int x = (int) iter.emission(slot); // cast to integer
+    virtual double log_probability(Iter const & iter) const {
+      int x = (int) iter.emission(_slotID); // cast to integer
       
       // log prob(x) = log( lambda^x exp(-lambda) / x!)
       //             = x log(lambda) - lambda - log(x!)
@@ -317,10 +317,10 @@ class Poisson : public EmissionFunction {
 
 class PoissonCovar : public EmissionFunction {
   public:
-    PoissonCovar(int covar_slot) : _covar_slot(covar_slot) {}
+  PoissonCovar(int stateID, int slotID, int covar_slot) : EmissionFunction(stateID, slotID), _covar_slot(covar_slot) {}
     
-    virtual double log_probability(Iter const & iter, int slot) const {
-      int x = (int) iter.emission(slot); // cast to integer
+    virtual double log_probability(Iter const & iter) const {
+      int x = (int) iter.emission(_slotID); // cast to integer
       double lambda = iter.covar(_covar_slot);
       
       // log prob(x) = log( lambda^x exp(-lambda) / x!)
