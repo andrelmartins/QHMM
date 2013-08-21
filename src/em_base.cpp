@@ -45,9 +45,7 @@ double EMSequence::updateFwBk() {
   return loglik;
 }
 
-void EMSequence::emission_suff_stats(int slot, std::vector<EmissionSuffStat*> * ssobjs) {
-  std::vector<Iter> * subiters = (*_slot_subiters)[slot];
-
+void EMSequence::update_posterior() {
   /* update posterior if needed */
   if (_posterior_dirty) {
     /* allocate posterior if needed */
@@ -57,23 +55,22 @@ void EMSequence::emission_suff_stats(int slot, std::vector<EmissionSuffStat*> * 
     }
 
     _hmm->state_posterior(*_iter, _forward, _backward, _posterior);
+    _posterior_dirty = false;
   }
+}
 
-  /* call each suff stat object with sub-iterators */
-  for (std::vector<EmissionSuffStat*>::iterator ss_it = ssobjs->begin();
-       ss_it != ssobjs->end();
-       ++ss_it) {
-    EmissionSuffStat* ss_i = *ss_it;
+EMSequences::EMSequences(HMM * hmm, std::vector<Iter*> & iters) {
+  std::vector<Iter*>::iterator it;
 
-    /* posterior is store in state order */
-    double * post_state = _posterior + (ss_i->state() * _iter->length());
-
-    for (std::vector<Iter>::iterator sub_it = subiters->begin();
-	 sub_it != subiters->end();
-	 ++sub_it) {
-      double * post_j = post_state + (*sub_it).iter_offset();
-
-      ss_i->accum(*sub_it, post_j);
-    }
+  for (it = iters.begin(); it != iters.end(); ++it) {
+    EMSequence * seq = new EMSequence(hmm, (*it));
+    _em_seqs.push_back(seq);
   }
+}
+
+EMSequences::~EMSequences() {
+  std::vector<EMSequence*>::iterator it;
+  
+  for (it = _em_seqs.begin(); it != _em_seqs.end(); ++it)
+    delete (*it);
 }

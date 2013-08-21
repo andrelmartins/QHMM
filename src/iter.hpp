@@ -89,7 +89,7 @@ class Iter {
     std::vector<Iter> * sub_iterators(int slot);
 
     int emission_slot_count() { return _emission_slot_count; }
-    int iter_offset() { return _offset; }
+    int iter_offset() const { return _offset; }
   
   protected:
     Iter(Iter * parent, int start, int end); // constructor for sub_iterator() function

@@ -9,11 +9,7 @@ double HMM::em(std::vector<Iter*> & iters, double tolerance) {
   /* initialize sequences & fw/bk memory
      (handles spliting by missing data)
    */
-  std::vector<EMSequence*> sequences;
-  for (std::vector<Iter*>::iterator it = iters.begin();
-       it != iters.end();
-       ++it)
-    sequences.push_back(new EMSequence(this, *it));
+  EMSequences * sequences = new EMSequences(this, iters);
 
   /* initialize sufficient statistic instances */
 
@@ -26,11 +22,7 @@ double HMM::em(std::vector<Iter*> & iters, double tolerance) {
     /* reset sufficient statistics */
 
     /* compute forward/backward per sequence => get log-lik */
-    cur_loglik = 0;
-    for (std::vector<EMSequence*>::iterator it = sequences.begin();
-       it != sequences.end();
-       ++it)
-      cur_loglik += (*it)->updateFwBk();
+    cur_loglik = sequences->updateFwBk();
 
     /* output cur_loglik & current parameters */
 
@@ -46,10 +38,7 @@ double HMM::em(std::vector<Iter*> & iters, double tolerance) {
   }
 
   /* clean up */
-  for (std::vector<EMSequence*>::iterator it = sequences.begin();
-       it != sequences.end();
-       ++it)
-     delete *it;
+  delete sequences;
 
   return cur_loglik;
 }
