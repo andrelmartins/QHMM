@@ -1,6 +1,7 @@
 #ifndef FUNC_TABLE_HPP
 #define FUNC_TABLE_HPP
 
+#include <algorithm>
 #include <stdexcept>
 #include <limits>
 #include <vector>
