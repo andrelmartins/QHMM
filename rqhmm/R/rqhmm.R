@@ -65,6 +65,9 @@ new.qhmm <- function(data.shape, valid.transitions, transition.functions, emissi
     valid.states = is.finite(flat) & flat > 0 & flat <= n.states
     if (!all(valid.states))
       stop("invalid state numbers in transition groups: ", do.call("paste", as.list(flat[!valid.states])))
+    
+    # transform group state IDs from R 1-based to C 0-based
+    transition.groups = lapply(transition.groups, function(grp) as.integer(grp - 1))
   }
   
   # emission groups
@@ -94,6 +97,9 @@ new.qhmm <- function(data.shape, valid.transitions, transition.functions, emissi
       if (!all(valid.states))
         stop("in slot ", slotId, ", invalid state numbers in emission groups: ", do.call("paste", as.list(flat[!valid.states])))
     }
+    
+    # transform group slot and state IDs from R 1-based to C 0-based
+    emission.groups = lapply(emission.groups, function(grp) as.integer(grp - 1))
   }
   
   # check if function names are valid
@@ -112,7 +118,8 @@ new.qhmm <- function(data.shape, valid.transitions, transition.functions, emissi
   # create instance
   res = .Call(rqhmm_create_hmm,
               list(emission.slot.dims, covar.slot.dims),
-              t(valid.transitions), transition.functions, emission.functions) # missing group information
+              t(valid.transitions), transition.functions, emission.functions,
+              emission.groups, transition.groups)
   class(res) <- "rqhmm"
   return(res)
 }

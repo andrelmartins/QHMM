@@ -33,6 +33,16 @@ double HMM::em(std::vector<Iter*> & iters, double tolerance) {
 
     /* update parameters */
 
+    /* - emission functions */
+    std::vector<std::vector<EmissionFunction*> > groups = emission_groups();
+    std::vector<std::vector<EmissionFunction*> >::iterator it;
+    for (it = groups.begin(); it != groups.end(); ++it) {
+      std::vector<EmissionFunction*> group_i = *it;
+      EmissionFunction * head = group_i[0];
+      
+      head->updateParams(sequences, &group_i);
+    }
+    
     /* */
     prev_loglik = cur_loglik;
   }

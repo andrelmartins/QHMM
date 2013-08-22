@@ -52,17 +52,17 @@ public:
       /* try to move inner iterator */
       ++_inner_iter;
       if (_inner_iter == _inner_vec->end()) {
-	/* try to move outer iterator */
-	++_outer_iter;
-	if (_outer_iter == _seqs->end())
-	  return false;
+        /* try to move outer iterator */
+        ++_outer_iter;
+        if (_outer_iter == _seqs->end())
+          return false;
 
-	/* update posterior */
-	(*_outer_iter)->update_posterior();
+        /* update posterior */
+        (*_outer_iter)->update_posterior();
 
-	/* update inner iterator */
-	_inner_vec = (*((*_outer_iter)->_slot_subiters))[_slot];
-	_inner_iter = _inner_vec->begin();
+        /* update inner iterator */
+        _inner_vec = (*((*_outer_iter)->_slot_subiters))[_slot];
+        _inner_iter = _inner_vec->begin();
       }
 
       return true;

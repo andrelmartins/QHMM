@@ -30,6 +30,9 @@ class HMM {
 
     // properties
     virtual int state_count() const = 0;
+  
+protected:
+    virtual const std::vector<std::vector<EmissionFunction*> > & emission_groups() const = 0;
 };
 
 #include "hmm.cpp"

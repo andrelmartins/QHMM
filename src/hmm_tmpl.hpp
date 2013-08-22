@@ -18,7 +18,12 @@ class HMMImpl : public HMM {
     const InnerBck _innerBck;
     
     double * _init_log_probs;
-    
+  protected:
+  
+    virtual const std::vector<std::vector<EmissionFunction*> > & emission_groups() const {
+      return _logEkb->groups();
+    }
+  
   public:
     HMMImpl(InnerFwd innerFwd, InnerBck innerBck, FuncAkl logAkl, FuncEkb logEkb, double * init_log_probs) : _n_states(logAkl->n_states()), _logAkl(logAkl), _logEkb(logEkb), _innerFwd(innerFwd), _innerBck(innerBck), _init_log_probs(init_log_probs) { }
 

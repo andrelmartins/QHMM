@@ -7,6 +7,9 @@
 #include <cmath>
 #include <limits>
 
+// forward declaration to avoid include loop
+class EMSequences;
+
 bool inline same_probability(double a, double b) {
   return fabs(a - b) < std::numeric_limits<double>::epsilon();
 }
@@ -41,6 +44,8 @@ public:
 
   int stateID() { return _stateID; }
   int slotID() { return _slotID; }
+  
+  virtual void updateParams(EMSequences * sequences, std::vector<EmissionFunction*> * group) {}
 
 protected:
   const int _stateID;
