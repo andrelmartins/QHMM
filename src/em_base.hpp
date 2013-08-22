@@ -68,7 +68,7 @@ public:
       return true;
     }
 
-    const Iter & iter() {
+    Iter & iter() {
       return *_inner_iter;
     }
 
@@ -83,8 +83,8 @@ public:
     const int _slot;
 
     std::vector<EMSequence*>::const_iterator _outer_iter;
-    const std::vector<Iter> * _inner_vec;
-    std::vector<Iter>::const_iterator _inner_iter;
+    std::vector<Iter> * _inner_vec;
+    std::vector<Iter>::iterator _inner_iter;
 
     const std::vector<EMSequence*> * _seqs;
   };

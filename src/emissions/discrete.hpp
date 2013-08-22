@@ -3,7 +3,9 @@
 
 #include <cmath>
 #include <limits>
+#include <cstring>
 #include "../base_classes.hpp"
+#include "../em_base.hpp"
 
 class DiscreteEmissions : public EmissionFunction {
 public:
@@ -56,6 +58,51 @@ public:
     return _log_probs[y];
   }
 
+  virtual void updateParams(EMSequences * sequences, std::vector<EmissionFunction*> * group) {
+    // sufficient statistics are the per symbol expected counts
+    double expected_counts[_alphabetSize];
+    
+    std::vector<EmissionFunction*>::iterator ef_it;
+    
+    for (int i = 0; i < _alphabetSize; ++i)
+      expected_counts[i] = 0;
+    
+    for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
+      DiscreteEmissions * ef = (DiscreteEmissions*) *ef_it;
+      EMSequences::PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
+
+      do {
+        const double * post_j = post_it->posterior();
+        Iter & iter = post_it->iter();
+        int length_j = iter.length();
+        iter.resetFirst();
+        
+        for (int j = 0; j < length_j; ++j, iter.next()) {
+          int symbol = (int) iter.emission(ef->_slotID);
+          
+          expected_counts[symbol] += post_j[j];
+        }
+      } while (post_it->next());
+      
+      delete post_it;
+    }
+    
+    // use expected counts to estimate parameter values
+    double normalization = 0;
+    for (int i = 0; i < _alphabetSize; ++i)
+      normalization += expected_counts[i];
+    for (int i = 0; i < _alphabetSize; ++i)
+      _log_probs[i] = log(expected_counts[i] / normalization);
+    
+    // propagate to other elements in the group
+    for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
+      DiscreteEmissions * ef = (DiscreteEmissions*) *ef_it;
+      
+      if (ef != this)
+        memcpy(ef->_log_probs, _log_probs, _alphabetSize * sizeof(double));
+    }
+  }
+  
 private:
   int _offset;
   int _alphabetSize;
