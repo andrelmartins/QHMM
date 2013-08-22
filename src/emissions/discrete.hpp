@@ -74,10 +74,9 @@ public:
       do {
         const double * post_j = post_it->posterior();
         Iter & iter = post_it->iter();
-        int length_j = iter.length();
         iter.resetFirst();
         
-        for (int j = 0; j < length_j; ++j, iter.next()) {
+        for (int j = 0; iter.next(); ++j) {
           int symbol = (int) iter.emission(ef->_slotID);
           
           expected_counts[symbol] += post_j[j];
