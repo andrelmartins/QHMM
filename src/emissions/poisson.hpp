@@ -4,6 +4,7 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include "../base_classes.hpp"
+#include "../em_base.hpp"
 
 // Code adapted from http://www.johndcook.com/csharp_log_factorial.html
 class LogFactorial {
@@ -308,6 +309,49 @@ class Poisson : public EmissionFunction {
         return -_lambda - LogFactorial::logFactorial(x);
       else
         return x * _log_lambda - _lambda - LogFactorial::logFactorial(x);
+    }
+  
+    virtual void updateParams(EMSequences * sequences, std::vector<EmissionFunction*> * group) {
+      // sufficient statistics are the sum of the state posteriors and the sum of the posterior times
+      // the observations
+      double sum_Pzi = 0;
+      double sum_Pzi_xi = 0;
+      
+      std::vector<EmissionFunction*>::iterator ef_it;
+      
+      for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
+        Poisson * ef = (Poisson*) *ef_it;
+        EMSequences::PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
+        
+        do {
+          const double * post_j = post_it->posterior();
+          Iter & iter = post_it->iter();
+          iter.resetFirst();
+          
+          for (int j = 0; iter.next(); ++j) {
+            int x = (int) iter.emission(ef->_slotID);
+            
+            sum_Pzi += post_j[j];
+            sum_Pzi_xi += post_j[j] * x;
+          }
+        } while (post_it->next());
+        
+        delete post_it;
+      }
+      
+      // use expected counts to estimate parameter value
+      _lambda = sum_Pzi_xi / sum_Pzi;
+      _log_lambda = log(_lambda);
+      
+      // propagate to other elements in the group
+      for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
+        Poisson * ef = (Poisson*) *ef_it;
+        
+        if (ef != this) {
+          ef->_lambda = _lambda;
+          ef->_log_lambda = _log_lambda;
+        }
+      }
     }
   
   private:
