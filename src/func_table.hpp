@@ -6,6 +6,7 @@
 #include <limits>
 #include <vector>
 #include <cassert>
+#include <cstring>
 #include "base_classes.hpp"
 
 template<typename T>
@@ -145,20 +146,14 @@ public:
     int ** next = new int*[_n_states];
     
     for (int i = 0; i < _n_states; ++i) {
-      int length = 0;
-      
-      // count valid transitions
-      for (int j = 0; j < _n_states; ++j)
-	if (_m[i][j] != -std::numeric_limits<double>::infinity())
-	  ++length;
-      
-      // record valid transitions
-      next[i] = new int[length + 1];
-      next[i][length] = -1; // termination mark
-      int k = 0;
-      for (int j = 0; j < _n_states; ++j)
-	if (_m[i][j] != -std::numeric_limits<double>::infinity())
-	  next[i][k++] = i;
+      TransitionFunction * f_i = _funcs[i];
+      int length = f_i->n_targets() + 1;
+      next[i] = new int[length];
+      next[i][f_i->n_targets()] = -1; // termination mark
+
+      memcpy(next[i], f_i->targets(), f_i->n_targets() * sizeof(int));
+      // sort to keep memory access sequential
+      std::sort(next[i], next[i] + length);
     }
     
     return next;

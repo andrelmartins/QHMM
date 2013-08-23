@@ -33,7 +33,9 @@ public:
   virtual double log_probability(int target) const = 0;
   virtual double log_probability(Iter const & iter, int target) const = 0;
 
-  int stateID() { return _stateID; }
+  int stateID() const { return _stateID; }
+  int n_targets() const { return _n_targets; }
+  const int * targets() const { return _targets; }
 
 protected:
   const int _stateID;
