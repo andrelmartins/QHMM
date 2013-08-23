@@ -113,9 +113,7 @@ public:
   bool isSparse() {
     int invalid_count = 0;
     for (int i = 0; i < _n_states; ++i)
-      for (int j = 0; j < _n_states; ++j)
-	if (_m[i][j] == -std::numeric_limits<double>::infinity())
-	  ++invalid_count;
+      invalid_count += (_n_states - _funcs[i]->n_targets());
     return invalid_count >= (_n_states * _n_states / 2); // heuristic threshold
   }
   
