@@ -5,7 +5,7 @@
 
 class FuncEntry {
 public:
-  FuncEntry(const char * fname, const char * pkg, const bool req_covars) : package(pkg), name(fname), needs_covars(req_covars) {}
+  FuncEntry(const char * fname, const char * pkg, const bool req_covars) : needs_covars(req_covars), package(pkg), name(fname) {}
   virtual EmissionFunction * create_emission_instance(int stateID, int slotID, int dim) const = 0;
   virtual TransitionFunction * create_transition_instance(int n_states, int n_targets, int * targets) const = 0;
   

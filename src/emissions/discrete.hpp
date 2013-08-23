@@ -9,7 +9,7 @@
 
 class DiscreteEmissions : public EmissionFunction {
 public:
-  DiscreteEmissions(int stateID, int slotID, int offset = 1) : EmissionFunction(stateID, slotID), _offset(offset), _log_probs(NULL), _alphabetSize(0) {}
+  DiscreteEmissions(int stateID, int slotID, int offset = 1) : EmissionFunction(stateID, slotID), _offset(offset), _alphabetSize(0), _log_probs(NULL) {}
   ~DiscreteEmissions() {
     if (_log_probs)
       delete[] _log_probs;

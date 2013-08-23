@@ -216,9 +216,7 @@ RQHMMData * _create_hmm_transitions(SEXP data_shape, EType * emissions, SEXP val
 RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transitions, SEXP emissions, SEXP emission_groups) {
   /* make choice about emission table */
   SEXP emission_shape = VECTOR_ELT(data_shape, 0);
-  SEXP covar_shape = VECTOR_ELT(data_shape, 1);
   int n_emissions = Rf_length(emission_shape);
-  int n_covars = Rf_length(covar_shape);
   int n_states = Rf_length(transitions);
   
   if (n_emissions == 1) {
@@ -238,7 +236,6 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
       for (int i = 0; i < n_groups; ++i) {
         SEXP group_i = VECTOR_ELT(emission_groups, i);
         int * igrp = INTEGER(group_i);
-        int grp_slot = *igrp;
         int grp_len = Rf_length(group_i) - 1; // exclude slot indicator
         
         etable->makeGroup(igrp + 1, grp_len); // exclude slot indicator
@@ -702,7 +699,7 @@ extern "C" {
     loglik = data->hmm->em(iterators, REAL(tolerance)[0]);
 
     /* clean up */
-    for (int i = 0; i < iterators.size(); ++i)
+    for (unsigned int i = 0; i < iterators.size(); ++i)
       delete iterators[i];
 
     /* prepare result */

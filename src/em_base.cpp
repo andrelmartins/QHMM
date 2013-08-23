@@ -22,7 +22,7 @@ EMSequence::EMSequence(HMM * hmm, Iter * iter) {
 }
 
 EMSequence::~EMSequence() {
-  for (int i = 0; i < _slot_subiters->size(); ++i)
+  for (unsigned int i = 0; i < _slot_subiters->size(); ++i)
     delete (*_slot_subiters)[i];
   delete _slot_subiters;
 
