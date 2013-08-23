@@ -79,37 +79,10 @@ class FunctionTable {
     int n_states() const { return _n_states; }
 };
 
-class HomogeneousTransitions : public FunctionTable<TransitionFunction> {
+class TransitionTable : public FunctionTable<TransitionFunction> {
 public:
-  HomogeneousTransitions(int n_states) : FunctionTable<TransitionFunction>(n_states) {
-    _m = new double*[n_states];
-    for (int i = 0; i < n_states; ++i)
-      _m[i] = new double[n_states];
-  }
-  
-  ~HomogeneousTransitions() {
-    for (int i = 0; i < _n_states; ++i)
-      delete[] _m[i];
-    delete[] _m;
-  }
-		
-  void updateTransitions() {
-    for (int i = 0; i < _n_states; ++i) {
-      double * row = _m[i];
-      for (int j = 0; j < _n_states; ++j)
-	row[j] = _funcs[i]->log_probability(j);
-    }
-  }
-  
-  virtual void setParams(int state, Params const & params) {
-    FunctionTable<TransitionFunction>::setParams(state, params);
-      
-    /* partial update */
-    double * row = _m[state];
-    for (int j = 0; j < _n_states; ++j)
-      row[j] = _funcs[state]->log_probability(j);
-  }
-		
+  TransitionTable(int n_states) : FunctionTable<TransitionFunction>(n_states) {}
+
   bool isSparse() {
     int invalid_count = 0;
     for (int i = 0; i < _n_states; ++i)
@@ -177,6 +150,39 @@ public:
     
     return next;
   }
+};  
+
+class HomogeneousTransitions : public TransitionTable {
+public:
+  HomogeneousTransitions(int n_states) : TransitionTable(n_states) {
+    _m = new double*[n_states];
+    for (int i = 0; i < n_states; ++i)
+      _m[i] = new double[n_states];
+  }
+  
+  ~HomogeneousTransitions() {
+    for (int i = 0; i < _n_states; ++i)
+      delete[] _m[i];
+    delete[] _m;
+  }
+		
+  void updateTransitions() {
+    for (int i = 0; i < _n_states; ++i) {
+      double * row = _m[i];
+      for (int j = 0; j < _n_states; ++j)
+	row[j] = _funcs[i]->log_probability(j);
+    }
+  }
+  
+  virtual void setParams(int state, Params const & params) {
+    FunctionTable<TransitionFunction>::setParams(state, params);
+      
+    /* partial update */
+    double * row = _m[state];
+    for (int j = 0; j < _n_states; ++j)
+      row[j] = _funcs[state]->log_probability(j);
+  }
+		
   
   // TODO: Check if it's worth it to transpose this matrix, since we'll be accessing
   //       it column by columns
@@ -188,26 +194,12 @@ private:
   double ** _m;
 };
 
-class NonHomogeneousTransitions : public FunctionTable<TransitionFunction> {
+class NonHomogeneousTransitions : public TransitionTable {
 public:
-  NonHomogeneousTransitions(int n_states) : FunctionTable<TransitionFunction>(n_states) {}
+  NonHomogeneousTransitions(int n_states) : TransitionTable(n_states) {}
   
   double operator() (Iter const & iter, int i, int j) const {
     return _funcs[i]->log_probability(iter, j);
-  }
-  
-  bool isSparse() {
-    return false; // For now assume non-homogeneous means not-sparse
-    // this is not strictly true, we could have constraints on valid
-    // transitions that make things sparse ...
-  }
-  
-  int ** previousStates() {
-    throw std::logic_error("called previousStates on non-homogeneous class (not supported)");
-  }
-  
-  int ** nextStates() {
-    throw std::logic_error("called nextStates on non-homogeneous class (not supported)");      
   }
 };
 
