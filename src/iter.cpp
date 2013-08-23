@@ -61,11 +61,11 @@ Iter::Iter(Iter * parent, int start, int end) : _is_subiterator(true), _missing_
 
   // start/end/ptr pointers
   _emission_start = parent->_emission_start + parent->_emission_step * start;
-  _emission_end = parent->_emission_end + parent->_emission_step * end;
+  _emission_end = parent->_emission_start + parent->_emission_step * end;
   _emission_ptr = _emission_start;
   
   _covar_start = parent->_covar_start + parent->_covar_step * start;
-  _covar_end = parent->_covar_end + parent->_covar_step * end;
+  _covar_end = parent->_covar_start + parent->_covar_step * end;
   _covar_ptr = _covar_start;
 }
 
