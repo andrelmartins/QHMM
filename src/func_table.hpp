@@ -121,23 +121,44 @@ public:
   
   int ** previousStates() {
     int ** previous = new int*[_n_states];
+
+    // count valid transitions
+    int lengths[_n_states];
+
+    for (int i = 0; i < _n_states; ++i)
+      lengths[i] = 0;
     
-    for (int j = 0; j < _n_states; ++j) {
-      int length = 0;
-      
-      // count valid transitions
-      for (int i = 0; i < _n_states; ++i)
-	if (_m[i][j] != -std::numeric_limits<double>::infinity())
-	  ++length;
-      
-      // record valid transitions
-      previous[j] = new int[length + 1];
-      previous[j][length] = -1; // termination mark
-      int k = 0;
-      for (int i = 0; i < _n_states; ++i)
-	if (_m[i][j] != -std::numeric_limits<double>::infinity())
-	  previous[j][k++] = i;
+    for (int i = 0; i < _n_states; ++i) {
+      TransitionFunction * f_i = _funcs[i];
+      int n = f_i->n_targets();
+      const int * targets = f_i->targets();
+
+      for (int j = 0; j < n; ++j)
+	lengths[targets[j]]++;
     }
+
+    // allocate space
+    for (int i = 0; i < _n_states; ++i) {
+      previous[i] = new int[lengths[i] + 1];
+      previous[i][lengths[i]] = - 1; // termination mark
+    }
+
+    // record valid transitions
+    for (int i = 0; i < _n_states; ++i) {
+      TransitionFunction * f_i = _funcs[i];
+      int n = f_i->n_targets();
+      const int * targets = f_i->targets();
+
+      for (int j = 0; j < n; ++j) {
+	int k = targets[j];
+	--lengths[k];
+	previous[k][lengths[k]] = i;
+      }
+    }
+
+    // sort transitions
+    for (int i = 0; i < _n_states; ++i)
+      std::sort(previous[i], previous[i] + lengths[i]);
     
     return previous;
   }
