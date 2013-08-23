@@ -16,19 +16,30 @@ bool inline same_probability(double a, double b) {
 
 class TransitionFunction {
 public:
-  TransitionFunction(int stateID) : _stateID(stateID) {}
+  TransitionFunction(int n_states, int n_targets, int * targets) : _stateID(targets[0]), _n_states(n_states), _n_targets(n_targets) {
+    _targets = new int[_n_states];
+    
+    for (int i = 0; i < _n_targets; ++i)
+      _targets[i] = targets[i];
+  }
+
+  virtual ~TransitionFunction() {
+    delete[] _targets;
+  }
 
   virtual bool validParams(Params const & params) const { return true; }
   virtual Params * getParams() const { return NULL; }
   virtual void setParams(Params const & params) {};
   virtual double log_probability(int target) const = 0;
   virtual double log_probability(Iter const & iter, int target) const = 0;
-  virtual ~TransitionFunction() {};
 
   int stateID() { return _stateID; }
 
 protected:
   const int _stateID;
+  const int _n_states;
+  const int _n_targets;
+  int * _targets;
 };
 
 class EmissionFunction {

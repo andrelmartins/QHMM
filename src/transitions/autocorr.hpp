@@ -13,19 +13,14 @@
 class AutoCorr : public TransitionFunction {
   public:
     // first target in `targets` must the source state
-  AutoCorr(int n_states, int n_targets, int * targets, double alpha = 0.5) : TransitionFunction(targets[0]), _n_states(n_states), _n_targets(n_targets) {
+  AutoCorr(int n_states, int n_targets, int * targets, double alpha = 0.5) : TransitionFunction(n_states, n_targets, targets) {
       _log_probs = new double[n_states];
-      _targets = new int[n_states];
-
-      for (int i = 0; i < n_targets; ++i)
-        _targets[i] = targets[i];
 
       update_log_probs(alpha);
     }
     
     ~AutoCorr() {
       delete[] _log_probs;
-      delete[] _targets;
     }
   
     virtual bool validParams(Params const & params) const {
@@ -50,9 +45,6 @@ class AutoCorr : public TransitionFunction {
     }
     
   private:
-    int _n_states;
-    int _n_targets;
-    int * _targets;
     double * _log_probs;
   
     void update_log_probs(double alpha) {
@@ -78,7 +70,7 @@ class AutoCorr : public TransitionFunction {
 class AutoCorrCovar : public TransitionFunction {
   public:
     // first target in `targets` must the source state
-  AutoCorrCovar(int n_states, int n_targets, int * targets, int covar_slot = 0) : TransitionFunction(targets[0]), _covar_slot(covar_slot), _self(*targets), _log_base(log(n_targets - 1)) {
+  AutoCorrCovar(int n_states, int n_targets, int * targets, int covar_slot = 0) : TransitionFunction(n_states, n_targets, targets), _covar_slot(covar_slot), _log_base(log(n_targets - 1)) {
       _valid_states = new bool[n_states];
       
       // set all to false
@@ -101,7 +93,7 @@ class AutoCorrCovar : public TransitionFunction {
 		virtual double log_probability(Iter const & iter, int target) const {
       if (_valid_states[target]) {
         double alpha = iter.covar(_covar_slot);
-        if (target == _self)
+        if (target == _stateID)
           return log(alpha);
         else
           return log(1.0 - alpha) - _log_base; 
@@ -111,7 +103,6 @@ class AutoCorrCovar : public TransitionFunction {
     
   private:
     const int _covar_slot;
-    const int _self;
     const double _log_base;
     bool * _valid_states;
 };

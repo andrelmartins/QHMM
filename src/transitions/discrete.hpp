@@ -7,13 +7,9 @@
 
 class Discrete : public TransitionFunction {
 public:
-  Discrete(int n_states, int n_targets, int * targets) : TransitionFunction(targets[0]), _n_states(n_states), _n_targets(n_targets) {
+  Discrete(int n_states, int n_targets, int * targets) : TransitionFunction(n_states, n_targets, targets) {
 
     _log_probs = new double[n_states];
-    _targets = new int[n_states];
-
-    for (int i = 0; i < n_targets; ++i)
-      _targets[i] = targets[i];
 
     // default equi-probable
     // set all to -Inf
@@ -27,7 +23,6 @@ public:
 
   ~Discrete() {
     delete[] _log_probs;
-    delete[] _targets;
   }
 
   virtual bool validParams(Params const & params) const {
@@ -65,9 +60,6 @@ public:
   }
 
 private:
-  int _n_states;
-  int _n_targets;
-  int * _targets;
   double * _log_probs;
 };
 
