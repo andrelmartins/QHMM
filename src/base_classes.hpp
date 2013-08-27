@@ -37,6 +37,8 @@ public:
   int n_targets() const { return _n_targets; }
   const int * targets() const { return _targets; }
 
+  virtual void updateParams(EMSequences * sequences, std::vector<TransitionFunction*> * group) {}
+
 protected:
   const int _stateID;
   const int _n_states;
