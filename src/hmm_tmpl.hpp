@@ -243,6 +243,17 @@ class HMMImpl : public HMM {
           matrix[j*iter.length() + i] = exp(fw[i*_n_states + j] + bk[i*_n_states + j] - logPx);
       }
     }
+
+    void local_loglik(Iter & iter, const double * const fw, const double * const bk, double * result) const {
+      LogSum * logsum = LogSum::create(_n_states);
+
+      for (int i = 0; i < iter.length(); ++i) {
+	logsum->clear();
+	for (int j = 0; j < _n_states; ++j)
+	  logsum->store(fw[i*_n_states + j] + bk[i*_n_states + j]);
+	result[i] = logsum->compute();
+      }
+    }
 };
 
 // auxiliary function to enable type inference
