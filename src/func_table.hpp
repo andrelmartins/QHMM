@@ -105,7 +105,7 @@ public:
       const int * targets = f_i->targets();
 
       for (int j = 0; j < n; ++j)
-	lengths[targets[j]]++;
+        lengths[targets[j]]++;
     }
 
     // allocate space
@@ -121,9 +121,9 @@ public:
       const int * targets = f_i->targets();
 
       for (int j = 0; j < n; ++j) {
-	int k = targets[j];
-	--lengths[k];
-	previous[k][lengths[k]] = i;
+        int k = targets[j];
+        --lengths[k];
+        previous[k][lengths[k]] = i;
       }
     }
 
@@ -145,7 +145,7 @@ public:
 
       memcpy(next[i], f_i->targets(), f_i->n_targets() * sizeof(int));
       // sort to keep memory access sequential
-      std::sort(next[i], next[i] + length);
+      std::sort(next[i], next[i] + length - 1); // exclude termination mark
     }
     
     return next;
