@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include "../base_classes.hpp"
+#include "../em_base.hpp"
 
 class Discrete : public TransitionFunction {
 public:
@@ -57,6 +58,49 @@ public:
     
   virtual double log_probability(Iter const & iter, int target) const {
     return log_probability(target);
+  }
+
+  virtual void updateParams(EMSequences * sequences, std::vector<TransitionFunction*> * group) {
+    // sufficient statistics are the per target expected counts
+    double expected_counts[_n_targets];
+
+    EMSequences::PosteriorTransitionIterators * siter = sequences->transition_iterators(*group);
+
+    // initialize
+    for (int i = 0; i < _n_targets; ++i)
+      expected_counts[i] = 0;
+
+    // sum expected counts
+    do {
+      PostIter & piter = siter->iter();
+
+      piter.reset();
+      do {
+	for (unsigned int gidx = 0; gidx < group->size(); ++gidx)
+	  for (int tgt_idx = 0; tgt_idx < _n_targets; ++tgt_idx)
+	    expected_counts[tgt_idx] += piter.posterior(gidx, tgt_idx);
+      } while (piter.next());
+    } while (siter->next());
+
+    // estimate parameters
+    double normalization = 0;
+    for (int i = 0; i < _n_targets; ++i)
+      normalization += expected_counts[i];
+    for (int i = 0; i < _n_targets; ++i)
+      _log_probs[_targets[i]] = log(expected_counts[i] / normalization);
+
+    // propagate to other elements in the group
+    std::vector<TransitionFunction*>::iterator tf_it;
+    for (tf_it = group->begin(); tf_it != group->end(); ++tf_it) {
+      Discrete * tf = (Discrete*) *tf_it;
+
+      if (tf != this) {
+	for (int i = 0; i < _n_targets; ++i)
+	  tf->_log_probs[tf->_targets[i]] = _log_probs[_targets[i]];
+      }
+    }
+
+    delete siter;
   }
 
 private:
