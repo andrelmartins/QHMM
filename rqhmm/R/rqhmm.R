@@ -195,3 +195,31 @@ em.qhmm <- function(hmm, emission.lst, covar.lst = NULL, tolerance = 1e-5) {
   # do the actual call
   .Call(rqhmm_em, hmm, emission.lst, covar.lst, tolerance)
 }
+
+emission.test.qhmm <- function(emission.name, emission.params, values, covars = NULL) {
+  values.shape = NULL
+  if (is.vector(values)) {
+    values.shape = 1
+  } else {
+    values.shape = dim(values)[1]
+  }
+
+  covar.shape = NULL
+  if (!is.null(covars)) {
+    if (is.vector(covars))
+      covar.shape = 1
+    else
+      covar.shape = dim(covars)[1]
+  }
+  hmm <- new.qhmm(list(values.shape, covar.shape), as.matrix(1), "discrete", list(emission.name))
+  set.transition.params.qhmm(hmm, 1, 1)
+  set.emission.params.qhmm(hmm, 1, emission.params)
+  
+  loglik = 0
+  if (is.null(covars))
+    loglik = em.qhmm(hmm, list(values))
+  else
+    loglik = em.qhmm(hmm, list(values), list(covars))
+  
+  return(list(loglik = loglik, params = get.emission.params.qhmm(hmm, 1)))
+}
