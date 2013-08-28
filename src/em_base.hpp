@@ -3,6 +3,7 @@
 
 #include "hmm.hpp"
 #include "iter.hpp"
+#include "post_iter.hpp"
 #include <vector>
 
 class EMSequences;
@@ -14,6 +15,9 @@ public:
 
   // returns sequence log-likelihood
   double updateFwBk();
+
+  PostIter * transition_iterator(std::vector<TransitionFunction*> & group);
+  double * local_loglik();
 
   friend class EMSequences;
 
@@ -28,6 +32,9 @@ private:
   std::vector<std::vector<Iter>* > * _slot_subiters;
 
   void update_posterior();
+
+  bool _local_loglik_dirty;
+  double * _local_loglik;
 };
 
 class EMSequences {
@@ -91,6 +98,49 @@ public:
 
   PosteriorIterator * iterator(int state, int slot) {
     return new PosteriorIterator(state, slot, &_em_seqs);
+  }
+
+  class PosteriorTransitionIterators {
+  public:
+    PosteriorTransitionIterators(std::vector<TransitionFunction*> & group, const std::vector<EMSequence*> * seqs) {
+      // upon creation instantiate the transition iterators
+      _postIters = new std::vector<PostIter*>();
+      std::vector<EMSequence*>::const_iterator seqs_iter;
+
+      for (seqs_iter = seqs->begin(); seqs_iter != seqs->end(); ++seqs_iter)
+	_postIters->push_back((*seqs_iter)->transition_iterator(group));
+      reset();
+    }
+    
+    ~PosteriorTransitionIterators() {
+      for (_post_iter = _postIters->begin();
+	   _post_iter != _postIters->end();
+	   ++_post_iter)
+	delete *_post_iter;
+      delete _postIters;
+    }
+
+    void reset() {
+      _post_iter = _postIters->begin();
+    }
+
+    bool next() {
+      ++_post_iter;
+
+      return (_post_iter != _postIters->end());
+    }
+
+    PostIter & iter() {
+      return (*(*_post_iter));
+    }
+
+  private:
+    std::vector<PostIter*>::iterator _post_iter;
+    std::vector<PostIter*> * _postIters;
+  };
+
+  PosteriorTransitionIterators * transition_iterators(std::vector<TransitionFunction*> & group) {
+    return new PosteriorTransitionIterators(group, &_em_seqs);
   }
 
   // returns sequence log-likelihood

@@ -19,6 +19,8 @@ EMSequence::EMSequence(HMM * hmm, Iter * iter) {
 
   _posterior = NULL; /* only allocate posterior on first use */
   _posterior_dirty = true; /* needs update */  
+  _local_loglik = NULL; /* only allocate on first use */
+  _local_loglik_dirty = true; /* needs update */
 }
 
 EMSequence::~EMSequence() {
@@ -30,6 +32,8 @@ EMSequence::~EMSequence() {
   delete[] _backward;
   if (_posterior != NULL)
     delete[] _posterior;
+  if (_local_loglik != NULL)
+    delete[] _local_loglik;
 }
 
 double EMSequence::updateFwBk() {
@@ -42,6 +46,7 @@ double EMSequence::updateFwBk() {
      are fixed and we don't actually need it
   */
   _posterior_dirty = true; /* needs update */
+  _local_loglik_dirty = true; /* needs update */
   return loglik;
 }
 
@@ -57,6 +62,22 @@ void EMSequence::update_posterior() {
     _hmm->state_posterior(*_iter, _forward, _backward, _posterior);
     _posterior_dirty = false;
   }
+}
+
+PostIter * EMSequence::transition_iterator(std::vector<TransitionFunction*> & group) {
+  return new PostIter(_forward, _backward, local_loglik(), group, _hmm, *_iter);
+}
+
+double * EMSequence::local_loglik() {
+  if (_local_loglik_dirty) {
+    if (_local_loglik == NULL)
+      _local_loglik = new double[_iter->length()];
+
+    _hmm->local_loglik(*_iter, _forward, _backward, _local_loglik);
+    _local_loglik_dirty = false;
+  }
+
+  return _local_loglik;
 }
 
 EMSequences::EMSequences(HMM * hmm, std::vector<Iter*> & iters) {
