@@ -80,10 +80,15 @@ public:
     }
   }
   
-  Iter * create_iterator(SEXP emissions, SEXP covars) {
+  Iter * create_iterator(SEXP emissions, SEXP covars, SEXP missing) {
+    /* check missing data support */
+    if (!supports_missing && missing != R_NilValue)
+      error("HMM instance does not support missing data!");
+
     /* validate emissions & covars */
     double * eptr;
     double * cptr = NULL;
+    int * mptr = NULL;
     int L, N;
     get_dims(emissions, N, L);
 
@@ -103,22 +108,29 @@ public:
       
       cptr = REAL(covars);
     }
+
+    if (missing != R_NilValue)
+      mptr = INTEGER(missing);
     
     return new Iter(L, emission_slots, e_slot_dim, eptr,
-                    covar_slots, c_slot_dim, cptr);
+                    covar_slots, c_slot_dim, cptr, mptr);
   }
   
-  void fill_iterator_list(std::vector<Iter*> & iterators, SEXP emission_list, SEXP covar_list) {
+  void fill_iterator_list(std::vector<Iter*> & iterators, SEXP emission_list, SEXP covar_list, SEXP missing_list) {
     int len = Rf_length(emission_list);
 
     for (int i = 0; i < len; ++i) {
       Iter * iter_i;
+      SEXP covar_i = R_NilValue;
+      SEXP missing_i = R_NilValue;
 
-      if (covar_list == R_NilValue)
-        iter_i = create_iterator(VECTOR_ELT(emission_list, i), R_NilValue);
-      else
-        iter_i = create_iterator(VECTOR_ELT(emission_list, i), VECTOR_ELT(covar_list, i));
+      if (covar_list != R_NilValue)
+	covar_i = VECTOR_ELT(covar_list, i);
+      if (missing_list != R_NilValue)
+	missing_i = VECTOR_ELT(missing_list, i);
 
+      iter_i = create_iterator(VECTOR_ELT(emission_list, i), covar_i, missing_i);
+	
       iterators.push_back(iter_i);
     }
 
@@ -414,7 +426,7 @@ extern "C" {
     return ans;
   }
   
-  SEXP rqhmm_forward(SEXP rqhmm, SEXP emissions, SEXP covars) {
+  SEXP rqhmm_forward(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing) {
     SEXP result;
     RQHMMData * data;
     Iter * iter;
@@ -428,7 +440,7 @@ extern "C" {
     data = (RQHMMData*) R_ExternalPtrAddr(ptr);
     
     /* create data structures */
-    iter = data->create_iterator(emissions, covars);
+    iter = data->create_iterator(emissions, covars, missing);
     PROTECT(result = allocMatrix(REALSXP, data->n_states, iter->length()));
     
     /* invoke forward */
@@ -447,7 +459,7 @@ extern "C" {
     return result;
   }
   
-  SEXP rqhmm_backward(SEXP rqhmm, SEXP emissions, SEXP covars) {
+  SEXP rqhmm_backward(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing) {
     SEXP result;
     RQHMMData * data;
     Iter * iter;
@@ -461,7 +473,7 @@ extern "C" {
     data = (RQHMMData*) R_ExternalPtrAddr(ptr);
     
     /* create data structures */
-    iter = data->create_iterator(emissions, covars);
+    iter = data->create_iterator(emissions, covars, missing);
     PROTECT(result = allocMatrix(REALSXP, data->n_states, iter->length()));
     
     /* invoke backward */
@@ -480,7 +492,7 @@ extern "C" {
     return result;
   }
   
-  SEXP rqhmm_viterbi(SEXP rqhmm, SEXP emissions, SEXP covars) {
+  SEXP rqhmm_viterbi(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing) {
     SEXP result;
     RQHMMData * data;
     Iter * iter;
@@ -493,7 +505,7 @@ extern "C" {
     data = (RQHMMData*) R_ExternalPtrAddr(ptr);
     
     /* create data structures */
-    iter = data->create_iterator(emissions, covars);
+    iter = data->create_iterator(emissions, covars, missing);
     PROTECT(result = NEW_INTEGER(iter->length()));
     
     /* invoke viterbi */
@@ -691,7 +703,7 @@ extern "C" {
     return R_NilValue;
   }
   
-  SEXP rqhmm_posterior(SEXP rqhmm, SEXP emissions, SEXP covars) {
+  SEXP rqhmm_posterior(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing) {
     SEXP result;
     RQHMMData * data;
     Iter * iter;
@@ -706,7 +718,7 @@ extern "C" {
     data = (RQHMMData*) R_ExternalPtrAddr(ptr);
     
     /* create data structures */
-    iter = data->create_iterator(emissions, covars);
+    iter = data->create_iterator(emissions, covars, missing);
     fw = (double*) R_alloc(data->n_states * iter->length(), sizeof(double));
     bk = (double*) R_alloc(data->n_states * iter->length(), sizeof(double));
     PROTECT(result = allocMatrix(REALSXP, iter->length(), data->n_states));
@@ -729,7 +741,7 @@ extern "C" {
     return result;
   }
   
-  SEXP rqhmm_em(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP tolerance) {
+  SEXP rqhmm_em(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing, SEXP tolerance) {
     SEXP result;
     SEXP ptr;
     RQHMMData * data;
@@ -743,7 +755,7 @@ extern "C" {
     data = (RQHMMData*) R_ExternalPtrAddr(ptr);
 
     /* create iterator vector */
-    data->fill_iterator_list(iterators, emissions, covars);
+    data->fill_iterator_list(iterators, emissions, covars, missing);
 
     /* invoke */
     loglik = data->hmm->em(iterators, REAL(tolerance)[0]);
