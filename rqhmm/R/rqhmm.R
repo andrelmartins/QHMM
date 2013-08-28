@@ -133,30 +133,32 @@ get.transition.params.qhmm <- function(hmm, state) {
 
 # actually, you can pass more than one state to set multiple states
 # to the same params
-set.transition.params.qhmm <- function(hmm, state, params) {
+set.transition.params.qhmm <- function(hmm, state, params, fixed = attr(params, "fixed")) {
   params = as.numeric(params)
   state = as.integer(state)
   stopifnot(all(state > 0))
   stopifnot(length(params) > 0)
-  invisible(.Call(rqhmm_set_transition_params, hmm, state, params))
+  stopifnot(is.null(fixed) || length(params) == length(fixed))
+  invisible(.Call(rqhmm_set_transition_params, hmm, state, params, fixed))
 }
 
 get.emission.params.qhmm <- function(hmm, state, slot = 1) {
-	state = as.integer(state)
-	slot = as.integer(slot)
-	stopifnot(length(state) == 1 && state >= 1)
-	stopifnot(length(slot) == 1 && slot >= 1)
-	.Call(rqhmm_get_emission_params, hmm, state, slot)
+  state = as.integer(state)
+  slot = as.integer(slot)
+  stopifnot(length(state) == 1 && state >= 1)
+  stopifnot(length(slot) == 1 && slot >= 1)
+  .Call(rqhmm_get_emission_params, hmm, state, slot)
 }
 
-set.emission.params.qhmm <- function(hmm, state, params, slot = 1) {
+set.emission.params.qhmm <- function(hmm, state, params, slot = 1, fixed = attr(params, "fixed")) {
   params = as.numeric(params)
   state = as.integer(state)
   slot = as.integer(slot)
   stopifnot(all(state > 0))
   stopifnot(all(slot > 0))
   stopifnot(length(params) > 0)
-  invisible(.Call(rqhmm_set_emission_params, hmm, state, slot, params))
+  stopifnot(is.null(fixed) || length(params) == length(fixed))
+  invisible(.Call(rqhmm_set_emission_params, hmm, state, slot, params, fixed))
 }
 
 get.initial.probs.qhmm <- function(hmm) {

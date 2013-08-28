@@ -528,13 +528,20 @@ extern "C" {
 
     /* convert parameters into result vector */
     if (params != NULL) {
+      SEXP fixed;
       PROTECT(result = NEW_NUMERIC(params->length()));
+      PROTECT(fixed = NEW_LOGICAL(params->length()));
 
-      for (int i = 0; i < params->length(); ++i)
+      for (int i = 0; i < params->length(); ++i) {
         REAL(result)[i] = (*params)[i];
+	LOGICAL(fixed)[i] = (params->isFixed(i) ? TRUE : FALSE);
+      }
+
+      /* store fixed status as attribute */
+      setAttrib(result, install("fixed"), fixed);
 
       delete params;
-      UNPROTECT(1);
+      UNPROTECT(2);
     }
 
     UNPROTECT(1);
@@ -542,12 +549,26 @@ extern "C" {
     return result;
   }
 
-  SEXP rqhmm_set_transition_params(SEXP rqhmm, SEXP state, SEXP params) {
+  void apply_fixed(Params & params, SEXP fixed) {
+    if (fixed != R_NilValue) {
+      PROTECT(fixed = AS_LOGICAL(fixed));
+      int * ptr = LOGICAL(fixed);
+      int n = length(fixed);
+
+      for (int i = 0; i < n; ++i)
+	params.setFixed(i, ptr[i] == TRUE);
+
+      UNPROTECT(1);
+    }
+  }
+
+  SEXP rqhmm_set_transition_params(SEXP rqhmm, SEXP state, SEXP params, SEXP fixed) {
     RQHMMData * data;
     SEXP ptr;
     int snum;
     int n;
     Params params_obj = Params(Rf_length(params), REAL(params));
+    apply_fixed(params_obj, fixed);
     
     /* retrieve rqhmm pointer */
     PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
@@ -602,13 +623,20 @@ extern "C" {
 
     /* convert parameters into result vector */
     if (params != NULL) {
+      SEXP fixed;
       PROTECT(result = NEW_NUMERIC(params->length()));
+      PROTECT(fixed = NEW_LOGICAL(params->length()));
 
-      for (int i = 0; i < params->length(); ++i)
+      for (int i = 0; i < params->length(); ++i) {
         REAL(result)[i] = (*params)[i];
+	LOGICAL(fixed)[i] = (params->isFixed(i) ? TRUE : FALSE);
+      }
+
+      /* store fixed status as attribute */
+      setAttrib(result, install("fixed"), fixed);
 
       delete params;
-      UNPROTECT(1);
+      UNPROTECT(2);
     }
 
     UNPROTECT(1);
@@ -616,14 +644,15 @@ extern "C" {
     return result;
   }
   
-  SEXP rqhmm_set_emission_params(SEXP rqhmm, SEXP state, SEXP slot, SEXP params) {
+  SEXP rqhmm_set_emission_params(SEXP rqhmm, SEXP state, SEXP slot, SEXP params, SEXP fixed) {
     RQHMMData * data;
     SEXP ptr;
     int snum;
     int slot_num;
     int n, m;
     Params params_obj = Params(Rf_length(params), REAL(params));
-    
+    apply_fixed(params_obj, fixed);
+
     /* retrieve rqhmm pointer */
     PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
     if (ptr == R_NilValue)
