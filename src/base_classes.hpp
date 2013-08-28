@@ -72,7 +72,7 @@ protected:
   const int _slotID;
 };
 
-class MissingEmissionFunction : EmissionFunction {
+class MissingEmissionFunction : public EmissionFunction {
   public:
   MissingEmissionFunction(EmissionFunction * func) : EmissionFunction(func->stateID(), func->slotID()), _func(func) {}
     ~MissingEmissionFunction() { // TODO: review memory management responsabilities

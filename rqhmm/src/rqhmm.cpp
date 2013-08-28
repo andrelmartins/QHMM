@@ -53,6 +53,7 @@ public:
     }
     
     this->n_states = n_states;
+    this->supports_missing = false;
   }
   
   ~RQHMMData() {
@@ -132,6 +133,7 @@ public:
   HMM * hmm;
   double * init_log_probs;
   int n_states;
+  bool supports_missing;
 };
 
 FuncEntry * get_entry(std::vector<FuncEntry*> & table, const char * name) {
@@ -192,12 +194,13 @@ void process_transition_groups(TransitionTable * ttable, SEXP groups) {
 }
 
 template<typename EType>
-RQHMMData * _create_hmm_transitions(SEXP data_shape, EType * emissions, SEXP valid_transitions, SEXP transitions, SEXP transition_groups) {
+RQHMMData * _create_hmm_transitions(SEXP data_shape, EType * emissions, SEXP valid_transitions, SEXP transitions, SEXP transition_groups, bool with_missing) {
   /* make choice about transition table */
   int n_states = Rf_length(transitions);
   bool needs_covars = false;
   RQHMMData * data = new RQHMMData(n_states, data_shape);
-    
+  data->supports_missing = with_missing;
+  
   /* first pass: check if any transition function needs covars */
   for (int i = 0; i < n_states; ++i) {
     const char * tfunc_name = CHAR(STRING_ELT(transitions, i));
@@ -230,11 +233,12 @@ RQHMMData * _create_hmm_transitions(SEXP data_shape, EType * emissions, SEXP val
   return data;
 }
 
-RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transitions, SEXP emissions, SEXP transition_groups, SEXP emission_groups) {
+RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transitions, SEXP emissions, SEXP transition_groups, SEXP emission_groups, SEXP support_missing) {
   /* make choice about emission table */
   SEXP emission_shape = VECTOR_ELT(data_shape, 0);
   int n_emissions = Rf_length(emission_shape);
   int n_states = Rf_length(transitions);
+  bool with_missing = support_missing != R_NilValue && LOGICAL(support_missing)[0] == TRUE;
   
   if (n_emissions == 1) {
     Emissions * etable = new Emissions(n_states);
@@ -243,7 +247,7 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
     for (int i = 0; i < n_states; ++i) {
       const char * efunc_name = CHAR(STRING_ELT(VECTOR_ELT(emissions, i), 0));
       FuncEntry * efunc = get_entry(__emissions, efunc_name);
-      etable->insert(efunc->create_emission_instance(i, 0, dim));
+      etable->insert(efunc->create_emission_instance(i, 0, dim, with_missing));
     }
     
     // process emission groups
@@ -260,7 +264,7 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
     }
     etable->commitGroups(); // turn remaining singletons into unitary groups
     
-    return _create_hmm_transitions(data_shape, etable, valid_transitions, transitions, transition_groups);
+    return _create_hmm_transitions(data_shape, etable, valid_transitions, transitions, transition_groups, with_missing);
   } else {
     MultiEmissions * etable = new MultiEmissions(n_states, n_emissions);
     
@@ -272,7 +276,7 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
         int dim = INTEGER(emission_shape)[j];
         const char * efunc_name = CHAR(STRING_ELT(emissions_i, j));
         FuncEntry * efunc = get_entry(__emissions, efunc_name);
-        funcs_i.push_back(efunc->create_emission_instance(i, j, dim));
+        funcs_i.push_back(efunc->create_emission_instance(i, j, dim, with_missing));
       }
       
       etable->insert(funcs_i);
@@ -293,7 +297,7 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
     }
     etable->commitGroups(); // turn remaining singletons into unitary groups
     
-    return _create_hmm_transitions(data_shape, etable, valid_transitions, transitions, transition_groups);
+    return _create_hmm_transitions(data_shape, etable, valid_transitions, transitions, transition_groups, with_missing);
   }
 }
 
@@ -389,8 +393,8 @@ extern "C" {
   }
   
   // TODO: add support for missing data
-  SEXP rqhmm_create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transitions, SEXP emissions, SEXP emission_groups, SEXP transition_groups) {
-    RQHMMData * data = _create_hmm(data_shape, valid_transitions, transitions, emissions, transition_groups, emission_groups);
+  SEXP rqhmm_create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transitions, SEXP emissions, SEXP emission_groups, SEXP transition_groups, SEXP support_missing) {
+    RQHMMData * data = _create_hmm(data_shape, valid_transitions, transitions, emissions, transition_groups, emission_groups, support_missing);
     SEXP ans;
     SEXP ptr;
     SEXP n_states;
