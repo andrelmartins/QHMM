@@ -39,6 +39,16 @@ double HMM::em(std::vector<Iter*> & iters, double tolerance) {
       
       head->updateParams(sequences, &group_i);
     }
+
+    /* - transition functions */
+    std::vector<std::vector<TransitionFunction*> > tgroups = transition_groups();
+    std::vector<std::vector<TransitionFunction*> >::iterator tit;
+    for (tit = tgroups.begin(); tit != tgroups.end(); ++tit) {
+      std::vector<TransitionFunction*> group_i = *tit;
+      TransitionFunction * head = group_i[0];
+      
+      head->updateParams(sequences, &group_i);
+    }
     
     /* */
     prev_loglik = cur_loglik;

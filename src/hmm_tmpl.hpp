@@ -23,6 +23,10 @@ class HMMImpl : public HMM {
     virtual const std::vector<std::vector<EmissionFunction*> > & emission_groups() const {
       return _logEkb->groups();
     }
+
+    virtual const std::vector<std::vector<TransitionFunction*> > & transition_groups() const {
+      return _logAkl->groups();
+    }
   
   public:
     HMMImpl(InnerFwd innerFwd, InnerBck innerBck, FuncAkl logAkl, FuncEkb logEkb, double * init_log_probs) : _n_states(logAkl->n_states()), _logAkl(logAkl), _logEkb(logEkb), _innerFwd(innerFwd), _innerBck(innerBck), _init_log_probs(init_log_probs) { }

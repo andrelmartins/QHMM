@@ -176,8 +176,23 @@ void fill_transitions(TType * ttable, int n_states, SEXP valid_transitions, SEXP
   }
 }
 
+void process_transition_groups(TransitionTable * ttable, SEXP groups) {
+  if (groups != R_NilValue) {
+    int n_groups = Rf_length(groups);
+      
+    for (int i = 0; i < n_groups; ++i) {
+      SEXP group_i = VECTOR_ELT(groups, i);
+      int * igrp = INTEGER(group_i);
+      int grp_len = Rf_length(group_i);
+      
+      ttable->makeGroup(igrp, grp_len);
+    }
+  }
+  ttable->commitGroups(); // turn remaining singletons into unitary groups
+}
+
 template<typename EType>
-RQHMMData * _create_hmm_transitions(SEXP data_shape, EType * emissions, SEXP valid_transitions, SEXP transitions) {
+RQHMMData * _create_hmm_transitions(SEXP data_shape, EType * emissions, SEXP valid_transitions, SEXP transitions, SEXP transition_groups) {
   /* make choice about transition table */
   int n_states = Rf_length(transitions);
   bool needs_covars = false;
@@ -199,6 +214,7 @@ RQHMMData * _create_hmm_transitions(SEXP data_shape, EType * emissions, SEXP val
     NonHomogeneousTransitions * ttable = new NonHomogeneousTransitions(n_states);
     
     fill_transitions(ttable, n_states, valid_transitions, transitions);
+    process_transition_groups(ttable, transition_groups); 
     
     data->hmm = HMM::create(ttable, emissions, data->init_log_probs);
   } else {
@@ -206,6 +222,7 @@ RQHMMData * _create_hmm_transitions(SEXP data_shape, EType * emissions, SEXP val
     
     fill_transitions(ttable, n_states, valid_transitions, transitions);
     ttable->updateTransitions(); // default initialization ...
+    process_transition_groups(ttable, transition_groups);
     
     data->hmm = HMM::create(ttable, emissions, data->init_log_probs);
   }
@@ -213,7 +230,7 @@ RQHMMData * _create_hmm_transitions(SEXP data_shape, EType * emissions, SEXP val
   return data;
 }
 
-RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transitions, SEXP emissions, SEXP emission_groups) {
+RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transitions, SEXP emissions, SEXP transition_groups, SEXP emission_groups) {
   /* make choice about emission table */
   SEXP emission_shape = VECTOR_ELT(data_shape, 0);
   int n_emissions = Rf_length(emission_shape);
@@ -243,7 +260,7 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
     }
     etable->commitGroups(); // turn remaining singletons into unitary groups
     
-    return _create_hmm_transitions(data_shape, etable, valid_transitions, transitions);
+    return _create_hmm_transitions(data_shape, etable, valid_transitions, transitions, transition_groups);
   } else {
     MultiEmissions * etable = new MultiEmissions(n_states, n_emissions);
     
@@ -276,7 +293,7 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
     }
     etable->commitGroups(); // turn remaining singletons into unitary groups
     
-    return _create_hmm_transitions(data_shape, etable, valid_transitions, transitions);
+    return _create_hmm_transitions(data_shape, etable, valid_transitions, transitions, transition_groups);
   }
 }
 
@@ -373,7 +390,7 @@ extern "C" {
   
   // TODO: add support for missing data
   SEXP rqhmm_create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transitions, SEXP emissions, SEXP emission_groups, SEXP transition_groups) {
-    RQHMMData * data = _create_hmm(data_shape, valid_transitions, transitions, emissions, emission_groups);
+    RQHMMData * data = _create_hmm(data_shape, valid_transitions, transitions, emissions, transition_groups, emission_groups);
     SEXP ans;
     SEXP ptr;
     SEXP n_states;
