@@ -328,7 +328,7 @@ class Poisson : public EmissionFunction {
           Iter & iter = post_it->iter();
           iter.resetFirst();
           
-          for (int j = 0; iter.next(); ++j) {
+          for (int j = 0; j < iter.length(); iter.next(), ++j) {
             int x = (int) iter.emission(ef->_slotID);
             
             sum_Pzi += post_j[j];

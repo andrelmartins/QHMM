@@ -76,7 +76,7 @@ public:
         Iter & iter = post_it->iter();
         iter.resetFirst();
         
-        for (int j = 0; iter.next(); ++j) {
+        for (int j = 0; j < iter.length(); iter.next(), ++j) {
           int symbol = (int) iter.emission(ef->_slotID) - _offset;
           
           expected_counts[symbol] += post_j[j];
