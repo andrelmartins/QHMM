@@ -2,6 +2,7 @@
 #include "em_base.hpp"
 #include <limits>
 #include <cstdio>
+#include <cmath>
 
 double HMM::em(std::vector<Iter*> & iters, double tolerance) {
   int iter_count = 0;
@@ -52,6 +53,16 @@ double HMM::em(std::vector<Iter*> & iters, double tolerance) {
     
     /* */
     prev_loglik = cur_loglik;
+    
+    /* check things went ok */
+    if (prev_loglik == -std::numeric_limits<double>::infinity()) {
+      printf("-Inf log likelihood! Aborted!\n");
+      break;
+    }
+    if (std::isnan(prev_loglik)) {
+      printf("NaN log likelihood! Aborted!\n");
+      break;
+    }
   }
 
   /* clean up */
