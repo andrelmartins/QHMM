@@ -170,7 +170,7 @@ void fill_transitions(TType * ttable, int n_states, SEXP valid_transitions, SEXP
     
     targets = create_target_vector(row, n_states, n_targets);
     
-    ttable->insert(tfunc->create_transition_instance(n_states, n_targets, targets));
+    ttable->insert(tfunc->create_transition_instance(n_states, i, n_targets, targets));
     
     delete[] targets;
   }

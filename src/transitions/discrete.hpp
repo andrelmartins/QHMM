@@ -8,7 +8,7 @@
 
 class Discrete : public TransitionFunction {
 public:
-  Discrete(int n_states, int n_targets, int * targets) : TransitionFunction(n_states, n_targets, targets) {
+  Discrete(int n_states, int stateID, int n_targets, int * targets) : TransitionFunction(n_states, stateID, n_targets, targets) {
 
     _log_probs = new double[n_states];
 

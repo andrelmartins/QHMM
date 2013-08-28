@@ -5,7 +5,7 @@
 #include <cmath>
 #include <limits>
 #include "../base_classes.hpp"
-
+#include "../em_base.hpp"
 
 // Simple Auto-correlation transition function
 //
@@ -13,7 +13,9 @@
 class AutoCorr : public TransitionFunction {
   public:
     // first target in `targets` must the source state
-  AutoCorr(int n_states, int n_targets, int * targets, double alpha = 0.5) : TransitionFunction(n_states, n_targets, targets) {
+    AutoCorr(int n_states, int stateID, int n_targets, int * targets, double alpha = 0.5) : TransitionFunction(n_states, stateID, n_targets, targets) {
+      
+      assert(stateID == _targets[0]);
       _log_probs = new double[n_states];
 
       update_log_probs(alpha);
@@ -28,7 +30,7 @@ class AutoCorr : public TransitionFunction {
     }
   
     virtual Params * getParams() const {
-      double alpha = exp(_log_probs[_targets[0]]);
+      double alpha = exp(_log_probs[_stateID]);
       return new Params(1, &alpha);
     }
 
@@ -106,7 +108,7 @@ class AutoCorr : public TransitionFunction {
 class AutoCorrCovar : public TransitionFunction {
   public:
     // first target in `targets` must the source state
-  AutoCorrCovar(int n_states, int n_targets, int * targets, int covar_slot = 0) : TransitionFunction(n_states, n_targets, targets), _covar_slot(covar_slot), _log_base(log(n_targets - 1)) {
+  AutoCorrCovar(int n_states, int stateID, int n_targets, int * targets, int covar_slot = 0) : TransitionFunction(n_states, stateID, n_targets, targets), _covar_slot(covar_slot), _log_base(log(n_targets - 1)) {
       _valid_states = new bool[n_states];
       
       // set all to false

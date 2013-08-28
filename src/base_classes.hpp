@@ -16,15 +16,20 @@ bool inline same_probability(double a, double b) {
 
 class TransitionFunction {
 public:
-  TransitionFunction(int n_states, int n_targets, int * targets) : _stateID(targets[0]), _n_states(n_states), _n_targets(n_targets) {
-    _targets = new int[_n_states];
+  TransitionFunction(int n_states, int stateID, int n_targets, int * targets) : _stateID(stateID), _n_states(n_states), _n_targets(n_targets) {
+    if (n_targets == 0)
+      _targets = NULL;
+    else {
+      _targets = new int[_n_states];
     
-    for (int i = 0; i < _n_targets; ++i)
-      _targets[i] = targets[i];
+      for (int i = 0; i < _n_targets; ++i)
+	_targets[i] = targets[i];
+    }
   }
 
   virtual ~TransitionFunction() {
-    delete[] _targets;
+    if (_targets != NULL)
+      delete[] _targets;
   }
 
   virtual bool validParams(Params const & params) const { return true; }
