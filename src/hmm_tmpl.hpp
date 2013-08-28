@@ -254,6 +254,27 @@ class HMMImpl : public HMM {
 	result[i] = logsum->compute();
       }
     }
+
+    void transition_posterior(Iter & iter_at_target, const double * const fw, const double * const bk, double loglik, int n_src, const int * const src, int n_tgt, double * result) const {
+
+      int index_tgt = iter_at_target.index();
+      const double * const fw_src = fw + _n_states * (index_tgt - 1);
+      const double * const bk_tgt = bk + _n_states * index_tgt;
+      double * rptr = result;
+
+      for (int isrc = 0; isrc < n_src; ++isrc) {
+	int k = src[isrc];
+	const int * const tgt = _logAkl->function(k)->targets();
+      
+	for (int itgt = 0; itgt < n_tgt; ++itgt, ++rptr) {
+	  int l = tgt[itgt];
+	  double log_emission = (*_logEkb)(iter_at_target, l);
+	  double log_trans = (*_logAkl)(iter_at_target, k, l);
+
+	  *rptr = exp(fw_src[k] + log_trans + log_emission + bk_tgt[l] - loglik);
+	}
+      }
+    }
 };
 
 // auxiliary function to enable type inference

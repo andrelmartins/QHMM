@@ -77,6 +77,11 @@ class FunctionTable {
     }
   
     int n_states() const { return _n_states; }
+
+    const T * function(int index) {
+      assert(index >= 0 && index < _n_states);
+      return _funcs[index];
+    }
 };
 
 class TransitionTable : public FunctionTable<TransitionFunction> {
