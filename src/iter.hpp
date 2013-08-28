@@ -18,12 +18,14 @@ class Iter {
       _emission_ptr = _emission_start;
       _covar_ptr = _covar_start;
       _missing_ptr = _missing_start;
+      _index = 0;
     }
     
     void resetLast() {
       _emission_ptr = _emission_end;
       _covar_ptr = _covar_end;
       _missing_ptr = _missing_end;
+      _index = _length - 1;
     }
     
     bool next() {
@@ -32,6 +34,7 @@ class Iter {
       _emission_ptr += _emission_step;
       _covar_ptr += _covar_step;
       _missing_ptr += _missing_step;
+      ++_index;
       return true;
     }
     
@@ -41,6 +44,7 @@ class Iter {
       _emission_ptr -= _emission_step;
       _covar_ptr -= _covar_step;
       _missing_ptr -= _missing_step;
+      --_index;
       return true;
     }
         
@@ -70,6 +74,8 @@ class Iter {
     }
     
     int length() const { return _length; }
+
+    int index() const { return _index; }
   
     bool is_missing(int slot) const {
       if (_missing_ptr == NULL)
@@ -97,6 +103,7 @@ class Iter {
     bool _is_subiterator;
     int _offset;
     int _length;
+    int _index;
   
     int _emission_slot_count;
     double * _emission_ptr;

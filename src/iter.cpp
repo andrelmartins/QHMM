@@ -10,6 +10,7 @@ Iter::Iter(int length, int emission_slots, int * e_slot_dim, double * emissions,
   _is_subiterator = false;
   _offset = 0;
   _length = length;
+  _index = 0;
   _emission_slot_count = emission_slots;
   _covar_slot_count = covar_slots;
   
@@ -49,6 +50,7 @@ Iter::~Iter() {
 Iter::Iter(Iter * parent, int start, int end) : _is_subiterator(true), _missing_ptr(NULL), _missing_start(NULL), _missing_end(NULL), _missing_step(0) {
   // set length
   _length = end - start + 1;
+  _index = 0;
   _offset = start;
   
   // copy shared information
