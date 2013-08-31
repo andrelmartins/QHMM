@@ -208,7 +208,7 @@ em.qhmm <- function(hmm, emission.lst, covar.lst = NULL, missing.lst = NULL, tol
   }
   
   # do the actual call
-  .Call(rqhmm_em, hmm, emission.lst, covar.lst, missing, tolerance)
+  .Call(rqhmm_em, hmm, emission.lst, covar.lst, missing.lst, tolerance)
 }
 
 emission.test.qhmm <- function(emission.name, emission.params, values, covars = NULL) {
