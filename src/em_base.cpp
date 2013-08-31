@@ -64,11 +64,7 @@ void EMSequence::update_posterior() {
   }
 }
 
-PostIter * EMSequence::transition_iterator(std::vector<TransitionFunction*> & group) {
-  return new PostIter(_forward, _backward, local_loglik(), group, _hmm, *_iter);
-}
-
-double * EMSequence::local_loglik() {
+const double * EMSequence::local_loglik() {
   if (_local_loglik_dirty) {
     if (_local_loglik == NULL)
       _local_loglik = new double[_iter->length()];

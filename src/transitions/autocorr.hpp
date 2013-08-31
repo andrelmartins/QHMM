@@ -51,34 +51,29 @@ class AutoCorr : public TransitionFunction {
     double expected_self_count = 0;
     double expected_total_count = 0;
 
-    EMSequences::PosteriorTransitionIterators * siter = sequences->transition_iterators(*group);
+    TransitionPosteriorIterator * piter = sequences->transition_iterator(*group);
 
     // sum expected counts
     do {
-      PostIter & piter = siter->iter();
-
-      piter.reset();
-      do {
-	for (unsigned int gidx = 0; gidx < group->size(); ++gidx) {
-	  expected_self_count += piter.posterior(gidx, 0);
-
-	  for (int tgt_idx = 1; tgt_idx < _n_targets; ++tgt_idx)
-	    expected_total_count += piter.posterior(gidx, tgt_idx);
-	}
-      } while (piter.next());
-    } while (siter->next());
-
+      for (unsigned int gidx = 0; gidx < group->size(); ++gidx) {
+        expected_self_count += piter->posterior(gidx, 0);
+        
+        for (int tgt_idx = 1; tgt_idx < _n_targets; ++tgt_idx)
+          expected_total_count += piter->posterior(gidx, tgt_idx);
+      }
+    } while (piter->next());
+    
     // estimate parameters
     double alpha = expected_self_count / expected_total_count;
     
     std::vector<TransitionFunction*>::iterator tf_it;
     for (tf_it = group->begin(); tf_it != group->end(); ++tf_it) {
       AutoCorr * tf = (AutoCorr*) *tf_it;
-
+      
       tf->update_log_probs(alpha);
     }
-
-    delete siter;
+    
+    delete piter;
   }
 
     
