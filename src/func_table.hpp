@@ -28,7 +28,7 @@ class FunctionTable {
     std::vector<std::vector<T *> > _groups;
   
   public:
-    void insert(T * func) {
+    virtual void insert(T * func) {
       assert((int) _funcs.size() < _n_states);
       _funcs.push_back(func);
       _singletons.push_back(func);
@@ -165,29 +165,18 @@ public:
       _m[i] = new double[n_states];
   }
   
-  ~HomogeneousTransitions() {
+  virtual ~HomogeneousTransitions() {
     for (int i = 0; i < _n_states; ++i)
       delete[] _m[i];
     delete[] _m;
   }
 		
-  void updateTransitions() {
-    for (int i = 0; i < _n_states; ++i) {
-      double * row = _m[i];
-      for (int j = 0; j < _n_states; ++j)
-	row[j] = _funcs[i]->log_probability(j);
-    }
-  }
-  
   virtual void setParams(int state, Params const & params) {
     FunctionTable<TransitionFunction>::setParams(state, params);
       
     /* partial update */
-    double * row = _m[state];
-    for (int j = 0; j < _n_states; ++j)
-      row[j] = _funcs[state]->log_probability(j);
+    updateRow(state);
   }
-		
   
   // TODO: Check if it's worth it to transpose this matrix, since we'll be accessing
   //       it column by columns
@@ -195,13 +184,26 @@ public:
     return _m[i][j];
   }
   
+  virtual void insert(TransitionFunction * func) {
+    TransitionTable::insert(func);
+    
+    updateRow((int) (_funcs.size() - 1));
+  }
+  
 private:
   double ** _m;
+  
+  void updateRow(int state) {
+    double * row = _m[state];
+    for (int j = 0; j < _n_states; ++j)
+      row[j] = _funcs[state]->log_probability(j);
+  }
 };
 
 class NonHomogeneousTransitions : public TransitionTable {
 public:
   NonHomogeneousTransitions(int n_states) : TransitionTable(n_states) {}
+  virtual ~NonHomogeneousTransitions() {}
   
   double operator() (Iter const & iter, int i, int j) const {
     return _funcs[i]->log_probability(iter, j);
@@ -211,6 +213,7 @@ public:
 class Emissions : public FunctionTable<EmissionFunction> {
 public:
   Emissions(int n_states) : FunctionTable<EmissionFunction>(n_states) {}
+  virtual ~Emissions() {}
   
   bool validSlotParams(int state, int slot, Params const & params) const {
     return validParams(state, params);
@@ -235,7 +238,7 @@ public:
     _funcs.reserve(n_states);
   }
   
-  ~MultiEmissions() { // TODO: review memory management responsabilities
+  virtual ~MultiEmissions() { // TODO: review memory management responsabilities
     for (unsigned int i = 0; i < _funcs.size(); ++i) {
       std::vector<EmissionFunction *> funcs_i = _funcs[i];
       

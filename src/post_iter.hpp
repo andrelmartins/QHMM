@@ -11,7 +11,7 @@ public:
 	   std::vector<TransitionFunction*> & group, HMM * hmm,
 	   Iter & iter) : _fw(forward), _bk(backward), 
 			  _local_logPx(local_loglik), _hmm(hmm),
-			  _group(group), _iter(iter) {
+        _iter(iter) {
     _group_size = group.size();
     _group_ids = new int[_group_size];
     for (unsigned int i = 0; i < _group_size; ++i)
@@ -75,7 +75,6 @@ private:
   const double * _bk;
   const double * _local_logPx;
   const HMM * _hmm;
-  const std::vector<TransitionFunction*> & _group;
   unsigned int _group_size;
   int * _group_ids;
   int _n_targets;

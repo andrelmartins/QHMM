@@ -230,15 +230,14 @@ RQHMMData * _create_hmm_transitions(SEXP data_shape, EType * emissions, SEXP val
     
     fill_transitions(ttable, n_states, valid_transitions, transitions);
     process_transition_groups(ttable, transition_groups); 
-    
+
     data->hmm = HMM::create(ttable, emissions, data->init_log_probs);
   } else {
     HomogeneousTransitions * ttable = new HomogeneousTransitions(n_states);
     
     fill_transitions(ttable, n_states, valid_transitions, transitions);
-    ttable->updateTransitions(); // default initialization ...
     process_transition_groups(ttable, transition_groups);
-    
+
     data->hmm = HMM::create(ttable, emissions, data->init_log_probs);
   }
   

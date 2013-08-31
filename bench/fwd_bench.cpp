@@ -50,7 +50,6 @@ HomogeneousTransitions * create_homogeneous_transitions(int n_states, double alp
 
     AutoCorr * state = new AutoCorr(n_states, 0, n_targets, &target, alpha);
     result->insert(state);
-    result->updateTransitions();
     return result;
   }
 
@@ -69,9 +68,6 @@ HomogeneousTransitions * create_homogeneous_transitions(int n_states, double alp
   }
 
   delete[] targets;
-
-  /* fill in cached transition table */
-  result->updateTransitions();
 
   return result;
 }
