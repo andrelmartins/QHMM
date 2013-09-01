@@ -17,7 +17,7 @@ public:
 template<typename T>
 class EmissionEntry : public FuncEntry {
 public:
-  EmissionEntry(const char * name, const char * package) : FuncEntry(name, package, false) {
+  EmissionEntry(const char * name, const char * package, const bool req_covars) : FuncEntry(name, package, req_covars) {
   }
   
   TransitionFunction * create_transition_instance(int n_states, int stateID, int n_targets, int * targets) const {

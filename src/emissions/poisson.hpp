@@ -361,7 +361,7 @@ class Poisson : public EmissionFunction {
 
 class PoissonCovar : public EmissionFunction {
   public:
-  PoissonCovar(int stateID, int slotID, int covar_slot) : EmissionFunction(stateID, slotID), _covar_slot(covar_slot) {}
+  PoissonCovar(int stateID, int slotID, int covar_slot = 0) : EmissionFunction(stateID, slotID), _covar_slot(covar_slot) {}
     
     virtual double log_probability(Iter const & iter) const {
       int x = (int) iter.emission(_slotID); // cast to integer
@@ -375,8 +375,17 @@ class PoissonCovar : public EmissionFunction {
         return x * log(lambda) - lambda - LogFactorial::logFactorial(x);
     }
   
+    virtual bool setCovarSlots(int * slots, int length) {
+      if (length != 1)
+        return false;
+      if (*slots < 0)
+        return false;
+      _covar_slot = *slots;
+      return true;
+    }
+  
   private:
-    const int _covar_slot;
+    int _covar_slot;
 };
 
 #endif

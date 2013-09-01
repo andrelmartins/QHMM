@@ -46,6 +46,10 @@ class FunctionTable {
       _funcs[state]->setParams(params);
     }
   
+    virtual bool setCovars(int state, int * idxs, int length) {
+      return _funcs[state]->setCovarSlots(idxs, length);
+    }
+  
     virtual void makeGroup(int * idxs, int length, int slot = 0) {
       std::vector<T * > group;
       
@@ -227,6 +231,10 @@ public:
     setParams(state, params);
   }
   
+  bool setSlotCovars(int state, int slot, int * idxs, int length) {
+    return setCovars(state, idxs, length);
+  }
+  
   double operator() (Iter const & iter, int i) const {
     return _funcs[i]->log_probability(iter);
   }
@@ -257,6 +265,10 @@ public:
 
   void setSlotParams(int state, int slot, Params const & params) {
     _funcs[state][slot]->setParams(params);
+  }
+  
+  virtual bool setSlotCovars(int state, int slot, int * idxs, int length) {
+    return _funcs[state][slot]->setCovarSlots(idxs, length);
   }
   
   void insert(std::vector<EmissionFunction *> funcs) {

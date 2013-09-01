@@ -69,6 +69,14 @@ class HMMImpl : public HMM {
         _init_log_probs[i] = log(probs[i]);
     }
   
+    virtual bool set_transition_covars(int state, int * idxs, int length) {
+      return _logAkl->setCovars(state, idxs, length);
+    }
+  
+    virtual bool set_emission_covars(int state, int slot, int * idxs, int length) {
+      return _logEkb->setSlotCovars(state, slot, idxs, length);
+    }
+  
     double forward(Iter & iter, double * matrix) {
       double * m_col, * m_col_prev;
       LogSum * logsum = LogSum::create(_n_states);

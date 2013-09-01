@@ -125,9 +125,9 @@ public:
       SEXP missing_i = R_NilValue;
 
       if (covar_list != R_NilValue)
-	covar_i = VECTOR_ELT(covar_list, i);
+        covar_i = VECTOR_ELT(covar_list, i);
       if (missing_list != R_NilValue)
-	missing_i = VECTOR_ELT(missing_list, i);
+        missing_i = VECTOR_ELT(missing_list, i);
 
       iter_i = create_iterator(VECTOR_ELT(emission_list, i), covar_i, missing_i);
 	
@@ -135,7 +135,42 @@ public:
     }
 
   }
+  
+  int * valid_covar_slots_copy(int * slots, int length) {
+    if (covar_slots == 0)
+      error("this hmm does not have any covariates!");
+    
+    int * shifted_copy = new int[length];
+    
+    for (int i = 0; i < length; ++i) {
+      shifted_copy[i] = slots[i] - 1;
+      if (shifted_copy[i] >= covar_slots) {
+        delete shifted_copy;
+        error("invalid covar slot[%d]: %d > %d", i + 1, slots[i], covar_slots);
+      }
+    }
+    
+    return shifted_copy;
+  }
 
+  void set_transition_covars(int state, int * idxs, int length) {
+    int * shifted_copy = valid_covar_slots_copy(idxs, length);
+    
+    bool result = hmm->set_transition_covars(state, shifted_copy, length);
+    delete shifted_copy;
+    if (!result)
+      error("covar slots not valid for state: %d", state + 1);
+  }
+  
+  void set_emission_covars(int state, int slot, int * idxs, int length) {
+    int * shifted_copy = valid_covar_slots_copy(idxs, length);
+    
+    bool result = hmm->set_emission_covars(state, slot, shifted_copy, length);
+    delete shifted_copy;
+    if (!result)
+      error("covar slots not valid for state: %d [slot: %d]", state + 1, slot + 1);
+  }
+  
   int emission_size;
   int emission_slots;
   int * e_slot_dim;
@@ -549,7 +584,7 @@ extern "C" {
 
       for (int i = 0; i < params->length(); ++i) {
         REAL(result)[i] = (*params)[i];
-	LOGICAL(fixed)[i] = (params->isFixed(i) ? TRUE : FALSE);
+        LOGICAL(fixed)[i] = (params->isFixed(i) ? TRUE : FALSE);
       }
 
       /* store fixed status as attribute */
@@ -571,7 +606,7 @@ extern "C" {
       int n = length(fixed);
 
       for (int i = 0; i < n; ++i)
-	params.setFixed(i, ptr[i] == TRUE);
+        params.setFixed(i, ptr[i] == TRUE);
 
       UNPROTECT(1);
     }
@@ -644,7 +679,7 @@ extern "C" {
 
       for (int i = 0; i < params->length(); ++i) {
         REAL(result)[i] = (*params)[i];
-	LOGICAL(fixed)[i] = (params->isFixed(i) ? TRUE : FALSE);
+        LOGICAL(fixed)[i] = (params->isFixed(i) ? TRUE : FALSE);
       }
 
       /* store fixed status as attribute */
@@ -699,6 +734,67 @@ extern "C" {
     
     UNPROTECT(1);
 
+    return R_NilValue;
+  }
+  
+  SEXP rqhmm_set_transition_covars(SEXP rqhmm, SEXP state, SEXP covarIdxs) {
+    RQHMMData * data;
+    SEXP ptr;
+    int snum;
+    int n;
+    
+    /* retrieve rqhmm pointer */
+    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
+    if (ptr == R_NilValue)
+      error("invalid rqhmm object");
+    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+    
+    n = Rf_length(state); /* allow setting multiple states to the same covar values */
+    for (int i = 0; i < n; ++i) {
+      snum = INTEGER(state)[i] - 1;
+      
+      if (snum < 0 || snum >= data->n_states)
+        error("invalid state number: %d", INTEGER(state)[i]);
+      
+      data->set_transition_covars(snum, INTEGER(covarIdxs), Rf_length(covarIdxs));
+    }
+  
+    UNPROTECT(1);
+  
+    return R_NilValue;
+  }
+  
+  SEXP rqhmm_set_emission_covars(SEXP rqhmm, SEXP state, SEXP slot, SEXP covarIdxs) {
+    RQHMMData * data;
+    SEXP ptr;
+    int snum;
+    int slot_num;
+    int n, m;
+    
+    /* retrieve rqhmm pointer */
+    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
+    if (ptr == R_NilValue)
+      error("invalid rqhmm object");
+    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+
+    n = Rf_length(state); /* allow setting multiple states to the same covar values */
+    m = Rf_length(slot);
+    for (int i = 0; i < n; ++i) {
+      snum = INTEGER(state)[i] - 1;
+      
+      if (snum < 0 || snum >= data->n_states)
+        error("invalid state number: %d", INTEGER(state)[i]);
+      
+      for (int j = 0; j < m; ++j) {
+        slot_num = INTEGER(slot)[j] - 1;
+        
+        if (slot_num < 0 || slot_num >= data->emission_slots)
+          error("invalid slot number: %d", INTEGER(slot)[j]);
+    
+        data->set_emission_covars(snum, slot_num, INTEGER(covarIdxs), Rf_length(covarIdxs));
+      }
+    }
+    
     return R_NilValue;
   }
   
@@ -825,10 +921,12 @@ extern "C" {
     // add our basic transition functions
     register_transition(new TransitionEntry<Discrete>("discrete", "rqhmm_base", false));
     register_transition(new TransitionEntry<AutoCorr>("autocorr", "rqhmm_base", false));
+    register_transition(new TransitionEntry<AutoCorrCovar>("autocorr_covar", "rqhmm_base", true));
 
     // add our basic emission functions
-    register_emission(new EmissionEntry<Poisson>("poisson", "rqhmm_base"));
-    register_emission(new EmissionEntry<DiscreteEmissions>("discrete", "rqhmm_base"));
+    register_emission(new EmissionEntry<Poisson>("poisson", "rqhmm_base", false));
+    register_emission(new EmissionEntry<PoissonCovar>("poisson", "rqhmm_base", true));
+    register_emission(new EmissionEntry<DiscreteEmissions>("discrete", "rqhmm_base", false));
   }
   
   void attr_default R_unload_rqhmm(DllInfo * info) {

@@ -133,9 +133,18 @@ class AutoCorrCovar : public TransitionFunction {
       } else
         return -std::numeric_limits<double>::infinity();
     }
-    
+
+    virtual bool setCovarSlots(int * slots, int length) {
+      if (length != 1)
+        return false;
+      if (*slots < 0)
+        return false;
+      _covar_slot = *slots;
+      return true;
+    }
+  
   private:
-    const int _covar_slot;
+    int _covar_slot;
     const double _log_base;
     bool * _valid_states;
 };

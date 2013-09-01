@@ -165,6 +165,29 @@ get.initial.probs.qhmm <- function(hmm) {
   .Call(rqhmm_get_initial_probs, hmm)
 }
 
+set.transition.covars.qhmm <- function(hmm, state, covarIdxs) {
+  covarIdxs = as.integer(covarIdxs)
+  state = as.integer(state)
+  stopifnot(length(state) > 0)
+  stopifnot(length(covarIdxs) > 0)
+  stopifnot(all(state > 0))
+  stopifnot(all(covarIdxs > 0))
+  invisible(.Call(rqhmm_set_transition_covars, hmm, state, covarIdxs))
+}
+
+set.emission.covars.qhmm <- function(hmm, state, covarIdxs, slot = 1) {
+  covarIdxs = as.integer(covarIdxs)
+  state = as.integer(state)
+  slot = as.integer(slot)
+  stopifnot(length(state) > 0)
+  stopifnot(length(slot) > 0)
+  stopifnot(length(covarIdxs) > 0)
+  stopifnot(all(state > 0))
+  stopifnot(all(slot > 0))
+  stopifnot(all(covarIdxs > 0))
+  invisible(.Call(rqhmm_set_emission_covars, hmm, state, slot, covarIdxs))
+}
+
 set.initial.probs.qhmm <- function(hmm, probs) {
   probs = as.double(probs)
   stopifnot(sum(probs) == 1)

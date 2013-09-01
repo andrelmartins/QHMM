@@ -17,6 +17,8 @@ class HMM {
     virtual Params * get_emission_params(int state, int slot) const = 0;
     virtual void set_emission_params(int state, int slot, Params const & params) = 0;
     virtual void set_initial_probs(double * probs) = 0;
+    virtual bool set_transition_covars(int state, int * idxs, int length) = 0;
+    virtual bool set_emission_covars(int state, int slot, int * idxs, int length) = 0;
   
     virtual double forward(Iter & iter, double * matrix) = 0;
     virtual double backward(Iter & iter, double * matrix) = 0;
