@@ -9,7 +9,7 @@
 
 class DiscreteEmissions : public EmissionFunction {
 public:
-  DiscreteEmissions(int stateID, int slotID, int offset = 1) : EmissionFunction(stateID, slotID), _offset(offset), _alphabetSize(0), _log_probs(NULL) {}
+  DiscreteEmissions(int stateID, int slotID, int offset = 1) : EmissionFunction(stateID, slotID), _offset(offset), _alphabetSize(0), _log_probs(NULL), _pseudoCount(0.0) {}
   ~DiscreteEmissions() {
     if (_log_probs)
       delete[] _log_probs;
@@ -52,6 +52,9 @@ public:
     if (!strcmp(name, "offset")) {
       *out_value = (double) _offset;
       return true;
+    } else if(!strcmp(name, "pseudo_count")) {
+      *out_value = _pseudoCount;
+      return true;
     }
     return false;
   }
@@ -59,6 +62,11 @@ public:
   virtual bool setOption(const char * name, double value) {
     if (!strcmp(name, "offset")) {
       _offset = (int) value;
+      return true;
+    } else if (!strcmp(name, "pseudo_count")) {
+      if (value < 0) // TODO: add warning
+	return false;
+      _pseudoCount = value;
       return true;
     }
     return false;
@@ -81,7 +89,7 @@ public:
     std::vector<EmissionFunction*>::iterator ef_it;
     
     for (int i = 0; i < _alphabetSize; ++i)
-      expected_counts[i] = 0;
+      expected_counts[i] = _pseudoCount;
     
     for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
       DiscreteEmissions * ef = (DiscreteEmissions*) *ef_it;
@@ -122,6 +130,7 @@ private:
   int _offset;
   int _alphabetSize;
   double * _log_probs;
+  double _pseudoCount;
 
 };
 
