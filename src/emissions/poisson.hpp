@@ -285,19 +285,22 @@ const double LogFactorial::logFactorialTable[256] = { 0.000000000000000,
 
 class Poisson : public EmissionFunction {
   public:
-  Poisson(int stateID, int slotID, double lambda = 1.0) : EmissionFunction(stateID, slotID), _lambda(lambda), _log_lambda(log(lambda)) {}
+  Poisson(int stateID, int slotID, double lambda = 1.0) : EmissionFunction(stateID, slotID), _lambda(lambda), _log_lambda(log(lambda)), _is_fixed(false) {}
 
     virtual bool validParams(Params const & params) const {
       return params.length() == 1 && params[0] > 0;
     }
 
     virtual Params * getParams() const {
-      return new Params(1, &_lambda);
+      Params * params = new Params(1, &_lambda);
+      params->setFixed(0, _is_fixed);
+      return params;
     }
 
     virtual void setParams(Params const & params) {
       _lambda = params[0];
       _log_lambda = log(_lambda);
+      _is_fixed = params.isFixed(0);
     }
   
     virtual double log_probability(Iter const & iter) const {
@@ -312,6 +315,9 @@ class Poisson : public EmissionFunction {
     }
   
     virtual void updateParams(EMSequences * sequences, std::vector<EmissionFunction*> * group) {
+      if (_is_fixed)
+	return;
+
       // sufficient statistics are the sum of the state posteriors and the sum of the posterior times
       // the observations
       double sum_Pzi = 0;
@@ -357,6 +363,7 @@ class Poisson : public EmissionFunction {
   private:
     double _lambda;
     double _log_lambda;
+    bool _is_fixed;
 };
 
 class PoissonCovar : public EmissionFunction {
@@ -386,6 +393,153 @@ class PoissonCovar : public EmissionFunction {
   
   private:
     int _covar_slot;
+};
+
+class PoissonScaledCovar : public EmissionFunction {
+public:
+  
+  PoissonScaledCovar(int stateID, int slotID, int covar_slot = 0, double scale = 1) : EmissionFunction(stateID, slotID), _covar_slot(covar_slot), _scale(scale) {
+    _is_fixed = false;
+    _lower_bound = 0;
+    _upper_bound = std::numeric_limits<double>::infinity();
+    _pseudo_num = 0;
+    _pseudo_denom = 0;
+  }
+  
+  virtual bool validParams(Params const & params) const {
+    return params.length() == 1 && params[0] > 0;
+  }
+  
+  virtual Params * getParams() const {
+    Params * params = new Params(1, &_scale);
+    params->setFixed(0, _is_fixed);
+    return params;
+  }
+  
+  virtual void setParams(Params const & params) {
+    _scale = params[0];
+    _is_fixed = params.isFixed(0);
+  }
+  
+  virtual bool getOption(const char * name, double * out_value) {
+    if (!strcmp(name, "lower_bound")) {
+      *out_value = _lower_bound;
+      return true;
+    } else if (!strcmp(name, "upper_bound")) {
+      *out_value = _upper_bound;
+      return true;
+    } else if (!strcmp(name, "pseudo_num")) {
+      *out_value = _pseudo_num;
+      return true;
+    } else if (!strcmp(name, "pseudo_denom")) {
+      *out_value = _pseudo_denom;
+      return true;
+    }
+    return false;
+  }
+  
+  virtual bool setOption(const char * name, double value) {
+    if (!strcmp(name, "lower_bound")) {
+      if (value < 0 || value >= _upper_bound)
+	return false; // TODO: add warning message
+      _lower_bound = value;
+      return true;
+    } else if (!strcmp(name, "upper_bound")) {
+      if (value <= _lower_bound)
+	return false; // TODO: add warning message
+      _upper_bound = value;
+    } else if (!strcmp(name, "pseudo_num")) {
+      if (value < 0) // TODO: add warning message
+	return false;
+      _pseudo_num = value;
+      return true;
+    } else if (!strcmp(name, "pseudo_denom")) {
+      if (value < 0) // TODO: add warning message
+	return false;
+      _pseudo_denom =  value;
+      return true;
+    }
+    return false;
+  }
+
+  virtual double log_probability(Iter const & iter) const {
+    int x = (int) iter.emission(_slotID); // cast to integer
+    double lambda = iter.covar(_covar_slot) * _scale;
+    
+    // log prob(x) = log( lambda^x exp(-lambda) / x!)
+    //             = x log(lambda) - lambda - log(x!)
+    if (x == 0)
+      return - lambda - LogFactorial::logFactorial(x);
+    else
+      return x * log(lambda) - lambda - LogFactorial::logFactorial(x);
+  }
+  
+  virtual bool setCovarSlots(int * slots, int length) {
+    if (length != 1)
+      return false;
+    if (*slots < 0)
+      return false;
+    _covar_slot = *slots;
+    return true;
+  }
+
+  virtual void updateParams(EMSequences * sequences, std::vector<EmissionFunction*> * group) {
+    if (_is_fixed)
+      return;
+
+    // sufficient statistics are the sum of the state posteriors times the lambdas and the sum of the posterior times
+    // the observations
+    double sum_Pzi_lambda_i = 0;
+    double sum_Pzi_xi = 0;
+      
+    std::vector<EmissionFunction*>::iterator ef_it;
+    
+    for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
+      PoissonScaledCovar * ef = (PoissonScaledCovar*) *ef_it;
+      EMSequences::PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
+      
+      do {
+	const double * post_j = post_it->posterior();
+	Iter & iter = post_it->iter();
+	iter.resetFirst();
+        
+	for (int j = 0; j < iter.length(); iter.next(), ++j) {
+	  int x = (int) iter.emission(ef->_slotID);
+	  double lambda_i = iter.covar(_covar_slot);
+          
+	  sum_Pzi_lambda_i += post_j[j] * lambda_i;
+	  sum_Pzi_xi += post_j[j] * x;
+	}
+      } while (post_it->next());
+      
+      delete post_it;
+    }
+    
+    // update parameter
+    double scale = (_pseudo_num + sum_Pzi_xi) / (_pseudo_denom + sum_Pzi_lambda_i);
+
+    if (scale > _lower_bound && scale < _upper_bound) {
+      _scale = scale;
+
+      // propagate to other elements in the group
+      for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
+        PoissonScaledCovar * ef = (PoissonScaledCovar*) *ef_it;
+        
+        if (ef != this)
+          ef->_scale = _scale;
+      }
+
+    } // TODO: else print warning
+  }
+  
+private:
+  int _covar_slot;
+  double _scale;
+  double _lower_bound;
+  double _upper_bound;
+  double _pseudo_num;
+  double _pseudo_denom;
+  bool _is_fixed;
 };
 
 #endif

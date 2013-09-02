@@ -991,7 +991,8 @@ extern "C" {
 
     // add our basic emission functions
     register_emission(new EmissionEntry<Poisson>("poisson", "rqhmm_base", false));
-    register_emission(new EmissionEntry<PoissonCovar>("poisson", "rqhmm_base", true));
+    register_emission(new EmissionEntry<PoissonCovar>("poisson_covar", "rqhmm_base", true));
+    register_emission(new EmissionEntry<PoissonScaledCovar>("poisson_scaled_covar", "rqhmm_base", true));
     register_emission(new EmissionEntry<DiscreteEmissions>("discrete", "rqhmm_base", false));
   }
   
