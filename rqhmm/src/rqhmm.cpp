@@ -8,6 +8,7 @@
 #include <transitions/autocorr.hpp>
 #include <emissions/poisson.hpp>
 #include <emissions/discrete.hpp>
+#include <emissions/geometric.hpp>
 #include <hmm.hpp>
 #include <vector>
 
@@ -994,6 +995,7 @@ extern "C" {
     register_emission(new EmissionEntry<PoissonCovar>("poisson_covar", "rqhmm_base", true));
     register_emission(new EmissionEntry<PoissonScaledCovar>("poisson_scaled_covar", "rqhmm_base", true));
     register_emission(new EmissionEntry<DiscreteEmissions>("discrete", "rqhmm_base", false));
+    register_emission(new EmissionEntry<Geometric>("geometric", "rqhmm_base", false));
   }
   
   void attr_default R_unload_rqhmm(DllInfo * info) {

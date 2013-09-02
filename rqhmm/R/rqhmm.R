@@ -305,6 +305,7 @@ em.qhmm <- function(hmm, emission.lst, covar.lst = NULL, missing.lst = NULL, tol
 }
 
 emission.test.qhmm <- function(emission.name, emission.params, values, covars = NULL) {
+  values = as.numeric(values) # for now all HMMs take numeric vectors as values
   values.shape = NULL
   if (is.vector(values)) {
     values.shape = 1
