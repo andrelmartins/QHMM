@@ -31,6 +31,9 @@ public:
       probs[i] = exp(_log_probs[i]);
 
     Params * result = new Params(_alphabetSize, probs);
+    if (_is_fixed)
+      for (int i = 0; i < _alphabetSize; ++i)
+	result->setFixed(i, true);
 
     delete probs;
 
@@ -46,6 +49,8 @@ public:
 
     for (int i = 0; i < _alphabetSize; ++i)
       _log_probs[i] = log(params[i]);
+
+    _is_fixed = params.isAllFixed();
   }
   
   virtual bool getOption(const char * name, double * out_value) {
@@ -83,6 +88,9 @@ public:
   }
 
   virtual void updateParams(EMSequences * sequences, std::vector<EmissionFunction*> * group) {
+    if (_is_fixed)
+      return;
+
     // sufficient statistics are the per symbol expected counts
     double expected_counts[_alphabetSize];
     
@@ -131,6 +139,7 @@ private:
   int _alphabetSize;
   double * _log_probs;
   double _pseudoCount;
+  bool _is_fixed;
 
 };
 
