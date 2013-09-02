@@ -10,6 +10,7 @@
 #include <emissions/discrete.hpp>
 #include <emissions/geometric.hpp>
 #include <emissions/direct.hpp>
+#include <emissions/fixed.hpp>
 #include <hmm.hpp>
 #include <vector>
 
@@ -998,6 +999,7 @@ extern "C" {
     register_emission(new EmissionEntry<DiscreteEmissions>("discrete", "rqhmm_base", false));
     register_emission(new EmissionEntry<Geometric>("geometric", "rqhmm_base", false));
     register_emission(new EmissionEntry<DirectEmission>("direct", "rqhmm_base", false));
+    register_emission(new EmissionEntry<FixedEmission>("fixed", "rqhmm_base", false));
   }
   
   void attr_default R_unload_rqhmm(DllInfo * info) {
