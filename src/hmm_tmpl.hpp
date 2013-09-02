@@ -77,6 +77,22 @@ class HMMImpl : public HMM {
       return _logEkb->setSlotCovars(state, slot, idxs, length);
     }
   
+    virtual bool get_emission_option(int state, int slot, const char * name, double * out_value) {
+      return _logEkb->getSlotOption(state, slot, name, out_value);
+    }
+  
+    virtual bool set_emission_option(int state, int slot, const char * name, double value) {
+      return _logEkb->setSlotOption(state, slot, name, value);
+    }
+  
+    virtual bool get_transition_option(int state, const char * name, double * out_value) {
+      return _logAkl->getOption(state, name, out_value);
+    }
+  
+    virtual bool set_transition_option(int state, const char * name, double value) {
+      return _logAkl->setOption(state, name, value);
+    }
+  
     double forward(Iter & iter, double * matrix) {
       double * m_col, * m_col_prev;
       LogSum * logsum = LogSum::create(_n_states);

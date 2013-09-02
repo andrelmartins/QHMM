@@ -36,6 +36,9 @@ public:
   virtual Params * getParams() const { return NULL; }
   virtual void setParams(Params const & params) {};
   virtual bool setCovarSlots(int * slots, int length) { return false; } // default is no slots
+  virtual bool getOption(const char * name, double * out_value) { return false; } // no options
+  virtual bool setOption(const char * name, double value) { return false; } // no options
+  
   virtual double log_probability(int target) const = 0;
   virtual double log_probability(Iter const & iter, int target) const = 0;
 
@@ -61,6 +64,9 @@ public:
   virtual Params * getParams() const { return NULL; }
   virtual void setParams(Params const & params) {};
   virtual bool setCovarSlots(int * slots, int length) { return false; } // default is no slots
+  virtual bool getOption(const char * name, double * out_value) { return false; } // no options
+  virtual bool setOption(const char * name, double value) { return false; } // no options
+  
   virtual double log_probability(Iter const & iter) const = 0;
   virtual ~EmissionFunction() {};
 
@@ -91,6 +97,14 @@ class MissingEmissionFunction : public EmissionFunction {
   
     bool setCovarSlots(int * slots, int length) {
       return _func->setCovarSlots(slots, length);
+    }
+  
+    bool getOption(const char * name, double * out_value) {
+      return _func->getOption(name, out_value);
+    }
+  
+    bool setOption(const char * name, double value) {
+      return _func->setOption(name, value);
     }
   
     double log_probability(Iter const & iter) const {

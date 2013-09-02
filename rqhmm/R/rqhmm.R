@@ -188,6 +188,76 @@ set.emission.covars.qhmm <- function(hmm, state, covarIdxs, slot = 1) {
   invisible(.Call(rqhmm_set_emission_covars, hmm, state, slot, covarIdxs))
 }
 
+# Maybe extend this to apply function to more than one state at a time?
+#
+set.transition.option.qhmm <- function(hmm, state, optName, value) {
+  state = as.integer(state)
+  optName = as.character(optName)
+  value = as.numeric(value)
+
+  stopifnot(length(state) == 1)
+  stopifnot(all(state > 0))
+  stopifnot(length(optName) > 0)
+  if (length(optName) != length(value)) {
+    if (length(valuee) == 1)
+      value = rep(value, length(optName))
+    if (length(optName) == 1)
+      optName = rep(optName, length(value))
+    
+    stop("mismatching lengths between optName and value")
+  }
+
+  .Call(rqhmm_set_transition_option, hmm, state, optName, value)
+}
+
+get.transition.option.qhmm <- function(hmm, state, optName) {
+  state = as.integer(state)
+  optName = as.character(optName)
+
+  stopifnot(length(state) == 1)
+  stopifnot(all(state > 0))
+  stopifnot(length(optName) > 0)
+
+  .Call(rqhmm_get_transition_option, hmm, state, optName)
+}
+
+set.emission.option.qhmm <- function(hmm, state, optName, value, slot = 1) {
+  state = as.integer(state)
+  slot = as.integer(slot)
+  optName = as.character(optName)
+  value = as.numeric(value)
+  
+  stopifnot(length(state) == 1)
+  stopifnot(length(slot) == 1)
+  stopifnot(all(state > 0))
+  stopifnot(all(slot > 0))
+  stopifnot(length(optName) > 0)
+  if (length(optName) != length(value)) {
+    if (length(valuee) == 1)
+    value = rep(value, length(optName))
+    if (length(optName) == 1)
+    optName = rep(optName, length(value))
+    
+    stop("mismatching lengths between optName and value")
+  }
+  
+  .Call(rqhmm_set_emission_option, hmm, state, slot, optName, value)
+}
+
+get.emission.option.qhmm <- function(hmm, state, optName, slot = 1) {
+  state = as.integer(state)
+  slot = as.integer(slot)
+  optName = as.character(optName)
+  
+  stopifnot(length(state) == 1)
+  stopifnot(length(slot) == 1)
+  stopifnot(all(state > 0))
+  stopifnot(all(slot > 0))
+  stopifnot(length(optName) > 0)
+  
+  .Call(rqhmm_get_emission_option, hmm, state, slot, optName)
+}
+
 set.initial.probs.qhmm <- function(hmm, probs) {
   probs = as.double(probs)
   stopifnot(sum(probs) == 1)

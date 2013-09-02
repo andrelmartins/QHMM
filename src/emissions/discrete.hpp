@@ -47,6 +47,22 @@ public:
     for (int i = 0; i < _alphabetSize; ++i)
       _log_probs[i] = log(params[i]);
   }
+  
+  virtual bool getOption(const char * name, double * out_value) {
+    if (!strcmp(name, "offset")) {
+      *out_value = (double) _offset;
+      return true;
+    }
+    return false;
+  }
+  
+  virtual bool setOption(const char * name, double value) {
+    if (!strcmp(name, "offset")) {
+      _offset = (int) value;
+      return true;
+    }
+    return false;
+  }
 
   virtual double log_probability(Iter const & iter) const {
     int x = (int) iter.emission(_slotID); // cast to integer

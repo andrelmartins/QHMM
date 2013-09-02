@@ -347,6 +347,91 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
   }
 }
 
+/* utility class */
+
+class RQAux {
+private:
+  SEXP ptr;
+  int n, m;
+  int i, j;
+  int * states;
+  int * slots;
+  bool has_slot;
+  
+  void update() {
+    stateID = states[i] - 1;
+    
+    if (stateID < 0 || stateID >= data->n_states)
+      error("invalid state number: %d", states[i]);
+    
+    if (has_slot) {
+      slotID = slots[j] - 1;
+      
+      if (slotID < 0 || slotID >= data->emission_slots)
+        error("invalid slot number: %d", slots[j]);
+    }
+  }
+  
+public:
+  ~RQAux() {
+    UNPROTECT(1);
+  }
+  
+  void init(SEXP obj, SEXP states, SEXP slots) {
+    /* retrieve rqhmm pointer */
+    PROTECT(ptr = GET_ATTR(obj, install("handle_ptr")));
+    if (ptr == R_NilValue)
+      error("invalid rqhmm object");
+    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+    hmm = data->hmm;
+    
+    i = 0;
+    j = 0;
+    
+    n = Rf_length(states);
+    this->states = INTEGER(states);
+    if (slots == R_NilValue) {
+      m = 0;
+      has_slot = false;
+      this->slots = NULL;
+    } else {
+      m = Rf_length(slots);
+      has_slot = true;
+      this->slots = INTEGER(slots);
+    }
+    
+    update();
+  }
+  
+  bool is_finished() {
+    return (i == n);
+  }
+  
+  void next() {
+    if (!is_finished()) {
+      if (has_slot) {
+        ++j;
+        if (j == m) {
+          j = 0;
+          ++i;
+          
+          if (!is_finished())
+            update();
+        }
+      } else {
+        ++i;
+        if (!is_finished())
+          update();
+      }
+    }
+  }
+  
+  // properties
+  int stateID;
+  int slotID;
+  HMM * hmm;
+  RQHMMData * data;
+};
 
 extern "C" {
 #ifdef HAVE_VISIBILITY_ATTRIBUTE
@@ -559,22 +644,12 @@ extern "C" {
   }
   
   SEXP rqhmm_get_transition_params(SEXP rqhmm, SEXP state) {
-    RQHMMData * data;
-    SEXP ptr;
-    int snum;
+    RQAux aux;
     SEXP result = R_NilValue;
 
-    /* retrieve rqhmm pointer */
-    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
-    if (ptr == R_NilValue)
-      error("invalid rqhmm object");
-    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+    aux.init(rqhmm, state, R_NilValue);
 
-    snum = INTEGER(state)[0] - 1;
-    if (snum < 0 || snum >= data->n_states)
-      error("invalid state number: %d", INTEGER(state)[0]);
-
-    Params * params = data->hmm->get_transition_params(snum);
+    Params * params = aux.hmm->get_transition_params(aux.stateID);
 
     /* convert parameters into result vector */
     if (params != NULL) {
@@ -613,63 +688,32 @@ extern "C" {
   }
 
   SEXP rqhmm_set_transition_params(SEXP rqhmm, SEXP state, SEXP params, SEXP fixed) {
-    RQHMMData * data;
-    SEXP ptr;
-    int snum;
-    int n;
+    RQAux aux;
+    
+    aux.init(rqhmm, state, R_NilValue);
+    
     Params params_obj = Params(Rf_length(params), REAL(params));
     apply_fixed(params_obj, fixed);
     
-    /* retrieve rqhmm pointer */
-    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
-    if (ptr == R_NilValue)
-      error("invalid rqhmm object");
-    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
-    
-    n = Rf_length(state); /* allow setting multiple states to the same parameter values */
-    for (int i = 0; i < n; ++i) {
-      snum = INTEGER(state)[i] - 1;
-      
-      if (snum < 0 || snum >= data->n_states)
-        error("invalid state number: %d", INTEGER(state)[i]);
-    
+    for (; !aux.is_finished(); aux.next()) {
       /* check if valid */
-      bool is_valid = data->hmm->valid_transition_params(snum, params_obj);
+      bool is_valid = aux.hmm->valid_transition_params(aux.stateID, params_obj);
       if (!is_valid)
-        error("param vector not valid for state: %d", INTEGER(state)[i]);
+        error("param vector not valid for state: %d", aux.stateID + 1);
       else
-        data->hmm->set_transition_params(snum, params_obj);
+        aux.hmm->set_transition_params(aux.stateID, params_obj);
     }
-    
-    UNPROTECT(1);
 
     return R_NilValue;
   }
 
   SEXP rqhmm_get_emission_params(SEXP rqhmm, SEXP state, SEXP slot) {
-    RQHMMData * data;
-    SEXP ptr;
+    RQAux aux;
     SEXP result = R_NilValue;
-    int snum;
-    int slot_num;
+    
+    aux.init(rqhmm, state, slot);
 
-    /* retrieve rqhmm pointer */
-    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
-    if (ptr == R_NilValue)
-      error("invalid rqhmm object");
-    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
-
-    snum = INTEGER(state)[0] - 1;
-
-    if (snum < 0 || snum >= data->n_states)
-      error("invalid state number: %d", INTEGER(state)[0]);
-
-    slot_num = INTEGER(slot)[0] - 1;
-
-    if (slot_num < 0 || slot_num >= data->emission_slots)
-      error("invalid slot number: %d", INTEGER(slot)[0]);
-
-    Params * params = data->hmm->get_emission_params(snum, slot_num);
+    Params * params = aux.hmm->get_emission_params(aux.stateID, aux.slotID);
 
     /* convert parameters into result vector */
     if (params != NULL) {
@@ -689,113 +733,135 @@ extern "C" {
       UNPROTECT(2);
     }
 
-    UNPROTECT(1);
-
     return result;
   }
   
   SEXP rqhmm_set_emission_params(SEXP rqhmm, SEXP state, SEXP slot, SEXP params, SEXP fixed) {
-    RQHMMData * data;
-    SEXP ptr;
-    int snum;
-    int slot_num;
-    int n, m;
+    RQAux aux;
+    
+    aux.init(rqhmm, state, slot);
+
     Params params_obj = Params(Rf_length(params), REAL(params));
     apply_fixed(params_obj, fixed);
 
-    /* retrieve rqhmm pointer */
-    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
-    if (ptr == R_NilValue)
-      error("invalid rqhmm object");
-    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
-    
-    n = Rf_length(state); /* allow setting multiple states to the same parameter values */
-    m = Rf_length(slot);
-    for (int i = 0; i < n; ++i) {
-      snum = INTEGER(state)[i] - 1;
-      
-      if (snum < 0 || snum >= data->n_states)
-        error("invalid state number: %d", INTEGER(state)[i]);
-    
-      for (int j = 0; j < m; ++j) {
-        slot_num = INTEGER(slot)[j] - 1;
-
-        if (slot_num < 0 || slot_num >= data->emission_slots)
-          error("invalid slot number: %d", INTEGER(slot)[j]);
-        
-        /* check if valid */
-        bool is_valid = data->hmm->valid_emission_params(snum, slot_num, params_obj);
-        if (!is_valid)
-          error("param vector not valid for state: %d slot: %d", INTEGER(state)[i], INTEGER(slot)[j]);
-        else
-          data->hmm->set_emission_params(snum, slot_num, params_obj);
-      }
+    for (; !aux.is_finished(); aux.next()) {
+      /* check if valid */
+      bool is_valid = aux.hmm->valid_emission_params(aux.stateID, aux.slotID, params_obj);
+      if (!is_valid)
+        error("param vector not valid for state: %d slot: %d", aux.stateID + 1, aux.slotID + 1);
+      else
+        aux.hmm->set_emission_params(aux.stateID, aux.slotID, params_obj);
     }
-    
-    UNPROTECT(1);
 
     return R_NilValue;
   }
   
   SEXP rqhmm_set_transition_covars(SEXP rqhmm, SEXP state, SEXP covarIdxs) {
-    RQHMMData * data;
-    SEXP ptr;
-    int snum;
-    int n;
+    RQAux aux;
     
-    /* retrieve rqhmm pointer */
-    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
-    if (ptr == R_NilValue)
-      error("invalid rqhmm object");
-    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
-    
-    n = Rf_length(state); /* allow setting multiple states to the same covar values */
-    for (int i = 0; i < n; ++i) {
-      snum = INTEGER(state)[i] - 1;
-      
-      if (snum < 0 || snum >= data->n_states)
-        error("invalid state number: %d", INTEGER(state)[i]);
-      
-      data->set_transition_covars(snum, INTEGER(covarIdxs), Rf_length(covarIdxs));
-    }
-  
-    UNPROTECT(1);
-  
+    aux.init(rqhmm, state, R_NilValue);
+
+    for (; !aux.is_finished(); aux.next())
+      aux.data->set_transition_covars(aux.stateID, INTEGER(covarIdxs), Rf_length(covarIdxs));
+
     return R_NilValue;
   }
   
   SEXP rqhmm_set_emission_covars(SEXP rqhmm, SEXP state, SEXP slot, SEXP covarIdxs) {
-    RQHMMData * data;
-    SEXP ptr;
-    int snum;
-    int slot_num;
-    int n, m;
+    RQAux aux;
     
-    /* retrieve rqhmm pointer */
-    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
-    if (ptr == R_NilValue)
-      error("invalid rqhmm object");
-    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+    aux.init(rqhmm, state, slot);
 
-    n = Rf_length(state); /* allow setting multiple states to the same covar values */
-    m = Rf_length(slot);
-    for (int i = 0; i < n; ++i) {
-      snum = INTEGER(state)[i] - 1;
-      
-      if (snum < 0 || snum >= data->n_states)
-        error("invalid state number: %d", INTEGER(state)[i]);
-      
-      for (int j = 0; j < m; ++j) {
-        slot_num = INTEGER(slot)[j] - 1;
-        
-        if (slot_num < 0 || slot_num >= data->emission_slots)
-          error("invalid slot number: %d", INTEGER(slot)[j]);
-    
-        data->set_emission_covars(snum, slot_num, INTEGER(covarIdxs), Rf_length(covarIdxs));
-      }
-    }
+    for (; !aux.is_finished(); aux.next())
+      aux.data->set_emission_covars(aux.stateID, aux.slotID, INTEGER(covarIdxs), Rf_length(covarIdxs));
     
     return R_NilValue;
+  }
+  
+  SEXP rqhmm_get_transition_option(SEXP rqhmm, SEXP state, SEXP name) {
+    RQAux aux;
+    SEXP result;
+    
+    aux.init(rqhmm, state, R_NilValue);
+    
+    PROTECT(result = NEW_NUMERIC(Rf_length(name)));
+    
+    for (int i = 0; i < Rf_length(name); ++i) {
+      double value;
+      bool res = aux.hmm->get_transition_option(aux.stateID, CHAR(STRING_ELT(name, i)), &value);
+      if (res)
+        REAL(result)[i] = value;
+      else
+        REAL(result)[i] = NA_REAL;
+    }
+    
+    UNPROTECT(1);
+    
+    return result;
+  }
+  
+  SEXP rqhmm_set_transition_option(SEXP rqhmm, SEXP state, SEXP name, SEXP value) {
+    RQAux aux;
+    SEXP result;
+    
+    aux.init(rqhmm, state, R_NilValue);
+    
+    PROTECT(result = NEW_LOGICAL(Rf_length(name)));
+    
+    for (int i = 0; i < Rf_length(name); ++i) {
+      bool res = aux.hmm->set_transition_option(aux.stateID, CHAR(STRING_ELT(name, i)), REAL(value)[i]);
+      if (res)
+        LOGICAL(result)[i] = TRUE;
+      else
+        LOGICAL(result)[i] = FALSE;
+    }
+    
+    UNPROTECT(1);
+    
+    return result;
+  }
+
+  SEXP rqhmm_get_emission_option(SEXP rqhmm, SEXP state, SEXP slot, SEXP name) {
+    RQAux aux;
+    SEXP result;
+    
+    aux.init(rqhmm, state, slot);
+    
+    PROTECT(result = NEW_NUMERIC(Rf_length(name)));
+    
+    for (int i = 0; i < Rf_length(name); ++i) {
+      double value;
+      bool res = aux.hmm->get_emission_option(aux.stateID, aux.slotID, CHAR(STRING_ELT(name, i)), &value);
+      if (res)
+        REAL(result)[i] = value;
+      else
+        REAL(result)[i] = NA_REAL;
+    }
+    
+    UNPROTECT(1);
+    
+    return result;
+  }
+  
+  SEXP rqhmm_set_emission_option(SEXP rqhmm, SEXP state, SEXP slot, SEXP name, SEXP value) {
+    RQAux aux;
+    SEXP result;
+    
+    aux.init(rqhmm, state, slot);
+    
+    PROTECT(result = NEW_LOGICAL(Rf_length(name)));
+    
+    for (int i = 0; i < Rf_length(name); ++i) {
+      bool res = aux.hmm->set_emission_option(aux.stateID, aux.slotID, CHAR(STRING_ELT(name, i)), REAL(value)[i]);
+      if (res)
+        LOGICAL(result)[i] = TRUE;
+      else
+        LOGICAL(result)[i] = FALSE;
+    }
+    
+    UNPROTECT(1);
+    
+    return result;
   }
   
   SEXP rqhmm_posterior(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing) {
