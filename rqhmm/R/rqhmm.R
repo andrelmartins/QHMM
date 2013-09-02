@@ -134,6 +134,7 @@ get.transition.params.qhmm <- function(hmm, state) {
 # actually, you can pass more than one state to set multiple states
 # to the same params
 set.transition.params.qhmm <- function(hmm, state, params, fixed = attr(params, "fixed")) {
+  fixed = as.logical(fixed) # weid R behaviour. Without this (or some function that touches the param (except the stopifnot below) the variable is not initialized
   params = as.numeric(params)
   state = as.integer(state)
   stopifnot(all(state > 0))
@@ -151,6 +152,7 @@ get.emission.params.qhmm <- function(hmm, state, slot = 1) {
 }
 
 set.emission.params.qhmm <- function(hmm, state, params, slot = 1, fixed = attr(params, "fixed")) {
+  fixed = as.logical(fixed) # weid R behaviour. Without this (or some function that touches the param (except the stopifnot below) the variable is not initialized
   params = as.numeric(params)
   state = as.integer(state)
   slot = as.integer(slot)
