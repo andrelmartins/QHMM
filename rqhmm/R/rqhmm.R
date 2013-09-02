@@ -304,7 +304,7 @@ em.qhmm <- function(hmm, emission.lst, covar.lst = NULL, missing.lst = NULL, tol
   .Call(rqhmm_em, hmm, emission.lst, covar.lst, missing.lst, tolerance)
 }
 
-emission.test.qhmm <- function(emission.name, emission.params, values, covars = NULL) {
+emission.test.qhmm <- function(emission.name, emission.params, values, covars = NULL, options = NULL) {
   values = as.numeric(values) # for now all HMMs take numeric vectors as values
   values.shape = NULL
   if (is.vector(values)) {
@@ -322,7 +322,18 @@ emission.test.qhmm <- function(emission.name, emission.params, values, covars = 
   }
   hmm <- new.qhmm(list(values.shape, covar.shape), as.matrix(1), "discrete", list(emission.name))
   set.transition.params.qhmm(hmm, 1, 1)
-  set.emission.params.qhmm(hmm, 1, emission.params)
+
+  if (!is.null(emission.params))
+    set.emission.params.qhmm(hmm, 1, emission.params)
+
+  if (!is.null(options)) {
+    stopifnot(is.list(options))
+    optNames = names(options)
+    stopifnot(!is.null(optNames))
+
+    for (optName in optNames)
+      set.emission.option.qhmm(hmm, 1, optName, options[[optName]])
+  }
   
   loglik = 0
   if (is.null(covars))
