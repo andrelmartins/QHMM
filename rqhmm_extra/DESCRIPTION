@@ -1,0 +1,14 @@
+Package: rqhmm.extra
+Type: Package
+Title: Quick Hidden Markov Model Extras package
+Version: 0.1
+Date: 2013-09-02
+Author: Andre L. Martins
+Maintainer: Andre L. Martins <alm253@cornell.edu>
+Description: Quick Hidden Markov Model Extras package
+  Extra emission and transition distribution implementations for use with
+  the RQHMM package.
+Depends: R(>= 2.4.0), rqhmm
+LinkingTo: rqhmm
+License: BSD
+NeedsCompilation: yes

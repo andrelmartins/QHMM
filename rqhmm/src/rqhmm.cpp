@@ -471,10 +471,10 @@ extern "C" {
     
     // drop transitions from package
     it = __transitions.begin();
-    while (it != __emissions.end()) {
+    while (it != __transitions.end()) {
       FuncEntry * entry = *it;
       if (!strcmp(entry->package, package))
-        it = __emissions.erase(it);
+        it = __transitions.erase(it);
       else
         ++it;
     }
