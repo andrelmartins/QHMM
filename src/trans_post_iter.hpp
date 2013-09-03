@@ -1,5 +1,5 @@
-#ifndef POST_ITER_HPP
-#define POST_ITER_HPP
+#ifndef TRANS_POST_ITER_HPP
+#define TRANS_POST_ITER_HPP
 
 #include "hmm.hpp"
 

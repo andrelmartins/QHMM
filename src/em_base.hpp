@@ -40,7 +40,7 @@ private:
   double * _local_loglik;
 };
 
-#include "post_iter.hpp"
+#include "trans_post_iter.hpp"
 
 class EMSequences {
 public:
