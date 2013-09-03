@@ -33,7 +33,7 @@ public:
     Params * result = new Params(_alphabetSize, probs);
     if (_is_fixed)
       for (int i = 0; i < _alphabetSize; ++i)
-	result->setFixed(i, true);
+        result->setFixed(i, true);
 
     delete probs;
 
@@ -70,7 +70,7 @@ public:
       return true;
     } else if (!strcmp(name, "pseudo_count")) {
       if (value < 0) // TODO: add warning
-	return false;
+        return false;
       _pseudoCount = value;
       return true;
     }
@@ -101,7 +101,7 @@ public:
     
     for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
       DiscreteEmissions * ef = (DiscreteEmissions*) *ef_it;
-      EMSequences::PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
+      PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
 
       do {
         const double * post_j = post_it->posterior();

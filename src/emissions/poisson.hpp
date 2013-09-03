@@ -316,7 +316,7 @@ class Poisson : public EmissionFunction {
   
     virtual void updateParams(EMSequences * sequences, std::vector<EmissionFunction*> * group) {
       if (_is_fixed)
-	return;
+        return;
 
       // sufficient statistics are the sum of the state posteriors and the sum of the posterior times
       // the observations
@@ -327,7 +327,7 @@ class Poisson : public EmissionFunction {
       
       for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
         Poisson * ef = (Poisson*) *ef_it;
-        EMSequences::PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
+        PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
         
         do {
           const double * post_j = post_it->posterior();
@@ -441,21 +441,21 @@ public:
   virtual bool setOption(const char * name, double value) {
     if (!strcmp(name, "lower_bound")) {
       if (value < 0 || value >= _upper_bound)
-	return false; // TODO: add warning message
+        return false; // TODO: add warning message
       _lower_bound = value;
       return true;
     } else if (!strcmp(name, "upper_bound")) {
       if (value <= _lower_bound)
-	return false; // TODO: add warning message
+        return false; // TODO: add warning message
       _upper_bound = value;
     } else if (!strcmp(name, "pseudo_num")) {
       if (value < 0) // TODO: add warning message
-	return false;
+        return false;
       _pseudo_num = value;
       return true;
     } else if (!strcmp(name, "pseudo_denom")) {
       if (value < 0) // TODO: add warning message
-	return false;
+        return false;
       _pseudo_denom =  value;
       return true;
     }
@@ -496,20 +496,20 @@ public:
     
     for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
       PoissonScaledCovar * ef = (PoissonScaledCovar*) *ef_it;
-      EMSequences::PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
+      PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
       
       do {
-	const double * post_j = post_it->posterior();
-	Iter & iter = post_it->iter();
-	iter.resetFirst();
+        const double * post_j = post_it->posterior();
+        Iter & iter = post_it->iter();
+        iter.resetFirst();
         
-	for (int j = 0; j < iter.length(); iter.next(), ++j) {
-	  int x = (int) iter.emission(ef->_slotID);
-	  double lambda_i = iter.covar(_covar_slot);
+        for (int j = 0; j < iter.length(); iter.next(), ++j) {
+          int x = (int) iter.emission(ef->_slotID);
+          double lambda_i = iter.covar(_covar_slot);
           
-	  sum_Pzi_lambda_i += post_j[j] * lambda_i;
-	  sum_Pzi_xi += post_j[j] * x;
-	}
+          sum_Pzi_lambda_i += post_j[j] * lambda_i;
+          sum_Pzi_xi += post_j[j] * x;
+        }
       } while (post_it->next());
       
       delete post_it;

@@ -65,19 +65,19 @@ public:
       
     for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
       Geometric * ef = (Geometric*) *ef_it;
-      EMSequences::PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
+      PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
       
       do {
-	const double * post_j = post_it->posterior();
-	Iter & iter = post_it->iter();
-	iter.resetFirst();
+        const double * post_j = post_it->posterior();
+        Iter & iter = post_it->iter();
+        iter.resetFirst();
+        
+        for (int j = 0; j < iter.length(); iter.next(), ++j) {
+          int x = (int) iter.emission(ef->_slotID) - _base;
           
-	for (int j = 0; j < iter.length(); iter.next(), ++j) {
-	  int x = (int) iter.emission(ef->_slotID) - _base;
-            
-	  sum_Pzi += post_j[j];
-	  sum_Pzi_xi += post_j[j] * x;
-	}
+          sum_Pzi += post_j[j];
+          sum_Pzi_xi += post_j[j] * x;
+        }
       } while (post_it->next());
       
       delete post_it;
@@ -94,8 +94,8 @@ public:
       Geometric * ef = (Geometric*) *ef_it;
         
       if (ef != this) {
-	ef->_log_prob = _log_prob;
-	ef->_log_1_prob = _log_1_prob;
+        ef->_log_prob = _log_prob;
+        ef->_log_1_prob = _log_1_prob;
       }
     }
   }
