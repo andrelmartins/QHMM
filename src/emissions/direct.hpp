@@ -38,7 +38,7 @@ public:
       double log_prob = iter.emission(_slotID);
 
       if (_flip != 0)
-	return log(_flip - exp(log_prob));
+        return log(_flip - exp(log_prob));
       return log_prob;
     } else {
       double prob = iter.emission(_slotID);

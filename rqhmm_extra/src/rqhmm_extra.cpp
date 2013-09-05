@@ -6,6 +6,8 @@
 #include <rqhmm_stubs.cpp>
 #include <rqhmm.hpp>
 
+#include "emissions/discrete_gamma.hpp"
+
 extern "C" {
 #ifdef HAVE_VISIBILITY_ATTRIBUTE
 # define attr_hidden __attribute__ ((visibility ("hidden")))
@@ -19,6 +21,8 @@ extern "C" {
   void attr_default R_init_rqhmm_extra(DllInfo * info) {
     Rprintf("rqhmm.extra init called\n");
 
+    // add our basic emission functions
+    rqhmm_register_emission(new EmissionEntry<DiscreteGamma>("discrete_gamma", "rqhmm_extra", false));
   }
 
   void attr_default R_unload_rqhmm_extra(DllInfo * info) {
