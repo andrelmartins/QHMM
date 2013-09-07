@@ -41,23 +41,38 @@ std::vector<block_t> * path_blocks(const std::vector<int> * path, const std::vec
 std::vector<block_t> * path_blocks(const std::vector<int> * path, const std::vector<int> * start_states, const std::vector<int> * middle_states, const std::vector<int> * end_states) {
   std::vector<block_t> * result = new std::vector<block_t>();
   bool in_block = false;
+  bool seen_mid = false;
   int block_start;
   std::vector<int>::const_iterator it;
   
   for (it = path->begin(); it != path->end(); ++it) {
     if (in_block) {
-      if (is_block_state(*it, middle_states))
+      if (is_block_state(*it, middle_states)) {
+        seen_mid = true;
         continue;
+      }
       
-      if (is_block_state(*it, end_states)) {
+      if (seen_mid && is_block_state(*it, end_states)) {
         // good block
         block_t block;
         block.start = block_start;
         block.end = it - path->begin();
         result->push_back(block);
+        in_block = false;
+        seen_mid = false;
+        continue;
       }
+      
+      // restart match
+      if (is_block_state(*it, start_states)) {
+        block_start = it - path->begin();
+        seen_mid = false;
+        continue;
+      }
+      
       // mismatch
       in_block = false;
+      seen_mid = false;
     } else if (is_block_state(*it, start_states)) {
       block_start = it - path->begin();
       in_block = true;
@@ -98,8 +113,8 @@ std::vector<block_t> * path_blocks_seq(const std::vector<int> * path, const std:
       in_block = false;
       block_index = 0;
     } else if (*it == (*block_states)[0]) {
-        block_start = it - path->begin();
-        in_block = true;
+      block_start = it - path->begin();
+      in_block = true;
     }
   }
   

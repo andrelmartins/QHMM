@@ -347,3 +347,17 @@ emission.test.qhmm <- function(emission.name, emission.params, values, covars = 
   
   return(list(loglik = loglik, params = get.emission.params.qhmm(hmm, 1)))
 }
+
+path.blocks.qhmm <- function(path, states, in.sequence = FALSE) {
+  stopifnot(length(path) > 0)
+  stopifnot(length(states) > 0)
+  .Call(rqhmm_path_blocks, path, states, in.sequence)
+}
+
+path.blocks2.qhmm <- function(path, start.states, middle.states, end.states) {
+  stopifnot(length(path) > 0)
+  stopifnot(length(start.states) > 0)
+  stopifnot(length(middle.states) > 0)
+  stopifnot(length(end.states) > 0)
+  .Call(rqhmm_path_blocks_ext, path, start.states, middle.states, end.states)
+}

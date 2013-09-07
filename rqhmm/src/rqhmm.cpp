@@ -12,6 +12,7 @@
 #include <emissions/direct.hpp>
 #include <emissions/fixed.hpp>
 #include <hmm.hpp>
+#include <utils.hpp>
 #include <vector>
 
 static std::vector<FuncEntry*> __emissions;
@@ -435,6 +436,30 @@ public:
   HMM * hmm;
   RQHMMData * data;
 };
+
+
+static SEXP convert_block_vector(std::vector<block_t> * blocks) {
+  SEXP result;
+  std::vector<block_t>::iterator it;
+  int * ptr;
+  
+  if (blocks->size() == 0)
+    return R_NilValue;
+  
+  PROTECT(result = allocMatrix(INTSXP, 2, blocks->size()));
+  ptr = INTEGER(result);
+  
+  for (it = blocks->begin(); it != blocks->end(); ++it) {
+    *ptr = (*it).start + 1; // convert to one-based
+    ++ptr;
+    *ptr = (*it).end + 1; // convert to one-based
+    ++ptr;
+  }
+  
+  UNPROTECT(1);
+  return result;
+}
+
 
 extern "C" {
 #ifdef HAVE_VISIBILITY_ATTRIBUTE
@@ -976,6 +1001,49 @@ extern "C" {
     UNPROTECT(1);
 
     return R_NilValue;
+  }
+  
+  SEXP rqhmm_path_blocks(SEXP path, SEXP states, SEXP in_sequence) {
+    SEXP result;
+    PROTECT(path = AS_INTEGER(path));
+    PROTECT(states = AS_INTEGER(states));
+    PROTECT(in_sequence = AS_LOGICAL(in_sequence));
+    std::vector<block_t> * blocks;
+    std::vector<int> state_vec = std::vector<int>(INTEGER(states), INTEGER(states) + Rf_length(states));
+    std::vector<int> path_vec = std::vector<int>(INTEGER(path), INTEGER(path) + Rf_length(path));
+    
+    if (LOGICAL(in_sequence)[0] == TRUE)
+      blocks = path_blocks_seq(&path_vec, &state_vec);
+    else
+      blocks = path_blocks(&path_vec, &state_vec);
+
+    result = convert_block_vector(blocks);
+    
+    delete blocks;
+    UNPROTECT(3);
+
+    return result;
+  }
+  
+  SEXP rqhmm_path_blocks_ext(SEXP path, SEXP start_states, SEXP middle_states, SEXP end_states) {
+    SEXP result;
+    PROTECT(path = AS_INTEGER(path));
+    PROTECT(start_states = AS_INTEGER(start_states));
+    PROTECT(middle_states = AS_INTEGER(middle_states));
+    PROTECT(end_states = AS_INTEGER(end_states));
+    std::vector<block_t> * blocks;
+    std::vector<int> start_vec = std::vector<int>(INTEGER(start_states), INTEGER(start_states) + Rf_length(start_states));
+    std::vector<int> middle_vec = std::vector<int>(INTEGER(middle_states), INTEGER(middle_states) + Rf_length(middle_states));
+    std::vector<int> end_vec = std::vector<int>(INTEGER(end_states), INTEGER(end_states) + Rf_length(end_states));
+    std::vector<int> path_vec = std::vector<int>(INTEGER(path), INTEGER(path) + Rf_length(path));
+    
+    blocks = path_blocks(&path_vec, &start_vec, &middle_vec, &end_vec);
+    result = convert_block_vector(blocks);
+    delete blocks;
+    
+    UNPROTECT(4);
+    
+    return result;
   }
   
   // R Entry points
