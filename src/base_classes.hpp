@@ -14,7 +14,7 @@ bool inline same_probability(double a, double b) {
   double diff = a - b;
   if (diff < 0.0)
     diff = -diff;
-  return diff <= std::numeric_limits<double>::epsilon();
+  return diff <= 2*std::numeric_limits<double>::epsilon();
 }
 
 class TransitionFunction {
