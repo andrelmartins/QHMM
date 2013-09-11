@@ -697,8 +697,6 @@ extern "C" {
       UNPROTECT(2);
     }
 
-    UNPROTECT(1);
-
     return result;
   }
 
