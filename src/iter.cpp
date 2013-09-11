@@ -1,4 +1,5 @@
 #include "iter.hpp"
+#include <cstdio>
 
 Iter::Iter(int length, int emission_slots, int * e_slot_dim, double * emissions,
          int covar_slots, int * c_slot_dim, double * covars, int * missing) {
@@ -25,7 +26,10 @@ Iter::Iter(int length, int emission_slots, int * e_slot_dim, double * emissions,
   _emission_end = emissions + (length - 1) * _emission_step;
   
   _covar_step = 0;
-  _covar_offsets = new int[covar_slots];
+  if (covar_slots == 0)
+    _covar_offsets = NULL;
+  else
+    _covar_offsets = new int[covar_slots];
   for (int i = 0; i < covar_slots; ++i) {
     _covar_offsets[i] = _covar_step;
     _covar_step += c_slot_dim[i];
@@ -43,7 +47,8 @@ Iter::Iter(int length, int emission_slots, int * e_slot_dim, double * emissions,
 Iter::~Iter() {
   if (!_is_subiterator) {
     delete[] _emission_offsets;
-    delete[] _covar_offsets;
+    if (_covar_offsets != NULL)
+      delete[] _covar_offsets;
   }
 }
 

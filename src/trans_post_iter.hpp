@@ -22,25 +22,25 @@ public:
 
   /* implement covariate interface if needed */
   double covar(const int slot) const {
-    return _iter.covar(slot);
+    return _iter->covar(slot);
   }
     
   double covar_i(const int slot, const int i) const {
-    return _iter.covar_i(slot, i);
+    return _iter->covar_i(slot, i);
   }
   
   // offset with respect to current iterator sequence position
   double covar_ext(const int slot, const int i, const int offset) const {
-    return _iter.covar_ext(slot, i, offset);
+    return _iter->covar_ext(slot, i, offset);
   }
 
-  int length() const { return _iter.length(); }
+  int length() const { return _iter->length(); }
 
 private:
   const double * _fw;
   const double * _bk;
   const double * _local_logPx;
-  Iter & _iter;
+  Iter * _iter;
   unsigned int _group_size;
   int * _group_ids;
   int _n_targets;
