@@ -11,7 +11,10 @@
 class EMSequences;
 
 bool inline same_probability(double a, double b) {
-  return fabs(a - b) < std::numeric_limits<double>::epsilon();
+  double diff = a - b;
+  if (diff < 0.0)
+    diff = -diff;
+  return diff <= std::numeric_limits<double>::epsilon();
 }
 
 class TransitionFunction {
