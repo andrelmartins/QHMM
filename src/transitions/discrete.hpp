@@ -20,6 +20,8 @@ public:
     double log_prob = -log(_n_states);
     for (int i = 0; i < _n_targets; ++i)
       _log_probs[_targets[i]] = log_prob;
+
+    _is_fixed = false;
   }
 
   ~Discrete() {
@@ -43,6 +45,10 @@ public:
 
     Params * result = new Params(_n_targets, probs);
 
+    if (_is_fixed)
+      for (int i = 0; i < _n_targets; ++i)
+        result->setFixed(i, true);
+
     delete probs;
     return result;
   }
@@ -50,6 +56,8 @@ public:
   virtual void setParams(Params const & params) {
     for (int i = 0; i < _n_targets; ++i)
       _log_probs[_targets[i]] = log(params[i]);
+
+    _is_fixed = params.isAllFixed();
   }
   
   virtual double log_probability(int target) const {
@@ -61,6 +69,9 @@ public:
   }
 
   virtual void updateParams(EMSequences * sequences, std::vector<TransitionFunction*> * group) {
+    if (_is_fixed)
+      return;
+
     // sufficient statistics are the per target expected counts
     double expected_counts[_n_targets];
 
@@ -100,6 +111,7 @@ public:
 
 private:
   double * _log_probs;
+  bool _is_fixed;
 };
 
 #endif
