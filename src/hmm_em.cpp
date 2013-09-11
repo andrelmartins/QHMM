@@ -50,6 +50,7 @@ double HMM::em(std::vector<Iter*> & iters, double tolerance) {
       
       head->updateParams(sequences, &group_i);
     }
+    refresh_transition_table(); // refresh internal caches
     
     /* */
     prev_loglik = cur_loglik;

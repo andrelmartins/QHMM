@@ -27,6 +27,10 @@ class HMMImpl : public HMM {
     virtual const std::vector<std::vector<TransitionFunction*> > & transition_groups() const {
       return _logAkl->groups();
     }
+
+    virtual void refresh_transition_table() {
+      return _logAkl->refresh();
+    }
   
   public:
     HMMImpl(InnerFwd innerFwd, InnerBck innerBck, FuncAkl logAkl, FuncEkb logEkb, double * init_log_probs) : _n_states(logAkl->n_states()), _logAkl(logAkl), _logEkb(logEkb), _innerFwd(innerFwd), _innerBck(innerBck), _init_log_probs(init_log_probs) { }

@@ -167,6 +167,8 @@ public:
     
     return next;
   }
+
+  virtual void refresh() {}
 };  
 
 class HomogeneousTransitions : public TransitionTable {
@@ -202,6 +204,11 @@ public:
     updateRow((int) (_funcs.size() - 1));
   }
   
+  virtual void refresh() {
+    for (int i = 0; i < _n_states; ++i)
+      updateRow(i);
+  }
+
 private:
   double ** _m;
   
