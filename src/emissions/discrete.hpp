@@ -35,7 +35,7 @@ public:
       for (int i = 0; i < _alphabetSize; ++i)
         result->setFixed(i, true);
 
-    delete probs;
+    delete[] probs;
 
     return result;
   }
