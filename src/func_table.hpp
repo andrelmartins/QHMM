@@ -267,6 +267,11 @@ class MultiEmissions {
 public:
   MultiEmissions(int n_states, int n_slots) : _n_states(n_states), _n_slots(n_slots) {
     _funcs.reserve(n_states);
+    for (int i = 0; i < n_slots; ++i) {
+      std::vector<EmissionFunction *> vec;
+      vec.reserve(n_states);
+      _singletons.push_back(vec);
+    }
   }
   
   virtual ~MultiEmissions() { // TODO: review memory management responsabilities
