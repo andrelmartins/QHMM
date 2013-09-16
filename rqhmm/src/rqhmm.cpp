@@ -422,7 +422,8 @@ public:
           
           if (!is_finished())
             update();
-        }
+        } else
+	  update();
       } else {
         ++i;
         if (!is_finished())
