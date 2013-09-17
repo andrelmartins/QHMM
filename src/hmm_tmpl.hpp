@@ -102,20 +102,29 @@ class HMMImpl : public HMM {
       LogSum * logsum = LogSum::create(_n_states);
       iter.resetFirst();
     
-      /* border conditions - position i = 0
-       * f_k(0) = e_k(0) * a0k
-       * log f_k(0) = log e_k(0) + log a0k
-       */
-      m_col = matrix;
-      for (int k = 0; k < _n_states; ++k)
-        m_col[k] = (*_logEkb)(iter, k) + _init_log_probs[k];
+      try {
+	/* border conditions - position i = 0
+	 * f_k(0) = e_k(0) * a0k
+	 * log f_k(0) = log e_k(0) + log a0k
+	 */
+	m_col = matrix;
+	for (int k = 0; k < _n_states; ++k)
+	  m_col[k] = (*_logEkb)(iter, k) + _init_log_probs[k];
 
-      /* inner cells */
-      m_col_prev = m_col;
-      m_col += _n_states;
-      for (; iter.next(); m_col_prev += _n_states, m_col += _n_states) {
-        for (int l = 0; l < _n_states; ++l)
-          m_col[l] = (*_logEkb)(iter, l) + (*_innerFwd)(_n_states, m_col_prev, l, iter, _logAkl, logsum);
+	/* inner cells */
+	m_col_prev = m_col;
+	m_col += _n_states;
+	for (; iter.next(); m_col_prev += _n_states, m_col += _n_states) {
+	  for (int l = 0; l < _n_states; ++l)
+	    m_col[l] = (*_logEkb)(iter, l) + (*_innerFwd)(_n_states, m_col_prev, l, iter, _logAkl, logsum);
+	}
+	
+      } catch (QHMMException & e) {
+	// clean up
+	delete logsum;
+
+	e.stack.push_back("forward");
+	throw;
       }
       
       /* log-likelihood */
@@ -140,23 +149,31 @@ class HMMImpl : public HMM {
       for (int k = 0; k < _n_states; ++k)
         m_col[k] = 0; /* log(1) */
 
-      /* inner cells */
-      iter.resetLast();
-      m_col_next = m_col;
-      m_col -= _n_states;
-      for (; m_col >= matrix; m_col_next -= _n_states, m_col -= _n_states, iter.prev()) {
+      try {
+	/* inner cells */
+	iter.resetLast();
+	m_col_next = m_col;
+	m_col -= _n_states;
+	for (; m_col >= matrix; m_col_next -= _n_states, m_col -= _n_states, iter.prev()) {
+	  
+	  for (int k = 0; k < _n_states; ++k)
+	    m_col[k] = (*_innerBck)(_n_states, m_col_next, k, iter, _logAkl, _logEkb, logsum);
+	}
+	
+	/* log-likelihood */
+	m_col = matrix;
+	logsum->clear();
+	iter.resetFirst();
+	for (int k = 0; k < _n_states; ++k) {
+	  double value = m_col[k] + _init_log_probs[k] + (*_logEkb)(iter, k);
+	  logsum->store(value);
+	}
+      } catch (QHMMException & e) {
+	// clean up
+	delete logsum;
 
-        for (int k = 0; k < _n_states; ++k)
-          m_col[k] = (*_innerBck)(_n_states, m_col_next, k, iter, _logAkl, _logEkb, logsum);
-      }
-
-      /* log-likelihood */
-      m_col = matrix;
-      logsum->clear();
-      iter.resetFirst();
-      for (int k = 0; k < _n_states; ++k) {
-        double value = m_col[k] + _init_log_probs[k] + (*_logEkb)(iter, k);
-        logsum->store(value);
+	e.stack.push_back("backward");
+	throw;
       }
       double loglik = logsum->compute();
 
@@ -188,30 +205,40 @@ class HMMImpl : public HMM {
         AT(backptr, l, 0) = -1; /* stop */
       }
 
-      /* inner columns */
-      m_col_prev = matrix;
-      m_col = matrix + rows;
-      b_col = backptr + rows;
-      for ( ; iter.next(); m_col += rows, m_col_prev += rows, b_col += rows) {
+      try {
+	/* inner columns */
+	m_col_prev = matrix;
+	m_col = matrix + rows;
+	b_col = backptr + rows;
+	for ( ; iter.next(); m_col += rows, m_col_prev += rows, b_col += rows) {
 
-        for (int l = 0; l < _n_states; ++l) {
-          double max = -std::numeric_limits<double>::infinity();
-          int argmax = -1;
+	  for (int l = 0; l < _n_states; ++l) {
+	    double max = -std::numeric_limits<double>::infinity();
+	    int argmax = -1;
 
-          for (int k = 0; k < _n_states; ++k) {
-            double value = m_col_prev[k] + (*_logAkl)(iter, k, l);
-            
-            if (value > max) {
-              max = value;
-              argmax = k;
-            }
-          }
-
-          /* assert(argmax != -1); */
-          m_col[l] = (*_logEkb)(iter, l) + max;
-          b_col[l] = argmax;
-        }
+	    for (int k = 0; k < _n_states; ++k) {
+	      double value = m_col_prev[k] + (*_logAkl)(iter, k, l);
+	      
+	      if (value > max) {
+		max = value;
+		argmax = k;
+	      }
+	    }
+	    
+	    /* assert(argmax != -1); */
+	    m_col[l] = (*_logEkb)(iter, l) + max;
+	    b_col[l] = argmax;
+	  }
+	}
+      } catch (QHMMException & e) {
+	// clean up
+	delete[] matrix;
+	delete[] backptr;
+	
+	e.stack.push_back("viterbi");
+	throw;
       }
+      
 
       /* backtrace */
 

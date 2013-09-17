@@ -29,8 +29,15 @@ double EMSequences::updateFwBk() {
   std::vector<EMSequence*>::iterator it;
   double loglik = 0;
   
-  for (it = _em_seqs.begin(); it != _em_seqs.end(); ++it)
-    loglik += (*it)->updateFwBk();
+  for (it = _em_seqs.begin(); it != _em_seqs.end(); ++it) {
+    try {
+      loglik += (*it)->updateFwBk();
+    } catch (QHMMException & e) {
+      int seq_id = it - _em_seqs.begin();
+      e.sequence_id = seq_id;
+      throw;
+    }
+  }
   
   return loglik;
 }
