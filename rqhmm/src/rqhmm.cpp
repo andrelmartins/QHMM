@@ -469,6 +469,8 @@ static void REprint_exception(QHMMException & e) {
     REprintf("  @ position %d of sequence %d\n", e.sequence_index + 1, e.sequence_id + 1);
 
   if (!e.is_transition) {
+    if (e.sequence_index >= 0)
+      REprintf("  Iter value: %g\n", e.evalue);
     REprintf("  emission on state %d, slot %d\n", e.state + 1, e.slot + 1);
   } else {
     REprintf("  transition on state %d\n", e.state + 1);
