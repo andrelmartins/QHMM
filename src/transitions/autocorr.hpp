@@ -19,6 +19,8 @@ class AutoCorr : public TransitionFunction {
       _log_probs = new double[n_states];
 
       update_log_probs(alpha);
+
+      _is_fixed = false;
     }
     
     ~AutoCorr() {
@@ -31,11 +33,15 @@ class AutoCorr : public TransitionFunction {
   
     virtual Params * getParams() const {
       double alpha = exp(_log_probs[_stateID]);
-      return new Params(1, &alpha);
+      Params * result = new Params(1, &alpha);
+      if (_is_fixed)
+	result->setFixed(1, true);
+      return result;
     }
 
     virtual void setParams(Params const & params) {
       update_log_probs(params[0]);
+      _is_fixed = params.isAllFixed();
     }
   
     virtual double log_probability(int target) const {
@@ -47,6 +53,9 @@ class AutoCorr : public TransitionFunction {
     }
 
   virtual void updateParams(EMSequences * sequences, std::vector<TransitionFunction*> * group) {
+    if (_is_fixed)
+      return;
+
     // sufficient statistics are the self and total expected counts
     double expected_self_count = 0;
     double expected_total_count = 0;
@@ -79,6 +88,7 @@ class AutoCorr : public TransitionFunction {
     
   private:
     double * _log_probs;
+    bool _is_fixed;
   
     void update_log_probs(double alpha) {
       // set all to -Inf
