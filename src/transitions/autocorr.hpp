@@ -67,7 +67,7 @@ class AutoCorr : public TransitionFunction {
       for (unsigned int gidx = 0; gidx < group->size(); ++gidx) {
         expected_self_count += piter->posterior(gidx, 0);
         
-        for (int tgt_idx = 1; tgt_idx < _n_targets; ++tgt_idx)
+        for (int tgt_idx = 0; tgt_idx < _n_targets; ++tgt_idx)
           expected_total_count += piter->posterior(gidx, tgt_idx);
       }
     } while (piter->next());
