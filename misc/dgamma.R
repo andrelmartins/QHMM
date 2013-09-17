@@ -5,15 +5,24 @@ expDif <- function(ln_x1, ln_x2) {
     return(ln_x1 + log(1 - exp(ln_x2 - ln_x1)));
 }
 
-ddgamma <- function(x, shape = 1, scale = 2, shift = 1, offset = 0) {
+ddgamma <- function(x, shape = 1, scale = 2, shift = 1, offset = 0, lower.tail = TRUE) {
     x = x + offset
     xlow = x + (shift - 1)
     xhigh = x + shift
-    
+
     txlow = xlow <= 0
-    vhigh = pgamma(xhigh, shape = shape, scale = scale, lower.tail = TRUE, log.p = TRUE)
-    vals = expDif(vhigh, pgamma(xlow, shape = shape, scale = scale, lower.tail = TRUE, log.p = TRUE))
-    vals[txlow] = vhigh
+
+    if (lower.tail) {
+      vhigh = pgamma(xhigh, shape = shape, scale = scale, lower.tail = TRUE, log.p = TRUE)
+      vals = expDif(vhigh, pgamma(xlow, shape = shape, scale = scale, lower.tail = TRUE, log.p = TRUE))
+      vals[txlow] = vhigh[txlow]
+    } else {
+      vhigh = pgamma(xhigh, shape = shape, scale = scale, lower.tail = FALSE, log.p = TRUE)
+      vlow = pgamma(xlow, shape = shape, scale = scale, lower.tail = FALSE, log.p = TRUE)
+
+      vals = expDif(vlow, vhigh)
+      vals[txlow] = pgamma(xhigh, shape = shape, scale = scale, lower.tail = TRUE, log.p = TRUE)[txlow]
+    }
     
     return(vals)
 }

@@ -112,7 +112,9 @@ public:
     if (x_low <= 0)
       return log_gamma_cdf(x_high);
 
-    return expDif(log_gamma_cdf(x_high), log_gamma_cdf(x_low));
+    // upper tail is more stable
+    return expDif(log_gamma_cdf_upper(x_low), log_gamma_cdf_upper(x_high));
+    //return expDif(log_gamma_cdf(x_high), log_gamma_cdf(x_low));
   }
   
   virtual void updateParams(EMSequences * sequences, std::vector<EmissionFunction*> * group) {
@@ -223,6 +225,10 @@ private:
 
   double log_gamma_cdf(const double x) const {
     return log(gsl_sf_gamma_inc_P(_shape, x / _scale));
+  }
+
+  double log_gamma_cdf_upper(const double x) const {
+    return log(gsl_sf_gamma_inc(_shape, x / _scale)) - gsl_sf_lngamma(_shape);
   }
 };
 
