@@ -561,7 +561,7 @@ extern "C" {
     SEXP n_states;
     SEXP n_slots;
     
-    PROTECT(ans = NEW_LIST(2));
+    PROTECT(ans = NEW_LIST(3));
     ptr = R_MakeExternalPtr(data, install("RQHMM_struct"), R_NilValue);
     PROTECT(ptr);
     R_RegisterCFinalizerEx(ptr, rqhmm_finalizer, (Rboolean) TRUE);
@@ -575,6 +575,7 @@ extern "C" {
 
     SET_VECTOR_ELT(ans, 0, n_states);
     SET_VECTOR_ELT(ans, 1, n_slots);
+    SET_VECTOR_ELT(ans, 2, Rf_duplicate(valid_transitions));
     
     UNPROTECT(4);
     

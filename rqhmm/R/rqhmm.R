@@ -120,8 +120,9 @@ new.qhmm <- function(data.shape, valid.transitions, transition.functions, emissi
               list(emission.slot.dims, covar.slot.dims),
               t(valid.transitions), transition.functions, emission.functions,
               emission.groups, transition.groups, as.logical(support.missing))
-  class(res) <- "rqhmm"
-  names(res) <- c("n.states", "n.emission.slots")
+  class(res) <- "qhmm"
+  names(res) <- c("n.states", "n.emission.slots", "valid.transitions")
+  res$valid.transitions = t(res$valid.transitions) # undo transpose
   return(res)
 }
 
@@ -442,5 +443,38 @@ restore.params.qhmm <- function(hmm, saved) {
     
     for (slot in 1:(hmm$n.emission.slots))
       set.emission.params.qhmm(hmm, state, state.params[[slot]], slot = slot)
+  }
+}
+
+print.qhmm <- function(object, ...) {
+  summary.qhmm(object, ...)
+}
+
+summary.qhmm <- function(object, digits = 3, nsmall = 0L, ...) {
+  param.cat <- function(param.vec) {
+    is.fixed = attr(param.vec, "fixed")
+    for (i in 1:length(param.vec)) {
+      valStr = format(param.vec[i], digits = digits, nsmall = nsmall)
+      if (is.fixed[i])
+        cat(" [", valStr, "]", sep='')
+      else
+        cat(" ", valStr, sep='')
+    }
+  }
+  
+  values = collect.params.qhmm(object)
+
+  for (state in 1:(object$n.states)) {
+    targets = which(object$valid.transitions[state,] > 0)
+    cat("( state", state, ") ->", targets, "\n")
+    cat("  transitions:")
+    param.cat(values$transitions[[state]])
+    cat("\n")
+    cat("  emissions:\n")
+    for (slot in 1:(object$n.emission.slots)) {
+      cat("    [", slot, "]:", sep='')
+      param.cat(values$emissions[[state]][[slot]])
+      cat("\n")
+    }
   }
 }
