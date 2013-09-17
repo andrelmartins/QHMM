@@ -99,6 +99,10 @@ class MissingEmissionFunction : public EmissionFunction {
     void setParams(Params const & params) {
       _func->setParams(params);
     }
+
+    Params * getParams() const { 
+      return _func->getParams(); 
+    }
   
     bool setCovarSlots(int * slots, int length) {
       return _func->setCovarSlots(slots, length);
@@ -141,6 +145,10 @@ public:
   
   void setParams(Params const & params) {
     _func->setParams(params);
+  }
+
+  Params * getParams() const { 
+    return _func->getParams(); 
   }
   
   bool setCovarSlots(int * slots, int length) {
