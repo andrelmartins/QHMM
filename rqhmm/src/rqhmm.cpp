@@ -559,8 +559,9 @@ extern "C" {
     SEXP ans;
     SEXP ptr;
     SEXP n_states;
+    SEXP n_slots;
     
-    PROTECT(ans = NEW_LIST(1));
+    PROTECT(ans = NEW_LIST(2));
     ptr = R_MakeExternalPtr(data, install("RQHMM_struct"), R_NilValue);
     PROTECT(ptr);
     R_RegisterCFinalizerEx(ptr, rqhmm_finalizer, (Rboolean) TRUE);
@@ -568,9 +569,14 @@ extern "C" {
 
     PROTECT(n_states = NEW_INTEGER(1));
     INTEGER(n_states)[0] = Rf_length(transitions);
+
+    PROTECT(n_slots = NEW_INTEGER(1));
+    INTEGER(n_slots)[0] = data->emission_slots;
+
     SET_VECTOR_ELT(ans, 0, n_states);
+    SET_VECTOR_ELT(ans, 1, n_slots);
     
-    UNPROTECT(3);
+    UNPROTECT(4);
     
     return ans;
   }

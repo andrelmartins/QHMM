@@ -121,6 +121,7 @@ new.qhmm <- function(data.shape, valid.transitions, transition.functions, emissi
               t(valid.transitions), transition.functions, emission.functions,
               emission.groups, transition.groups, as.logical(support.missing))
   class(res) <- "rqhmm"
+  names(res) <- c("n.states", "n.emission.slots")
   return(res)
 }
 
@@ -418,4 +419,28 @@ path.blocks2.qhmm <- function(path, start.states, middle.states, end.states) {
   stopifnot(length(middle.states) > 0)
   stopifnot(length(end.states) > 0)
   .Call(rqhmm_path_blocks_ext, path, start.states, middle.states, end.states)
+}
+
+# collect/restore
+#
+
+collect.params.qhmm <- function(hmm) {
+  transitions = lapply(1:(hmm$n.states), function(state)
+    get.transition.params.qhmm(hmm, state))
+  emissions = lapply(1:(hmm$n.states), function(state)
+    lapply(1:(hmm$n.emission.slots), function(slot)
+           get.emission.params.qhmm(hmm, state, slot = slot)))
+
+  return(list(transitions = transitions, emissions = emissions))
+}
+
+restore.params.qhmm <- function(hmm, saved) {
+  for (state in 1:(hmm$n.states)) {
+    set.transition.params.qhmm(hmm, state, saved$transitions[[state]])
+
+    state.params = saved$emissions[[state]]
+    
+    for (slot in 1:(hmm$n.emission.slots))
+      set.emission.params.qhmm(hmm, state, state.params[[slot]], slot = slot)
+  }
 }
