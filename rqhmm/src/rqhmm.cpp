@@ -464,7 +464,15 @@ static SEXP convert_block_vector(std::vector<block_t> * blocks) {
 }
 
 static void REprint_exception(QHMMException & e) {
-  REprintf("EM::RuntimeException::%s\n", e.what());
+  REprintf("QHMM::RuntimeException::%s\n", e.what());
+  if (!e.is_transition) {
+    REprintf("  emission on state %d, slot %d\n", e.state + 1, e.slot + 1);
+  }
+
+  /* print stack trace */
+  std::vector<string>::iterator it;
+  for (it = e.stack.begin(); it != e.stack.end(); ++it)
+    REprintf("  # %s\n", (*it).c_str());
 }
 
 extern "C" {

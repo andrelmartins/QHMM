@@ -10,7 +10,7 @@ using namespace std;
 class QHMMException : public exception {
 
 public:
-  QHMMException(string msg, bool is_transition, int state, int slot, int index, double value) : _msg(msg) {
+  QHMMException(string msg, string frame, bool is_transition, int state, int slot, int index, double value) : _msg(msg) {
     this->is_transition = is_transition;
     this->state = state;
     this->slot = slot;
@@ -18,6 +18,7 @@ public:
     this->evalue = value;
 
     this->sequence_id = -1;
+    this->stack.push_back(frame);
   }
   virtual ~QHMMException() throw() {}
 

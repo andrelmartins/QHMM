@@ -167,7 +167,7 @@ public:
     double log_prob = _func->log_probability(iter);
 
     if (std::isnan(log_prob))
-      throw QHMMException("NaN detected", false, _stateID, _slotID, iter.index(), iter.emission(_slotID)); // TODO: support higher dimensions!
+      throw QHMMException("NaN detected", "log_probability", false, _stateID, _slotID, iter.index(), iter.emission(_slotID)); // TODO: support higher dimensions!
 
     return log_prob;
   }
