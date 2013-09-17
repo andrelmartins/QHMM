@@ -2,7 +2,7 @@
 # RQHMM: Quick Hidden Markov Model Package
 #
 
-new.qhmm <- function(data.shape, valid.transitions, transition.functions, emission.functions, transition.groups = NULL, emission.groups = NULL, support.missing = FALSE) {
+new.qhmm <- function(data.shape, valid.transitions, transition.functions, emission.functions, transition.groups = NULL, emission.groups = NULL, support.missing = FALSE, enable.debug = FALSE) {
   #
   # HMM structure validation
   
@@ -119,7 +119,8 @@ new.qhmm <- function(data.shape, valid.transitions, transition.functions, emissi
   res = .Call(rqhmm_create_hmm,
               list(emission.slot.dims, covar.slot.dims),
               t(valid.transitions), transition.functions, emission.functions,
-              emission.groups, transition.groups, as.logical(support.missing))
+              emission.groups, transition.groups,
+              as.logical(support.missing), as.logical(enable.debug))
   class(res) <- "qhmm"
   names(res) <- c("n.states", "n.emission.slots", "valid.transitions")
   res$valid.transitions = t(res$valid.transitions) # undo transpose

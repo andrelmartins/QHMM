@@ -284,12 +284,13 @@ RQHMMData * _create_hmm_transitions(SEXP data_shape, EType * emissions, SEXP val
   return data;
 }
 
-RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transitions, SEXP emissions, SEXP transition_groups, SEXP emission_groups, SEXP support_missing) {
+RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transitions, SEXP emissions, SEXP transition_groups, SEXP emission_groups, SEXP support_missing, SEXP enable_debug) {
   /* make choice about emission table */
   SEXP emission_shape = VECTOR_ELT(data_shape, 0);
   int n_emissions = Rf_length(emission_shape);
   int n_states = Rf_length(transitions);
   bool with_missing = support_missing != R_NilValue && LOGICAL(support_missing)[0] == TRUE;
+  bool with_debug = enable_debug != R_NilValue && LOGICAL(enable_debug)[0] == TRUE;
   
   if (n_emissions == 1) {
     Emissions * etable = new Emissions(n_states);
@@ -298,7 +299,7 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
     for (int i = 0; i < n_states; ++i) {
       const char * efunc_name = CHAR(STRING_ELT(VECTOR_ELT(emissions, i), 0));
       FuncEntry * efunc = get_entry(__emissions, efunc_name);
-      etable->insert(efunc->create_emission_instance(i, 0, dim, with_missing));
+      etable->insert(efunc->create_emission_instance(i, 0, dim, with_missing, with_debug));
     }
     
     // process emission groups
@@ -554,8 +555,8 @@ extern "C" {
   }
   
   // TODO: add support for missing data
-  SEXP rqhmm_create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transitions, SEXP emissions, SEXP emission_groups, SEXP transition_groups, SEXP support_missing) {
-    RQHMMData * data = _create_hmm(data_shape, valid_transitions, transitions, emissions, transition_groups, emission_groups, support_missing);
+  SEXP rqhmm_create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transitions, SEXP emissions, SEXP emission_groups, SEXP transition_groups, SEXP support_missing, SEXP enable_debug) {
+    RQHMMData * data = _create_hmm(data_shape, valid_transitions, transitions, emissions, transition_groups, emission_groups, support_missing, enable_debug);
     SEXP ans;
     SEXP ptr;
     SEXP n_states;
@@ -954,7 +955,11 @@ extern "C" {
     data->fill_iterator_list(iterators, emissions, covars, missing);
 
     /* invoke */
-    loglik = data->hmm->em(iterators, REAL(tolerance)[0]);
+    try {
+      loglik = data->hmm->em(iterators, REAL(tolerance)[0]);
+    } catch (QHMMException & e) {
+      REprintf("EM::RuntimeException::%s\n", e.what());
+    }
 
     /* clean up */
     for (unsigned int i = 0; i < iterators.size(); ++i)

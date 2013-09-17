@@ -3,6 +3,7 @@
 
 #include "iter.hpp"
 #include "params.hpp"
+#include "QHMMException.hpp"
 
 #include <cmath>
 #include <limits>
@@ -126,6 +127,55 @@ class MissingEmissionFunction : public EmissionFunction {
 
   private:
     EmissionFunction * _func;
+};
+
+class DebugEmissionFunction : public EmissionFunction {
+public:
+  DebugEmissionFunction(EmissionFunction * func) : EmissionFunction(func->stateID(), func->slotID()), _func(func) {}
+  ~DebugEmissionFunction() { // TODO: review memory management responsabilities
+    delete _func;
+  }
+
+  bool validParams(Params const & params) const {
+    return _func->validParams(params);
+  }
+  
+  void setParams(Params const & params) {
+    _func->setParams(params);
+  }
+  
+  bool setCovarSlots(int * slots, int length) {
+    return _func->setCovarSlots(slots, length);
+  }
+  
+  bool getOption(const char * name, double * out_value) {
+    return _func->getOption(name, out_value);
+  }
+  
+  bool setOption(const char * name, double value) {
+    return _func->setOption(name, value);
+  }
+  
+  double log_probability(Iter const & iter) const {
+    double log_prob = _func->log_probability(iter);
+
+    if (gsl_isnan(log_prob))
+      throw QHMMException("NaN detected", false, _stateID, _slotID, iter.index(), iter.emission(_slotID)); // TODO: support higher dimensions!
+
+    return log_prob;
+  }
+
+  virtual void updateParams(EMSequences * sequences, std::vector<EmissionFunction*> * group) {
+    _func->updateParams(sequences, group);
+
+    /* check if params are still valid! */
+    // TODO: Implement check
+  }
+    
+  virtual EmissionFunction * inner() { return _func; }
+  
+private:
+  EmissionFunction * _func;
 };
 
 #endif
