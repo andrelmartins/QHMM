@@ -88,7 +88,7 @@ std::vector<block_t> * path_blocks_seq(const std::vector<int> * path, const std:
   std::vector<block_t> * result = new std::vector<block_t>();
   bool in_block = false;
   int block_start;
-  int block_index = 0;
+  unsigned int block_index = 0;
   std::vector<int>::const_iterator it;
   
   for (it = path->begin(); it != path->end(); ++it) {
