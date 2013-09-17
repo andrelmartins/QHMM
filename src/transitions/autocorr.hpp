@@ -77,7 +77,7 @@ class AutoCorr : public TransitionFunction {
     
     std::vector<TransitionFunction*>::iterator tf_it;
     for (tf_it = group->begin(); tf_it != group->end(); ++tf_it) {
-      AutoCorr * tf = (AutoCorr*) *tf_it;
+      AutoCorr * tf = (AutoCorr*) (*tf_it)->inner();
       
       tf->update_log_probs(alpha);
     }

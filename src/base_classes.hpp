@@ -20,7 +20,7 @@ bool inline same_probability(double a, double b) {
 
 class TransitionFunction {
 public:
-  TransitionFunction(int n_states, int stateID, int n_targets, int * targets) : _stateID(stateID), _n_states(n_states), _n_targets(n_targets) {
+  TransitionFunction(int n_states, int stateID, int n_targets, const int * targets) : _stateID(stateID), _n_states(n_states), _n_targets(n_targets) {
     if (n_targets == 0)
       _targets = NULL;
     else {
@@ -51,12 +51,80 @@ public:
   const int * targets() const { return _targets; }
 
   virtual void updateParams(EMSequences * sequences, std::vector<TransitionFunction*> * group) {}
+  virtual TransitionFunction * inner() { return this; }
 
 protected:
   const int _stateID;
   const int _n_states;
   const int _n_targets;
   int * _targets;
+};
+
+class DebugTransitionFunction : public TransitionFunction{
+public:
+  DebugTransitionFunction(TransitionFunction * func, int n_states) : TransitionFunction(func->stateID(), n_states, func->n_targets(), func->targets()), _func(func) {
+  }
+
+  bool validParams(Params const & params) const {
+    return _func->validParams(params);
+  }
+
+  Params * getParams() const { 
+    return _func->getParams();
+  }
+
+  void setParams(Params const & params) {
+    _func->setParams(params);
+  }
+
+  bool setCovarSlots(int * slots, int length) { 
+    return _func->setCovarSlots(slots, length);
+  }
+
+  bool getOption(const char * name, double * out_value) {
+    return _func->getOption(name, out_value);
+  }
+
+  bool setOption(const char * name, double value) {
+    return _func->setOption(name, value);
+  }
+  
+  double log_probability(int target) const {
+    double log_prob = _func->log_probability(target);
+
+    if (std::isnan(log_prob))
+      throw QHMMException("NaN detected", "log_probability", true, _stateID, -1, -1, -1);
+
+    return log_prob;
+  }
+
+  double log_probability(Iter const & iter, int target) const {
+    double log_prob = _func->log_probability(iter, target);
+
+    if (std::isnan(log_prob))
+      throw QHMMException("NaN detected", "log_probability", true, _stateID, -1, iter.index(), -1);
+
+    return log_prob;
+  }
+
+  virtual void updateParams(EMSequences * sequences, std::vector<TransitionFunction*> * group) {
+    _func->updateParams(sequences, group);
+
+    /* check if params are still valid! */
+    Params * tmp =  _func->getParams();
+    if (!_func->validParams(*tmp)) {
+      delete tmp;
+      throw QHMMException("Invalid param update", "updateParams", true, _stateID, -1, -1, -1);
+    }
+    delete tmp;
+  }
+
+  virtual TransitionFunction * inner() {
+    return _func; 
+  }
+
+private:
+  TransitionFunction * _func;
 };
 
 class EmissionFunction {
@@ -176,7 +244,12 @@ public:
     _func->updateParams(sequences, group);
 
     /* check if params are still valid! */
-    // TODO: Implement check
+    Params * tmp =  _func->getParams();
+    if (!_func->validParams(*tmp)) {
+      delete tmp;
+      throw QHMMException("Invalid param update", "updateParams", false, _stateID, _slotID, -1, -1);
+    }
+    delete tmp;
   }
     
   virtual EmissionFunction * inner() { return _func; }

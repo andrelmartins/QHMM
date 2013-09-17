@@ -214,7 +214,7 @@ int * create_target_vector(int * transition_row, int n_states, int & out_n_targe
 }
 
 template<typename TType>
-void fill_transitions(TType * ttable, int n_states, SEXP valid_transitions, SEXP transitions) {
+void fill_transitions(TType * ttable, int n_states, SEXP valid_transitions, SEXP transitions, bool with_debug) {
   for (int i = 0; i < n_states; ++i) {
     const char * tfunc_name = CHAR(STRING_ELT(transitions, i));
     FuncEntry * tfunc = get_entry(__transitions, tfunc_name);
@@ -224,7 +224,7 @@ void fill_transitions(TType * ttable, int n_states, SEXP valid_transitions, SEXP
     
     targets = create_target_vector(row, n_states, n_targets);
     
-    ttable->insert(tfunc->create_transition_instance(n_states, i, n_targets, targets));
+    ttable->insert(tfunc->create_transition_instance(n_states, i, n_targets, targets, with_debug));
     
     delete[] targets;
   }
@@ -246,7 +246,7 @@ void process_transition_groups(TransitionTable * ttable, SEXP groups) {
 }
 
 template<typename EType>
-RQHMMData * _create_hmm_transitions(SEXP data_shape, EType * emissions, SEXP valid_transitions, SEXP transitions, SEXP transition_groups, bool with_missing) {
+RQHMMData * _create_hmm_transitions(SEXP data_shape, EType * emissions, SEXP valid_transitions, SEXP transitions, SEXP transition_groups, bool with_missing, bool with_debug) {
   /* make choice about transition table */
   int n_states = Rf_length(transitions);
   bool needs_covars = false;
@@ -268,14 +268,14 @@ RQHMMData * _create_hmm_transitions(SEXP data_shape, EType * emissions, SEXP val
   if (needs_covars) {
     NonHomogeneousTransitions * ttable = new NonHomogeneousTransitions(n_states);
     
-    fill_transitions(ttable, n_states, valid_transitions, transitions);
+    fill_transitions(ttable, n_states, valid_transitions, transitions, with_debug);
     process_transition_groups(ttable, transition_groups); 
 
     data->hmm = HMM::create(ttable, emissions, data->init_log_probs);
   } else {
     HomogeneousTransitions * ttable = new HomogeneousTransitions(n_states);
     
-    fill_transitions(ttable, n_states, valid_transitions, transitions);
+    fill_transitions(ttable, n_states, valid_transitions, transitions, with_debug);
     process_transition_groups(ttable, transition_groups);
 
     data->hmm = HMM::create(ttable, emissions, data->init_log_probs);
@@ -316,7 +316,7 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
     }
     etable->commitGroups(); // turn remaining singletons into unitary groups
     
-    return _create_hmm_transitions(data_shape, etable, valid_transitions, transitions, transition_groups, with_missing);
+    return _create_hmm_transitions(data_shape, etable, valid_transitions, transitions, transition_groups, with_missing, with_debug);
   } else {
     MultiEmissions * etable = new MultiEmissions(n_states, n_emissions);
     
@@ -349,7 +349,7 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
     }
     etable->commitGroups(); // turn remaining singletons into unitary groups
     
-    return _create_hmm_transitions(data_shape, etable, valid_transitions, transitions, transition_groups, with_missing);
+    return _create_hmm_transitions(data_shape, etable, valid_transitions, transitions, transition_groups, with_missing, with_debug);
   }
 }
 
@@ -465,10 +465,13 @@ static SEXP convert_block_vector(std::vector<block_t> * blocks) {
 
 static void REprint_exception(QHMMException & e) {
   REprintf("QHMM::RuntimeException::%s\n", e.what());
-  REprintf("  @ position %d of sequence %d\n", e.sequence_index + 1, e.sequence_id + 1);
+  if (e.sequence_index >= 0)
+    REprintf("  @ position %d of sequence %d\n", e.sequence_index + 1, e.sequence_id + 1);
 
   if (!e.is_transition) {
     REprintf("  emission on state %d, slot %d\n", e.state + 1, e.slot + 1);
+  } else {
+    REprintf("  transition on state %d\n", e.state + 1);
   }
 
   /* print stack trace */

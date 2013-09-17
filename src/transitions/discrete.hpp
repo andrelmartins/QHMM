@@ -98,7 +98,7 @@ public:
     // propagate to other elements in the group
     std::vector<TransitionFunction*>::iterator tf_it;
     for (tf_it = group->begin(); tf_it != group->end(); ++tf_it) {
-      Discrete * tf = (Discrete*) *tf_it;
+      Discrete * tf = (Discrete*) (*tf_it)->inner();
       
       if (tf != this) {
         for (int i = 0; i < _n_targets; ++i)
