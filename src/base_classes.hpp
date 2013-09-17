@@ -112,7 +112,7 @@ public:
 
     /* check if params are still valid! */
     Params * tmp =  _func->getParams();
-    if (!_func->validParams(*tmp)) {
+    if (tmp->anyNaN() || !_func->validParams(*tmp)) {
       delete tmp;
       throw QHMMException("Invalid param update", "updateParams", true, _stateID, -1, -1, -1);
     }
@@ -245,7 +245,7 @@ public:
 
     /* check if params are still valid! */
     Params * tmp =  _func->getParams();
-    if (!_func->validParams(*tmp)) {
+    if (tmp->anyNaN() || !_func->validParams(*tmp)) {
       delete tmp;
       throw QHMMException("Invalid param update", "updateParams", false, _stateID, _slotID, -1, -1);
     }

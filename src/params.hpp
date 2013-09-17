@@ -1,6 +1,7 @@
 #ifndef PARAMS_HPP
 #define PARAMS_HPP
 
+#include <cmath>
 #include <stdexcept>
 #define INDEX_CHECK(index) if (index < 0 || index >= _length) throw std::out_of_range("index");
 
@@ -57,6 +58,15 @@ public:
   
   int length() const {
     return _length;
+  }
+
+  // to help with debug code
+  bool anyNaN() const {
+    for (unsigned int i = 0; i < _length; ++i) {
+      if (std::isnan(_values[i]))
+	return true;
+    }
+    return false;
   }
   
 private:
