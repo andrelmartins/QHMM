@@ -45,7 +45,12 @@ public:
   }
   
   TransitionFunction * create_transition_instance(int n_states, int stateID, int n_targets, int * targets, bool with_debug = false) const {
-    return new T(n_states, stateID, n_targets, targets);
+    TransitionFunction * func = new T(n_states, stateID, n_targets, targets);
+
+    if (with_debug)
+      func = new DebugTransitionFunction(func, n_states);
+
+    return func;
   }
   
   EmissionFunction * create_emission_instance(int stateID, int slotID, int dim, bool with_missing = false, bool with_debug = false) const {
