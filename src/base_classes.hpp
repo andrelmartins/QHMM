@@ -7,7 +7,6 @@
 
 #include <cmath>
 #include <limits>
-#include <gsl/gsl_math.h>
 
 // forward declaration to avoid include loop
 class EMSequences;
@@ -159,7 +158,7 @@ public:
   double log_probability(Iter const & iter) const {
     double log_prob = _func->log_probability(iter);
 
-    if (gsl_isnan(log_prob))
+    if (std::isnan(log_prob))
       throw QHMMException("NaN detected", false, _stateID, _slotID, iter.index(), iter.emission(_slotID)); // TODO: support higher dimensions!
 
     return log_prob;

@@ -328,7 +328,7 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
         int dim = INTEGER(emission_shape)[j];
         const char * efunc_name = CHAR(STRING_ELT(emissions_i, j));
         FuncEntry * efunc = get_entry(__emissions, efunc_name);
-        funcs_i.push_back(efunc->create_emission_instance(i, j, dim, with_missing));
+        funcs_i.push_back(efunc->create_emission_instance(i, j, dim, with_missing, with_debug));
       }
       
       etable->insert(funcs_i);
@@ -463,6 +463,9 @@ static SEXP convert_block_vector(std::vector<block_t> * blocks) {
   return result;
 }
 
+static void REprint_exception(QHMMException & e) {
+  REprintf("EM::RuntimeException::%s\n", e.what());
+}
 
 extern "C" {
 #ifdef HAVE_VISIBILITY_ATTRIBUTE
@@ -601,7 +604,12 @@ extern "C" {
     PROTECT(result = allocMatrix(REALSXP, data->n_states, iter->length()));
     
     /* invoke forward */
-    double log_lik = data->hmm->forward((*iter), REAL(result));
+    double log_lik;
+    try {
+      log_lik = data->hmm->forward((*iter), REAL(result));
+    } catch (QHMMException & e) {
+      REprint_exception(e);
+    }
 
     /* clean up */
     delete iter;
@@ -634,7 +642,12 @@ extern "C" {
     PROTECT(result = allocMatrix(REALSXP, data->n_states, iter->length()));
     
     /* invoke backward */
-    double log_lik = data->hmm->backward((*iter), REAL(result));
+    double log_lik;
+    try {
+      log_lik = data->hmm->backward((*iter), REAL(result));
+    } catch (QHMMException & e) {
+      REprint_exception(e);
+    }
     
     /* clean up */
     delete iter;
@@ -666,8 +679,12 @@ extern "C" {
     PROTECT(result = NEW_INTEGER(iter->length()));
     
     /* invoke viterbi */
-    data->hmm->viterbi((*iter), INTEGER(result));
-    
+    try {
+      data->hmm->viterbi((*iter), INTEGER(result));
+    } catch (QHMMException & e) {
+      REprint_exception(e);
+    }
+   
     /* 0-based -> 1-based state numbers */
     int * rptr = INTEGER(result);
     for (int i = 0; i < iter->length(); ++i)
@@ -921,9 +938,14 @@ extern "C" {
     PROTECT(result = allocMatrix(REALSXP, iter->length(), data->n_states));
     
     /* invoke forward, backward and posterior */
-    double log_lik = data->hmm->forward((*iter), fw);
-    log_lik = data->hmm->backward((*iter), bk);
-    data->hmm->state_posterior((*iter), fw, bk, REAL(result));
+    double log_lik = 0;
+    try {
+      log_lik = data->hmm->forward((*iter), fw);
+      log_lik = data->hmm->backward((*iter), bk);
+      data->hmm->state_posterior((*iter), fw, bk, REAL(result));
+    } catch (QHMMException & e) {
+      REprint_exception(e);
+    }
     
     /* clean up */
     delete iter;
@@ -958,7 +980,7 @@ extern "C" {
     try {
       loglik = data->hmm->em(iterators, REAL(tolerance)[0]);
     } catch (QHMMException & e) {
-      REprintf("EM::RuntimeException::%s\n", e.what());
+      REprint_exception(e);
     }
 
     /* clean up */
