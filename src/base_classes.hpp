@@ -3,7 +3,6 @@
 
 #include "iter.hpp"
 #include "params.hpp"
-#include "QHMMException.hpp"
 
 #include <cmath>
 #include <limits>
@@ -79,7 +78,7 @@ public:
   int slotID() { return _slotID; }
   
   virtual void updateParams(EMSequences * sequences, std::vector<EmissionFunction*> * group) {}
-  virtual EmissionFunction * inner() const { return this; }
+  virtual EmissionFunction * inner() { return this; }
 
 protected:
   const int _stateID;
@@ -123,7 +122,7 @@ class MissingEmissionFunction : public EmissionFunction {
       return _func->updateParams(sequences, group);
     }
   
-    virtual EmissionFunction * inner() const { return _func; }
+    virtual EmissionFunction * inner() { return _func; }
 
   private:
     EmissionFunction * _func;
