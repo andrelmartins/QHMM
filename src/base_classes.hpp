@@ -62,7 +62,7 @@ protected:
 
 class DebugTransitionFunction : public TransitionFunction{
 public:
-  DebugTransitionFunction(TransitionFunction * func, int n_states) : TransitionFunction(func->stateID(), n_states, func->n_targets(), func->targets()), _func(func) {
+  DebugTransitionFunction(TransitionFunction * func, int n_states) : TransitionFunction(n_states, func->stateID(), func->n_targets(), func->targets()), _func(func) {
   }
 
   bool validParams(Params const & params) const {
