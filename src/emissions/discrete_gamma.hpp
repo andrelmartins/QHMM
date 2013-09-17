@@ -129,7 +129,7 @@ public:
     std::vector<EmissionFunction*>::iterator ef_it;
     
     for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
-      DiscreteGamma * ef = (DiscreteGamma*) *ef_it;
+      DiscreteGamma * ef = (DiscreteGamma*) (*ef_it)->inner();
       PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
       
       do {
@@ -195,7 +195,7 @@ public:
     
     // propagate to other elements in the group
     for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
-      DiscreteGamma * ef = (DiscreteGamma*) *ef_it;
+      DiscreteGamma * ef = (DiscreteGamma*) (*ef_it)->inner();
       
       if (ef != this) {
         ef->_shape = _shape;

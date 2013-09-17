@@ -326,7 +326,7 @@ class Poisson : public EmissionFunction {
       std::vector<EmissionFunction*>::iterator ef_it;
       
       for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
-        Poisson * ef = (Poisson*) *ef_it;
+        Poisson * ef = (Poisson*) (*ef_it)->inner();
         PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
         
         do {
@@ -351,7 +351,7 @@ class Poisson : public EmissionFunction {
       
       // propagate to other elements in the group
       for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
-        Poisson * ef = (Poisson*) *ef_it;
+        Poisson * ef = (Poisson*) (*ef_it)->inner();
         
         if (ef != this) {
           ef->_lambda = _lambda;
@@ -495,7 +495,7 @@ public:
     std::vector<EmissionFunction*>::iterator ef_it;
     
     for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
-      PoissonScaledCovar * ef = (PoissonScaledCovar*) *ef_it;
+      PoissonScaledCovar * ef = (PoissonScaledCovar*) (*ef_it)->inner();
       PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
       
       do {
@@ -523,7 +523,7 @@ public:
 
       // propagate to other elements in the group
       for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
-        PoissonScaledCovar * ef = (PoissonScaledCovar*) *ef_it;
+        PoissonScaledCovar * ef = (PoissonScaledCovar*) (*ef_it)->inner();
         
         if (ef != this)
           ef->_scale = _scale;

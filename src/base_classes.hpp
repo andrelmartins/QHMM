@@ -3,9 +3,11 @@
 
 #include "iter.hpp"
 #include "params.hpp"
+#include "QHMMException.hpp"
 
 #include <cmath>
 #include <limits>
+#include <gsl/gsl_math.h>
 
 // forward declaration to avoid include loop
 class EMSequences;
@@ -77,6 +79,7 @@ public:
   int slotID() { return _slotID; }
   
   virtual void updateParams(EMSequences * sequences, std::vector<EmissionFunction*> * group) {}
+  virtual EmissionFunction * inner() const { return this; }
 
 protected:
   const int _stateID;
@@ -115,7 +118,13 @@ class MissingEmissionFunction : public EmissionFunction {
         return 0.0; /* log(1) */
       return _func->log_probability(iter);
     }
+
+    virtual void updateParams(EMSequences * sequences, std::vector<EmissionFunction*> * group) {
+      return _func->updateParams(sequences, group);
+    }
   
+    virtual EmissionFunction * inner() const { return _func; }
+
   private:
     EmissionFunction * _func;
 };

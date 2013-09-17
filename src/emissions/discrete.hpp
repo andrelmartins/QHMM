@@ -100,7 +100,7 @@ public:
       expected_counts[i] = _pseudoCount;
     
     for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
-      DiscreteEmissions * ef = (DiscreteEmissions*) *ef_it;
+      DiscreteEmissions * ef = (DiscreteEmissions*) (*ef_it)->inner();
       PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
 
       do {
@@ -127,7 +127,7 @@ public:
     
     // propagate to other elements in the group
     for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
-      DiscreteEmissions * ef = (DiscreteEmissions*) *ef_it;
+      DiscreteEmissions * ef = (DiscreteEmissions*) (*ef_it)->inner();
       
       if (ef != this)
         memcpy(ef->_log_probs, _log_probs, _alphabetSize * sizeof(double));
