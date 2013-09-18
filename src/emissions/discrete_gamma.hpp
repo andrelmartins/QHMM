@@ -6,9 +6,18 @@
 
 #include "../src/math.hpp"
 
+
 class DiscreteGamma : public EmissionFunction {
 public:
-  DiscreteGamma(int stateID, int slotID, double shape = 1.0, double scale = 2.0) : EmissionFunction(stateID, slotID), _shape(shape), _scale(scale), _fixedMean(false), _mean(shape * scale), _fixedParams(false), _offset(0), _shift(1.0), _tolerance(1e-6), _maxIter(100) {}
+  DiscreteGamma(int stateID, int slotID, double shape = 1.0, double scale = 2.0) : EmissionFunction(stateID, slotID), _shape(shape), _scale(scale), _fixedMean(false), _mean(shape * scale), _fixedParams(false), _offset(0), _shift(1.0), _tolerance(1e-6), _maxIter(100), _tblSize(64) {
+
+    _logp_tbl = new double[_tblSize];
+    update_logp_tbl();
+  }
+
+  ~DiscreteGamma() {
+    delete[] _logp_tbl;
+  }
   
   virtual bool validParams(Params const & params) const {
     // supports two or three parameters: shape, scale, mean
@@ -64,6 +73,9 @@ public:
     } else if (!strcmp(name, "tolerance")) {
       *out_value = _tolerance;
       return true;
+    } else if (!strcmp(name, "tblSize")) {
+      *out_value = _tblSize;
+      return true;
     }
     return false;
   }
@@ -88,30 +100,29 @@ public:
         return false;
       _tolerance = value;
       return true;
+    } else if (!strcmp(name, "tblSize")) {
+      int tblSize = (int)value;
+      if (tblSize <= 0)
+	_tblSize = tblSize; /* this just disables tbl use */
+      else {
+	_tblSize = tblSize;
+	delete _logp_tbl;
+	_logp_tbl = new double[_tblSize];
+	update_logp_tbl();
+      }
+      return true;
     }
     return false;
   }
 
   virtual double log_probability(Iter const & iter) const {
-    // TODO: double check this math: I think to be correct this need to have an open interval ...
-    //       P(X = x) = p(x + (1 - shift) <= X < x + shift) = p(X < x + shift) - p(X < x + (shift - 1))
-    //
-    //       in other words, prob of X in [x + shift - 1, x + shift [
-    //
-    //       which differs the result below by p(X = x + shift) - p(X = x + (shift - 1)) when useLowerTail = TRUE
-    //       and by p(X = x + (shift - 1)) - p(X = x + shift) when useLowerTail = FALSE
-    //
-    
-    double x = iter.emission(_slotID) + _offset;
-    double x_low = x + (_shift - 1.0);
-    double x_high = x + _shift;
-    
-    if (x_low <= 0)
-      return QHMM_log_gamma_cdf_lower(x_high, _shape, _scale);
+    int x = (int) (iter.emission(_slotID) + _offset);
 
-    // upper tail is more stable
-    return QHMM_logdiff(QHMM_log_gamma_cdf_upper(x_low, _shape, _scale), QHMM_log_gamma_cdf_upper(x_high, _shape, _scale));
-    // return logdiff(log_gamma_cdf_lower(x_high, _shape, _scale), log_gamma_cdf_lower(x_low, _shape, _scale));
+    assert(x >= 0);
+
+    if (x < _tblSize)
+      return _logp_tbl[x];
+    return logprob(x);
   }
   
   virtual void updateParams(EMSequences * sequences, std::vector<EmissionFunction*> * group) {
@@ -190,6 +201,8 @@ public:
     else
       _scale = mean / _shape;
     
+    update_logp_tbl();
+
     // propagate to other elements in the group
     for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
       DiscreteGamma * ef = (DiscreteGamma*) (*ef_it)->inner();
@@ -197,6 +210,7 @@ public:
       if (ef != this) {
         ef->_shape = _shape;
         ef->_scale = _scale;
+	ef->copy_logp_tbl(this);
       }
     }
   }
@@ -211,6 +225,38 @@ private:
   double _shift;
   double _tolerance;
   int _maxIter;
+  int _tblSize;
+
+  double * _logp_tbl;
+
+  double logprob(int x) const {
+    // TODO: double check this math: I think to be correct this need to have an open interval ...
+    //       P(X = x) = p(x + (1 - shift) <= X < x + shift) = p(X < x + shift) - p(X < x + (shift - 1))
+    //
+    //       in other words, prob of X in [x + shift - 1, x + shift [
+    //
+    //       which differs the result below by p(X = x + shift) - p(X = x + (shift - 1)) when useLowerTail = TRUE
+    //       and by p(X = x + (shift - 1)) - p(X = x + shift) when useLowerTail = FALSE
+    //
+    double x_low = x + (_shift - 1.0);
+    double x_high = x + _shift;
+    
+    if (x_low <= 0)
+      return QHMM_log_gamma_cdf_lower(x_high, _shape, _scale);
+
+    // upper tail is more stable
+    return QHMM_logdiff(QHMM_log_gamma_cdf_upper(x_low, _shape, _scale), QHMM_log_gamma_cdf_upper(x_high, _shape, _scale));
+    // return logdiff(log_gamma_cdf_lower(x_high, _shape, _scale), log_gamma_cdf_lower(x_low, _shape, _scale));
+  }
+  
+  void update_logp_tbl() {
+    for (int i = 0; i < _tblSize; ++i)
+      _logp_tbl[i] = logprob(i);
+  }
+
+  void copy_logp_tbl(DiscreteGamma * other) {
+    memcpy(_logp_tbl, other->_logp_tbl, _tblSize * sizeof(double));
+  }
 };
 
 #endif
