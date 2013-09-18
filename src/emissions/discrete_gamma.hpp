@@ -4,10 +4,7 @@
 #include <base_classes.hpp>
 #include <em_base.hpp>
 
-#include <cmath>
-#include <gsl/gsl_math.h>
-#include <gsl/gsl_sf_gamma.h>
-#include <gsl/gsl_sf_psi.h>
+#include "../src/math.hpp"
 
 class DiscreteGamma : public EmissionFunction {
 public:
@@ -110,11 +107,11 @@ public:
     double x_high = x + _shift;
     
     if (x_low <= 0)
-      return log_gamma_cdf(x_high);
+      return QHMM_log_gamma_cdf_lower(x_high, _shape, _scale);
 
     // upper tail is more stable
-    return expDif(log_gamma_cdf_upper(x_low), log_gamma_cdf_upper(x_high));
-    //return expDif(log_gamma_cdf(x_high), log_gamma_cdf(x_low));
+    return QHMM_logdiff(QHMM_log_gamma_cdf_upper(x_low, _shape, _scale), QHMM_log_gamma_cdf_upper(x_high, _shape, _scale));
+    // return logdiff(log_gamma_cdf_lower(x_high, _shape, _scale), log_gamma_cdf_lower(x_low, _shape, _scale));
   }
   
   virtual void updateParams(EMSequences * sequences, std::vector<EmissionFunction*> * group) {
@@ -167,10 +164,10 @@ public:
       
       /* update shape */
       //knext = ki - (log(ki) - digamma(ki) - s) / (1.0/ki - trigamma(ki));
-      knext = ki - (log(ki) - gsl_sf_psi(ki) - s) / (1.0 / ki - gsl_sf_psi_1(ki));
+      knext = ki - (log(ki) - QHMM_digamma(ki) - s) / (1.0 / ki - QHMM_trigamma(ki));
       
       /* test boundary conditions */
-      if (gsl_isinf(shape) != 0 || gsl_isnan(shape) || shape <= 0) {
+      if (QHMM_isinf(shape) != 0 || QHMM_isnan(shape) || shape <= 0) {
         // TODO: add warning message
         knext = shape;
         break;
@@ -180,7 +177,7 @@ public:
     shape = knext;
     
     // check for weirdness
-    if (shape > 1000 || gsl_isnan(shape) || gsl_isinf(shape) != 0)
+    if (shape > 1000 || QHMM_isnan(shape) || QHMM_isinf(shape) != 0)
       // TODO: add warning! update failed!
       return;
     
@@ -214,22 +211,6 @@ private:
   double _shift;
   double _tolerance;
   int _maxIter;
-  
-  /* compute log(exp(ln_x1) - exp(ln_x2))
-
-     Note: ln_x1 >= ln_x2
-  */
-  double expDif(double ln_x1, double ln_x2) const {
-    return(ln_x1 + log(1 - exp(ln_x2 - ln_x1)));
-  }
-
-  double log_gamma_cdf(const double x) const {
-    return log(gsl_sf_gamma_inc_P(_shape, x / _scale));
-  }
-
-  double log_gamma_cdf_upper(const double x) const {
-    return log(gsl_sf_gamma_inc(_shape, x / _scale)) - gsl_sf_lngamma(_shape);
-  }
 };
 
 #endif
