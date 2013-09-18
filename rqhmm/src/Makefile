@@ -5,7 +5,7 @@ HPP=func_entry.hpp $(wildcard $(LIBSRC)/*.hpp)
 # build our MAKEFLAGS
 # R needs spaces to be escaped ...
 #
-MFLGS := "CXXFLAGS=-I../../src -DUSE_RMATH"
+MFLGS := "CXXFLAGS=-I../../src -DUSE_RMATH -DRQHMM"
 # define a space
 empty:=
 space:= $(empty) $(empty)

@@ -4,6 +4,7 @@
 #include "iter.hpp"
 #include "params.hpp"
 #include "QHMMException.hpp"
+#include "log.hpp"
 
 #include <cmath>
 #include <limits>

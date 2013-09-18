@@ -86,19 +86,25 @@ public:
       _offset = value;
       return true;
     } else if (!strcmp(name, "shift")) {
-      if (value < 0) // TODO: add warning
+      if (value < 0) {
+	log_msg("shift must be >= 0: %g\n", value);
         return false;
+      }
       _shift = value;
       return true;
     } else if (!strcmp(name, "maxIter")) {
       int maxIter = (int) value;
-      if (maxIter <= 0)
+      if (maxIter <= 0) {
+	log_msg("maxIter must be > 0: %d\n", maxIter);
         return false;
+      }
       _maxIter = maxIter;
       return true;
     } else if (!strcmp(name, "tolerance")) {
-      if (value < 0) // TODO: add warning
+      if (value < 0) {
+	log_msg("tolerance must be >= 0: %g\n", value);
         return false;
+      }
       _tolerance = value;
       return true;
     } else if (!strcmp(name, "tblSize")) {
@@ -179,8 +185,9 @@ public:
       knext = ki - (log(ki) - QHMM_digamma(ki) - s) / (1.0 / ki - QHMM_trigamma(ki));
       
       /* test boundary conditions */
-      if (QHMM_isinf(shape) != 0 || QHMM_isnan(shape) || shape <= 0) {
-        // TODO: add warning message
+      if (QHMM_isinf(shape) || QHMM_isnan(shape) || shape <= 0) {
+	log_state_slot_msg(_stateID, _slotID, "shape update failed: %g (keeping old value: %g)\n", knext, _shape);
+
         knext = shape;
         break;
       }
@@ -189,9 +196,10 @@ public:
     shape = knext;
     
     // check for weirdness
-    if (shape > 1000 || QHMM_isnan(shape) || QHMM_isinf(shape) != 0)
-      // TODO: add warning! update failed!
+    if (shape > 1000 || QHMM_isnan(shape) || QHMM_isinf(shape) != 0) {
+      log_state_slot_msg(_stateID, _slotID, "shape update failed: %g (keeping old value: %g)\n", shape, _shape);
       return;
+    }
     
     // 1.3 Accept update
     _shape = shape;
