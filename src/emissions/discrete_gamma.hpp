@@ -153,7 +153,7 @@ public:
         iter.resetFirst();
         
         for (int j = 0; j < iter.length(); iter.next(), ++j) {
-          int x = (int) iter.emission(ef->_slotID);
+          int x = (int) (iter.emission(ef->_slotID) + _offset);
           
           sum_Pzi += post_j[j];
           sum_Pzi_xi += post_j[j] * x;
@@ -169,6 +169,8 @@ public:
     double mean = sum_Pzi_xi / sum_Pzi;
     double s = log(mean) - sum_Pzi_log_xi / sum_Pzi;
 
+    //log_state_slot_msg(_stateID, _slotID, " U: mean = %g, sum_Pzi_xi = %g, sum_Pzi = %g sum_Pzi_log_xi = %g\n", mean, sum_Pzi_xi, sum_Pzi, sum_Pzi_log_xi);
+
     // 1.1 Initial guess
     double shape = (3 - s + sqrt(pow(s - 3, 2) + 24 * s)) / (12 * s);
     
@@ -179,6 +181,9 @@ public:
     do {
       ++i;
       ki = shape;
+      /*log_state_slot_msg(_stateID, _slotID, " U[%d] s = %g, ki = %g\n",
+			 i, s, ki);
+      */
       
       /* update shape */
       //knext = ki - (log(ki) - digamma(ki) - s) / (1.0/ki - trigamma(ki));
