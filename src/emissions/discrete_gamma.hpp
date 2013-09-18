@@ -201,7 +201,7 @@ public:
     shape = knext;
     
     // check for weirdness
-    if (shape > 1000 || QHMM_isnan(shape) || QHMM_isinf(shape) != 0) {
+    if (shape > 1000 || QHMM_isnan(shape) || QHMM_isinf(shape)) {
       log_state_slot_msg(_stateID, _slotID, "shape update failed: %g (keeping old value: %g)\n", shape, _shape);
       return;
     }
