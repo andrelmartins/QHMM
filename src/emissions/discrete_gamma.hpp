@@ -53,6 +53,7 @@ public:
     _shape = params[0];
     _scale = params[1];
     _fixedParams = params.isFixed(0) || params.isFixed(1); // TODO: fix hack in validParams ...
+    update_logp_tbl();
     if (params.length() == 3) {
       _mean = params[2];
       _fixedMean = true;
@@ -255,7 +256,8 @@ private:
   }
 
   void copy_logp_tbl(DiscreteGamma * other) {
-    memcpy(_logp_tbl, other->_logp_tbl, _tblSize * sizeof(double));
+    if (_tblSize > 0)
+      memcpy(_logp_tbl, other->_logp_tbl, _tblSize * sizeof(double));
   }
 };
 
