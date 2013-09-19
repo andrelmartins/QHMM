@@ -35,7 +35,7 @@ class AutoCorr : public TransitionFunction {
       double alpha = exp(_log_probs[_stateID]);
       Params * result = new Params(1, &alpha);
       if (_is_fixed)
-	result->setFixed(0, true);
+        result->setFixed(0, true);
       return result;
     }
 

@@ -38,9 +38,9 @@ public:
     if (!strcmp(name, "base")) {
       int base = (int) value;
       if (base != 0 && base != 1) {
-	log_msg("invalid base value: %d : should be 0 or 1\n",
-		base);
-	return false;
+        log_msg("invalid base value: %d : should be 0 or 1\n",
+                base);
+        return false;
       }
       _base = base;
     }

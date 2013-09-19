@@ -70,8 +70,8 @@ public:
       return true;
     } else if (!strcmp(name, "pseudo_count")) {
       if (value < 0) {
-	log_msg("invalid pseudo_count: %g : shoud be >= 0\n",
-		value);
+        log_msg("invalid pseudo_count: %g : shoud be >= 0\n",
+                value);
         return false;
       }
       _pseudoCount = value;

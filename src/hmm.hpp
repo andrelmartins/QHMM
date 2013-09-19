@@ -42,7 +42,7 @@ class HMM {
 protected:
     virtual const std::vector<std::vector<EmissionFunction*> > & emission_groups() const = 0;
     virtual const std::vector<std::vector<TransitionFunction*> > & transition_groups() const = 0;
-  virtual void refresh_transition_table() = 0;
+    virtual void refresh_transition_table() = 0;
 };
 
 #include "hmm.cpp"

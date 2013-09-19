@@ -441,34 +441,34 @@ public:
   virtual bool setOption(const char * name, double value) {
     if (!strcmp(name, "lower_bound")) {
       if (value < 0 || value >= _upper_bound) {
-	log_msg("invalid lower_bound: %g : must be between > 0 and <= %g\n",
-		value, _upper_bound);
+        log_msg("invalid lower_bound: %g : must be between > 0 and <= %g\n",
+                value, _upper_bound);
         return false;
       }
       _lower_bound = value;
       return true;
     } else if (!strcmp(name, "upper_bound")) {
       if (value <= _lower_bound) {
-	log_msg("invalid upper_bound: %g : must be > %g\n",
-		_lower_bound);
+        log_msg("invalid upper_bound: %g : must be > %g\n",
+                _lower_bound);
         return false;
       }
       _upper_bound = value;
     } else if (!strcmp(name, "pseudo_num")) {
       if (value < 0) {
-	log_msg("invalid pseudo_num: %g : must be >= 0\n",
-		value);
+        log_msg("invalid pseudo_num: %g : must be >= 0\n",
+                value);
         return false;
       }
       _pseudo_num = value;
       return true;
     } else if (!strcmp(name, "pseudo_denom")) {
       if (value < 0) {
-	log_msg("invalid pseudo_denom: %g : must be >= 0\n",
-		value);
+        log_msg("invalid pseudo_denom: %g : must be >= 0\n",
+                value);
         return false;
       }
-      _pseudo_denom =  value;
+      _pseudo_denom = value;
       return true;
     }
     return false;

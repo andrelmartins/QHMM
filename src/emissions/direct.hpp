@@ -22,7 +22,7 @@ public:
   virtual bool setOption(const char * name, double value) {
     if (value != 1.0 && value != 0.0) {
       log_msg("invalid option value: %g : should be 0 or 1\n",
-	      value);
+              value);
       return false;
     }
 

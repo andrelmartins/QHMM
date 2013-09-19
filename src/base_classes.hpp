@@ -28,7 +28,7 @@ public:
       _targets = new int[_n_states];
     
       for (int i = 0; i < _n_targets; ++i)
-	_targets[i] = targets[i];
+        _targets[i] = targets[i];
     }
   }
 

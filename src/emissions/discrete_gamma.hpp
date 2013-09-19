@@ -87,7 +87,7 @@ public:
       return true;
     } else if (!strcmp(name, "shift")) {
       if (value < 0) {
-	log_msg("shift must be >= 0: %g\n", value);
+        log_msg("shift must be >= 0: %g\n", value);
         return false;
       }
       _shift = value;
@@ -95,14 +95,14 @@ public:
     } else if (!strcmp(name, "maxIter")) {
       int maxIter = (int) value;
       if (maxIter <= 0) {
-	log_msg("maxIter must be > 0: %d\n", maxIter);
+        log_msg("maxIter must be > 0: %d\n", maxIter);
         return false;
       }
       _maxIter = maxIter;
       return true;
     } else if (!strcmp(name, "tolerance")) {
       if (value < 0) {
-	log_msg("tolerance must be >= 0: %g\n", value);
+        log_msg("tolerance must be >= 0: %g\n", value);
         return false;
       }
       _tolerance = value;
@@ -110,12 +110,12 @@ public:
     } else if (!strcmp(name, "tblSize")) {
       int tblSize = (int)value;
       if (tblSize <= 0)
-	_tblSize = tblSize; /* this just disables tbl use */
+        _tblSize = tblSize; /* this just disables tbl use */
       else {
-	_tblSize = tblSize;
-	delete _logp_tbl;
-	_logp_tbl = new double[_tblSize];
-	update_logp_tbl();
+        _tblSize = tblSize;
+        delete _logp_tbl;
+        _logp_tbl = new double[_tblSize];
+        update_logp_tbl();
       }
       return true;
     }
@@ -191,7 +191,7 @@ public:
       
       /* test boundary conditions */
       if (QHMM_isinf(shape) || QHMM_isnan(shape) || shape <= 0) {
-	log_state_slot_msg(_stateID, _slotID, "shape update failed: %g (keeping old value: %g)\n", knext, _shape);
+        log_state_slot_msg(_stateID, _slotID, "shape update failed: %g (keeping old value: %g)\n", knext, _shape);
 
         knext = shape;
         break;
@@ -224,7 +224,7 @@ public:
       if (ef != this) {
         ef->_shape = _shape;
         ef->_scale = _scale;
-	ef->copy_logp_tbl(this);
+        ef->copy_logp_tbl(this);
       }
     }
   }

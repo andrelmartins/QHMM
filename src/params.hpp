@@ -64,7 +64,7 @@ public:
   bool anyNaN() const {
     for (unsigned int i = 0; i < _length; ++i) {
       if (std::isnan(_values[i]))
-	return true;
+        return true;
     }
     return false;
   }
