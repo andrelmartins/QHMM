@@ -89,7 +89,7 @@ std::vector<Iter> * Iter::sub_iterators(int slot) {
       if (*mptr != 0 && start >= 0) {
         result->push_back(Iter(this, start, i - 1));
         start = -1;
-      } else if (start < 0)
+      } else if (*mptr == 0 && start < 0)
         start = i;
     }
     
