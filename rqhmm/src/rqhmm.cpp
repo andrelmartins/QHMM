@@ -114,8 +114,17 @@ public:
       cptr = REAL(covars);
     }
 
-    if (missing != R_NilValue)
+    if (missing != R_NilValue) {
+      int Lm, Nm;
+      get_dims(missing, Nm, Lm);
+
+      if (Lm != L)
+	error("missing length must match emissions length: %d != %d\n", Lm, L);
+      if (Nm != emission_slots)
+	error("missing don't match data shape: n.rows = %d, required = %d", Nm, emission_slots);
+
       mptr = INTEGER(missing);
+    }
     
     return new Iter(L, emission_slots, e_slot_dim, eptr,
                     covar_slots, c_slot_dim, cptr, mptr);
