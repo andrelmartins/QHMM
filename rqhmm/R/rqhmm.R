@@ -276,8 +276,13 @@ set.initial.probs.qhmm <- function(hmm, probs) {
 null.or.integer <- function(vec) {
   if (is.null(vec))
     vec
-  else
-    as.integer(vec)
+  else {
+    if (is.matrix(vec)) {
+      storage.mode(vec) <- "integer"
+      return(vec)
+    } else
+      as.integer(vec)
+  }
 }
 
 forward.qhmm <- function(hmm, emissions, covars = NULL, missing = NULL) {
