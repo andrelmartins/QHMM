@@ -50,7 +50,7 @@ class FunctionTable {
       return _funcs[state]->setCovarSlots(idxs, length);
     }
   
-    virtual bool getOption(int state, const char * name, double * out_value) {
+    virtual bool getOption(int state, const char * name, double * out_value) const {
       return _funcs[state]->getOption(name, out_value);
     }
   
@@ -250,7 +250,7 @@ public:
     return setCovars(state, idxs, length);
   }
   
-  bool getSlotOption(int state, int slot, const char * name, double * out_value) {
+  bool getSlotOption(int state, int slot, const char * name, double * out_value) const {
     return getOption(state, name, out_value);
   }
   
@@ -299,7 +299,7 @@ public:
     return _funcs[state][slot]->setCovarSlots(idxs, length);
   }
   
-  bool getSlotOption(int state, int slot, const char * name, double * out_value) {
+  bool getSlotOption(int state, int slot, const char * name, double * out_value) const {
     return _funcs[state][slot]->getOption(name, out_value);
   }
   

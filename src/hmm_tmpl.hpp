@@ -81,7 +81,7 @@ class HMMImpl : public HMM {
       return _logEkb->setSlotCovars(state, slot, idxs, length);
     }
   
-    virtual bool get_emission_option(int state, int slot, const char * name, double * out_value) {
+    virtual bool get_emission_option(int state, int slot, const char * name, double * out_value) const {
       return _logEkb->getSlotOption(state, slot, name, out_value);
     }
   
@@ -89,7 +89,7 @@ class HMMImpl : public HMM {
       return _logEkb->setSlotOption(state, slot, name, value);
     }
   
-    virtual bool get_transition_option(int state, const char * name, double * out_value) {
+    virtual bool get_transition_option(int state, const char * name, double * out_value) const {
       return _logAkl->getOption(state, name, out_value);
     }
   
@@ -97,7 +97,7 @@ class HMMImpl : public HMM {
       return _logAkl->setOption(state, name, value);
     }
   
-    double forward(Iter & iter, double * matrix) {
+    double forward(Iter & iter, double * matrix) const {
       double * m_col, * m_col_prev;
       LogSum * logsum = LogSum::create(_n_states);
       iter.resetFirst();
@@ -140,7 +140,7 @@ class HMMImpl : public HMM {
       return loglik;
     }
 
-    double backward(Iter & iter, double * matrix) {
+    double backward(Iter & iter, double * matrix) const {
       double * m_col, * m_col_next;
       LogSum * logsum = LogSum::create(_n_states);
       
@@ -185,7 +185,7 @@ class HMMImpl : public HMM {
 
 #define AT(M, I, J) M[(I) + (J)*rows]
 
-    void viterbi(Iter & iter, int * path) {
+    void viterbi(Iter & iter, int * path) const {
       int rows = _n_states; /* needed by AT macro */
       int cols = iter.length();
       double * m_col, * m_col_prev;
@@ -275,7 +275,7 @@ class HMMImpl : public HMM {
       delete[] backptr;
     }
   
-    void state_posterior(Iter & iter, const double * const fw, const double * const bk, double * matrix) {
+    void state_posterior(Iter & iter, const double * const fw, const double * const bk, double * matrix) const {
       /* posterior matrix is filled, state by state */
       LogSum * logsum = LogSum::create(_n_states);
       
