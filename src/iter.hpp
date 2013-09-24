@@ -97,10 +97,17 @@ class Iter {
     int emission_slot_count() { return _emission_slot_count; }
     int iter_offset() const { return _offset; }
   
+    Iter * shallowCopy() {
+      Iter * result = new Iter(*this); // default compiler member-wise copy
+      result->_is_copy = true; // mark as copy to avoid double free in destructor
+      return result;
+    }
+  
   protected:
     Iter(Iter * parent, int start, int end); // constructor for sub_iterator() function
   
     bool _is_subiterator;
+    bool _is_copy;
     int _offset;
     int _length;
     int _index;

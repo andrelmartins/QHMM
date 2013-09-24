@@ -9,6 +9,7 @@ Iter::Iter(int length, int emission_slots, int * e_slot_dim, double * emissions,
   assert(emissions != NULL);
   
   _is_subiterator = false;
+  _is_copy = false;
   _offset = 0;
   _length = length;
   _index = 0;
@@ -45,7 +46,7 @@ Iter::Iter(int length, int emission_slots, int * e_slot_dim, double * emissions,
 }
 
 Iter::~Iter() {
-  if (!_is_subiterator) {
+  if (!(_is_subiterator || _is_copy)) {
     delete[] _emission_offsets;
     if (_covar_offsets != NULL)
       delete[] _covar_offsets;

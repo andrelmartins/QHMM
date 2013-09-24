@@ -26,6 +26,7 @@ public:
   
 private:
   Iter * _iter;
+  Iter * _iterCopy;
   HMM * _hmm;
   
   bool _posterior_dirty;

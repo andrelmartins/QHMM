@@ -3,6 +3,7 @@
 EMSequence::EMSequence(HMM * hmm, Iter * iter) {
   /* keep pointer to main iterator and HMM */
   _iter = iter;
+  _iterCopy = iter->shallowCopy();
   _hmm = hmm;
   
   /* initialize sub-iterators */
@@ -24,6 +25,7 @@ EMSequence::EMSequence(HMM * hmm, Iter * iter) {
 }
 
 EMSequence::~EMSequence() {
+  delete _iterCopy;
   for (unsigned int i = 0; i < _slot_subiters->size(); ++i)
     delete (*_slot_subiters)[i];
   delete _slot_subiters;
@@ -40,7 +42,7 @@ double EMSequence::updateFwBk() {
   double loglik = 0;
   
   loglik = _hmm->forward(*_iter, _forward);
-  loglik = _hmm->backward(*_iter, _backward); // ideally should check both are eq
+  loglik = _hmm->backward(*_iterCopy, _backward); // ideally should check both are eq
   
   /* we don't update the posterior here just in case all emissions
    are fixed and we don't actually need it
