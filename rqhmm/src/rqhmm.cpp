@@ -15,6 +15,7 @@
 #include <hmm.hpp>
 #include <utils.hpp>
 #include <vector>
+#include <cstring>
 
 static std::vector<FuncEntry*> __emissions;
 static std::vector<FuncEntry*> __transitions;
@@ -449,6 +450,90 @@ public:
   RQHMMData * data;
 };
 
+SEXP em_trace_column_name(ParamRecord * rec, int position) {
+  SEXP result;
+  if (rec->isTransition) {
+    int paramIndex = rec->paramIndex(position) + 1;
+    int size = snprintf(NULL, 0, "T.%d.%d", 
+			rec->stateID + 1, paramIndex);
+    char * tmp = new char[size + 1];
+    snprintf(tmp, size + 1, "T.%d.%d", 
+	     rec->stateID + 1, rec->paramIndex(position) + 1);
+    result = mkChar(tmp);
+    delete tmp;
+  } else {
+    int paramIndex = rec->paramIndex(position) + 1;
+    int size = snprintf(NULL, 0, "S.%d.%d.%d", 
+			rec->stateID + 1, rec->slotID + 1, paramIndex);
+    char * tmp = new char[size + 1];
+    snprintf(tmp, size + 1, "S.%d.%d.%d", 
+	     rec->stateID + 1, rec->slotID + 1, paramIndex);
+    result = mkChar(tmp);
+    delete tmp;
+  }
+  return result;
+}
+
+static SEXP convert_em_trace(std::vector<ParamRecord*> * trace) {
+  SEXP result;
+  SEXP row_names;
+  SEXP col_names;
+  // data frame with columns
+  // T.<state number>.<param index> for transitions
+  // E.<state number>.<slot number>.<param index> for emissions
+
+  /* compute number of columns */
+  int n_columns = 0;
+  int n_rows = 0;
+  for (unsigned int i = 0; i < trace->size(); ++i) {
+    ParamRecord * rec_i = (*trace)[i];
+
+    n_columns += rec_i->paramSize();
+    if (n_rows == 0 && rec_i->paramSize() > 0)
+      n_rows = rec_i->size();
+  }
+
+  if (n_columns == 0)
+    return R_NilValue;
+
+  /* allocate space */
+  PROTECT(result = NEW_LIST(n_columns));
+  PROTECT(col_names = NEW_CHARACTER(n_columns));
+  PROTECT(row_names = NEW_INTEGER(n_rows));
+  for (int i = 0; i < n_rows; ++i)
+    INTEGER(row_names)[i] = i + 1;
+  
+
+  /* fill in data frame */
+  int col = 0;
+  for (unsigned int i = 0; i < trace->size(); ++i) {
+    ParamRecord * rec_i = (*trace)[i];
+
+    if (rec_i->paramSize() > 0) {
+      for (int position = 0; position < rec_i->paramSize(); ++position) {
+	SEXP col_data;
+	/* create column name */
+	SET_STRING_ELT(col_names, col, em_trace_column_name(rec_i, position));
+
+	/* copy column data */
+	col_data = NEW_NUMERIC(n_rows);
+	for (int j = 0; j < n_rows; ++j)
+	  REAL(col_data)[j] = rec_i->value(j, position);
+	SET_VECTOR_ELT(result, col, col_data);
+
+	/* */
+	++col;
+      }
+    }
+  }
+  
+  setAttrib(result, R_RowNamesSymbol, row_names);
+  setAttrib(result, R_NamesSymbol, col_names);
+  setAttrib(result, R_ClassSymbol, mkString("data.frame"));
+  UNPROTECT(3);
+
+  return result;
+}
 
 static SEXP convert_block_vector(std::vector<block_t> * blocks) {
   SEXP result;
@@ -986,6 +1071,7 @@ extern "C" {
   
   SEXP rqhmm_em(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing, SEXP tolerance) {
     SEXP result;
+    SEXP loglik;
     SEXP ptr;
     RQHMMData * data;
     std::vector<Iter*> iterators;
@@ -1010,13 +1096,19 @@ extern "C" {
     /* clean up */
     for (unsigned int i = 0; i < iterators.size(); ++i)
       delete iterators[i];
-    HMM::delete_records(em_result.param_trace);
 
     /* prepare result */
-    PROTECT(result = NEW_NUMERIC(1));
-    REAL(result)[0] = em_result.log_likelihood;
+    PROTECT(result = NEW_LIST(2));
+    PROTECT(loglik = NEW_NUMERIC(1));
+    REAL(loglik)[0] = em_result.log_likelihood;
 
-    UNPROTECT(2);
+    SET_VECTOR_ELT(result, 0, loglik);
+    SET_VECTOR_ELT(result, 1, convert_em_trace(em_result.param_trace));
+
+    /* more clean up */
+    HMM::delete_records(em_result.param_trace);
+
+    UNPROTECT(3);
 
     return result;
   }
