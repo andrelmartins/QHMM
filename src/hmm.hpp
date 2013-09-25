@@ -4,6 +4,12 @@
 #include <vector>
 #include "iter.hpp"
 #include "func_table.hpp"
+#include "param_record.hpp"
+
+typedef struct EMResult {
+  double log_likelihood;
+  std::vector<ParamRecord*> * param_trace;
+} EMResult;
 
 class HMM {
   public:
@@ -31,7 +37,7 @@ class HMM {
     virtual void local_loglik(Iter & iter, const double * const fw, const double * const bk, double * result) const = 0;
     virtual void transition_posterior(Iter & iter_at_target, const double * const fw, const double * const bk, double loglik, int n_src, const int * const src, int n_tgt, double * result) const = 0;
 
-    virtual double em(std::vector<Iter*> & iters, double tolerance);
+    virtual struct EMResult em(std::vector<Iter*> & iters, double tolerance);
 
     template<typename TransTableT, typename EmissionTableT>
     static HMM * create(TransTableT * transitions, EmissionTableT * emissions, double * init_log_probs);
@@ -39,10 +45,14 @@ class HMM {
     // properties
     virtual int state_count() const = 0;
   
+    static void delete_records(std::vector<ParamRecord*> * ptr);
 protected:
     virtual const std::vector<std::vector<EmissionFunction*> > & emission_groups() const = 0;
     virtual const std::vector<std::vector<TransitionFunction*> > & transition_groups() const = 0;
     virtual void refresh_transition_table() = 0;
+
+    std::vector<ParamRecord*> * init_records() const;
+    void update_records(std::vector<ParamRecord*> * ptr) const;
 };
 
 #include "hmm.cpp"

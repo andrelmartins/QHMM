@@ -989,7 +989,7 @@ extern "C" {
     SEXP ptr;
     RQHMMData * data;
     std::vector<Iter*> iterators;
-    double loglik;
+    EMResult em_result;
 
     /* retrieve rqhmm pointer */
     PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
@@ -1002,7 +1002,7 @@ extern "C" {
 
     /* invoke */
     try {
-      loglik = data->hmm->em(iterators, REAL(tolerance)[0]);
+      em_result = data->hmm->em(iterators, REAL(tolerance)[0]);
     } catch (QHMMException & e) {
       REprint_exception(e);
     }
@@ -1010,10 +1010,11 @@ extern "C" {
     /* clean up */
     for (unsigned int i = 0; i < iterators.size(); ++i)
       delete iterators[i];
+    HMM::delete_records(em_result.param_trace);
 
     /* prepare result */
     PROTECT(result = NEW_NUMERIC(1));
-    REAL(result)[0] = loglik;
+    REAL(result)[0] = em_result.log_likelihood;
 
     UNPROTECT(2);
 
