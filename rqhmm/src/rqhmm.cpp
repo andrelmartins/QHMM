@@ -350,11 +350,21 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
       
       for (int i = 0; i < n_groups; ++i) {
         SEXP group_i = VECTOR_ELT(emission_groups, i);
-        int * igrp = INTEGER(group_i);
-        int grp_slot = *igrp;
-        int grp_len = Rf_length(group_i) - 1; // exclude slot indicator
+
+	if (IS_INTEGER(group_i)) {
+	  int * igrp = INTEGER(group_i);
+	  int grp_slot = *igrp;
+	  int grp_len = Rf_length(group_i) - 1; // exclude slot indicator
         
-        etable->makeGroup(igrp + 1, grp_len, &grp_slot, 1); // exclude slot indicator
+	  etable->makeGroup(igrp + 1, grp_len, &grp_slot, 1); // exclude slot indicator
+	} else {
+	  SEXP slots = VECTOR_ELT(group_i, 0);
+	  SEXP states = VECTOR_ELT(group_i, 1);
+	  int grp_len = Rf_length(states);
+	  int slot_len = Rf_length(slots);
+
+	  etable->makeGroup(INTEGER(states), grp_len, INTEGER(slots), slot_len);
+	}
       }
     }
     etable->commitGroups(); // turn remaining singletons into unitary groups
