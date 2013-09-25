@@ -471,7 +471,9 @@ collect.params.qhmm <- function(hmm) {
     lapply(1:(hmm$n.emission.slots), function(slot)
            get.emission.params.qhmm(hmm, state, slot = slot)))
 
-  return(list(transitions = transitions, emissions = emissions))
+  return(list(transitions = transitions,
+              emissions = emissions,
+              initial.probs = get.initial.probs.qhmm(hmm)))
 }
 
 restore.params.qhmm <- function(hmm, saved) {
@@ -483,6 +485,11 @@ restore.params.qhmm <- function(hmm, saved) {
     for (slot in 1:(hmm$n.emission.slots))
       set.emission.params.qhmm(hmm, state, state.params[[slot]], slot = slot)
   }
+
+  # for purposes of backward compatibility
+  # some, in use, code did not same this value
+  if ("initial.probs" %in% names(saved))
+    set.initial.probs.qhmm(hmm, saved$initial.probs)
 }
 
 print.qhmm <- function(object, ...) {
@@ -502,10 +509,12 @@ summary.qhmm <- function(object, digits = 3, nsmall = 0L, ...) {
   }
   
   values = collect.params.qhmm(object)
+  init.probs = values$initial.probs
 
   for (state in 1:(object$n.states)) {
     targets = which(object$valid.transitions[state,] > 0)
     cat("( state", state, ") ->", targets, "\n")
+    cat("  initial prob:", values$initial.probs[state], "\n")
     cat("  transitions:")
     param.cat(values$transitions[[state]])
     cat("\n")
