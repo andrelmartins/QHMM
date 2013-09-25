@@ -354,7 +354,7 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
         int grp_slot = *igrp;
         int grp_len = Rf_length(group_i) - 1; // exclude slot indicator
         
-        etable->makeGroup(igrp + 1, grp_len, grp_slot); // exclude slot indicator
+        etable->makeGroup(igrp + 1, grp_len, &grp_slot, 1); // exclude slot indicator
       }
     }
     etable->commitGroups(); // turn remaining singletons into unitary groups
