@@ -61,6 +61,7 @@ EMResult HMM::em(std::vector<Iter*> & iters, double tolerance) {
   int iter_count = 0;
   double cur_loglik, prev_loglik;
   EMResult result;
+  bool skip_transitions;
 
   /* initialize result trace */
   result.param_trace = init_records();
@@ -69,6 +70,7 @@ EMResult HMM::em(std::vector<Iter*> & iters, double tolerance) {
      (handles spliting by missing data)
    */
   EMSequences * sequences = new EMSequences(this, iters);
+  skip_transitions = sequences->unitarySequences();
 
   /* main EM loop */
   prev_loglik = -std::numeric_limits<double>::infinity();
@@ -90,15 +92,17 @@ EMResult HMM::em(std::vector<Iter*> & iters, double tolerance) {
     /* update parameters */
 
     /* - transition functions */
-    std::vector<std::vector<TransitionFunction*> > tgroups = transition_groups();
-    std::vector<std::vector<TransitionFunction*> >::iterator tit;
-    for (tit = tgroups.begin(); tit != tgroups.end(); ++tit) {
-      std::vector<TransitionFunction*> group_i = *tit;
-      TransitionFunction * head = group_i[0];
-      
-      head->updateParams(sequences, &group_i);
+    if (!skip_transitions) {
+      std::vector<std::vector<TransitionFunction*> > tgroups = transition_groups();
+      std::vector<std::vector<TransitionFunction*> >::iterator tit;
+      for (tit = tgroups.begin(); tit != tgroups.end(); ++tit) {
+	std::vector<TransitionFunction*> group_i = *tit;
+	TransitionFunction * head = group_i[0];
+	
+	head->updateParams(sequences, &group_i);
+      }
+      refresh_transition_table(); // refresh internal caches
     }
-    refresh_transition_table(); // refresh internal caches
 
     /* - emission functions */
     std::vector<std::vector<EmissionFunction*> > groups = emission_groups();

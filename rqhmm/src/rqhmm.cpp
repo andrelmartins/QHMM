@@ -1081,6 +1081,7 @@ extern "C" {
   
   SEXP rqhmm_em(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing, SEXP tolerance) {
     SEXP result;
+    SEXP res_names;
     SEXP loglik;
     SEXP ptr;
     RQHMMData * data;
@@ -1110,15 +1111,21 @@ extern "C" {
     /* prepare result */
     PROTECT(result = NEW_LIST(2));
     PROTECT(loglik = NEW_NUMERIC(1));
+    PROTECT(res_names = NEW_CHARACTER(2));
     REAL(loglik)[0] = em_result.log_likelihood;
 
     SET_VECTOR_ELT(result, 0, loglik);
     SET_VECTOR_ELT(result, 1, convert_em_trace(em_result.param_trace));
 
+    SET_STRING_ELT(res_names, 0, mkChar("loglik"));
+    SET_STRING_ELT(res_names, 1, mkChar("trace"));
+    
+    setAttrib(result, R_NamesSymbol, res_names);
+
     /* more clean up */
     HMM::delete_records(em_result.param_trace);
 
-    UNPROTECT(3);
+    UNPROTECT(4);
 
     return result;
   }

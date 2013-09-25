@@ -380,13 +380,13 @@ emission.test.qhmm <- function(emission.name, emission.params, values, covars = 
       set.emission.option.qhmm(hmm, 1, optName, options[[optName]])
   }
   
-  loglik = 0
+  result = NULL
   if (is.null(covars))
-    loglik = em.qhmm(hmm, list(values))
+    result = em.qhmm(hmm, list(values))
   else
-    loglik = em.qhmm(hmm, list(values), list(covars))
+    result = em.qhmm(hmm, list(values), list(covars))
   
-  return(list(loglik = loglik, params = get.emission.params.qhmm(hmm, 1)))
+  return(list(result = result, params = get.emission.params.qhmm(hmm, 1)))
 }
 
 transition.test.qhmm <- function(transition.name, transition.params, n.states, state.sequence, covars = NULL, options = NULL) {
@@ -433,18 +433,18 @@ transition.test.qhmm <- function(transition.name, transition.params, n.states, s
   }
   
   # run EM
-  loglik = 0
+  result = NULL
   if (is.null(covars))
-    loglik = em.qhmm(hmm, list(state.sequence))
+    result = em.qhmm(hmm, list(state.sequence))
   else
-    loglik = em.qhmm(hmm, list(state.sequence), list(covars))
+    result = em.qhmm(hmm, list(state.sequence), list(covars))
 
   # obtain transition matrix / parameter table
   tm = NULL
   for (i in 1:n.states)
     tm = rbind(tm, get.transition.params.qhmm(hmm, i))
 
-  return(list(loglik = loglik, params = tm))
+  return(list(result = result, params = tm))
 }
 
 path.blocks.qhmm <- function(path, states, in.sequence = FALSE) {
