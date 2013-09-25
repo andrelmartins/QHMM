@@ -1,4 +1,5 @@
 #include "em_seq.hpp"
+#include <omp.h>
 
 EMSequence::EMSequence(HMM * hmm, Iter * iter) {
   /* keep pointer to main iterator and HMM */
@@ -40,10 +41,19 @@ EMSequence::~EMSequence() {
 
 double EMSequence::updateFwBk() {
   double loglik = 0;
-  
-  loglik = _hmm->forward(*_iter, _forward);
-  loglik = _hmm->backward(*_iterCopy, _backward); // ideally should check both are eq
-  
+
+  #pragma omp num_treads(2)
+  {
+   #pragma omp sections 
+   {  
+     #pragma omp section
+       loglik = _hmm->forward(*_iter, _forward);
+ 
+     #pragma omp section
+       loglik = _hmm->backward(*_iterCopy, _backward); // ideally should check both are eq
+   }
+  }
+
   /* we don't update the posterior here just in case all emissions
    are fixed and we don't actually need it
    */

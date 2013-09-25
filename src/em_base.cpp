@@ -1,5 +1,6 @@
 #include "em_base.hpp"
 #include "em_seq.hpp"
+#include <omp.h>
 
 EMSequences::EMSequences(HMM * hmm, std::vector<Iter*> & iters) {
   std::vector<Iter*>::iterator it;
@@ -29,14 +30,16 @@ double EMSequences::updateFwBk() {
   std::vector<EMSequence*>::iterator it;
   double loglik = 0;
   
-  for (it = _em_seqs.begin(); it != _em_seqs.end(); ++it) {
-    try {
-      loglik += (*it)->updateFwBk();
-    } catch (QHMMException & e) {
-      int seq_id = it - _em_seqs.begin();
-      e.sequence_id = seq_id;
-      throw;
-    }
+  omp_set_nested(1); // Allow nested OMP directives.
+  #pragma omp parallel for num_threads(4)
+  for (int i=0;i<_em_seqs.size();i++) {
+//    try {
+      loglik += (_em_seqs[i])->updateFwBk();
+//    } catch (QHMMException & e) {
+//      int seq_id = it - _em_seqs.begin();
+//      e.sequence_id = seq_id;
+//      throw;
+//    }
   }
   
   return loglik;
