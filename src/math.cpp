@@ -34,6 +34,12 @@ double QHMM_logdiff(const double ln_x1, const double ln_x2) {
   return(ln_x1 + log1p(-exp(ln_x2 - ln_x1)));
 }
 
+double QHMM_logsum(const double ln_x1, const double ln_x2) {
+  if (ln_x1 > ln_x2)
+    return(ln_x1 + log1p(exp(ln_x2 - ln_x1)));
+  return(ln_x2 + log1p(exp(ln_x1 - ln_x2)));
+}
+
 double QHMM_log_gamma_cdf_lower(const double x, const double shape, const double scale) {
   return pgamma(x, shape, scale, TRUE, TRUE);
 }
@@ -54,6 +60,12 @@ double QHMM_trigamma(const double x) {
 
 double QHMM_logdiff(const double ln_x1, const double ln_x2) {
   return(ln_x1 + gsl_log1p(-exp(ln_x2 - ln_x1)));
+}
+
+double QHMM_logsum(const double ln_x1, const double ln_x2) {
+  if (ln_x1 > ln_x2)
+    return(ln_x1 + gsl_log1p(exp(ln_x2 - ln_x1)));
+  return(ln_x2 + gsl_log1p(exp(ln_x1 - ln_x2)));
 }
 
 double QHMM_log_gamma(const double x) {
@@ -93,6 +105,13 @@ double QHMM_trigamma(const double k) {
 double QHMM_logdiff(const double ln_x1, const double ln_x2) {
   return(ln_x1 + log(1 - exp(ln_x2 - ln_x1)));
 }
+
+double QHMM_logsum(const double ln_x1, const double ln_x2) {
+  if (ln_x1 > ln_x2)
+    return(ln_x1 + log(1 + exp(ln_x2 - ln_x1)));
+  return(ln_x2 + log(1 + exp(ln_x1 - ln_x2)));
+}
+
 
 double QHMM_log_gamma(const double x) {
   return std::lgamma(x);
