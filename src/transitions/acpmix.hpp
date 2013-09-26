@@ -206,7 +206,7 @@ private:
 
   void update_log_probs() {
     _log_acor_self = log(_alpha) + log(_gamma);
-    _log_acor_other = log(1.0 - _alpha) + log(_gamma) - log(_n_targets);
+    _log_acor_other = log(1.0 - _alpha) + log(_gamma) - log(_n_targets - 1);
     _log_prior_weight = log(1.0 - _gamma);
   }
 
@@ -235,7 +235,7 @@ private:
 	    fx += post / denom;
 	    gx -= post * _gamma / (denom * denom);
 	  } else {
-	    double denom = (_gamma * (1.0 - alpha) + _n_targets * (1.0 - _gamma) * prior);
+	    double denom = (_gamma * (1.0 - alpha) + (_n_targets - 1) * (1.0 - _gamma) * prior);
 	    fx -= post / denom;
 	    gx -= post * _gamma / (denom * denom);
 	  }
