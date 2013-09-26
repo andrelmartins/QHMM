@@ -76,7 +76,7 @@ void ParamRecord::collect() {
 
 double ParamRecord::value(int row, int position) const {
   assert(row > 0 && row < this->size());
-  assert(position > 0 && position <= _size);
+  assert(position >= 0 && position < _size);
 
   return (*(_records[position]))[row];
 }
