@@ -19,7 +19,7 @@ void ParamRecord::init(Params * par) {
       _indexes = new int[_size];
       _records = new vdbl_ptr[_size];
 
-      for (int i = 0, j = 0; i < _size; ++i)
+      for (int i = 0, j = 0; i < par->length(); ++i)
 	if (!par->isFixed(i))
 	  _indexes[j++] = i;
 
