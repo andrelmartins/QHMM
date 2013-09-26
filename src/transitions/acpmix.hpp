@@ -20,7 +20,7 @@
 class ACPMix : public TransitionFunction {
 public:
 
-  ACPMix(int n_states, int stateID, int n_targets, int * targets, double alpha = 0.5, double gamma = 0.5, int covar_slot = 0, int max_iters = 100) : TransitionFunction(n_states, stateID, n_targets, targets), _covar_slot(covar_slot), _alpha(alpha), _gamma(gamma), _is_fixed_alpha(false), _max_iters(100) {
+  ACPMix(int n_states, int stateID, int n_targets, int * targets, double alpha = 0.5, double gamma = 0.5, int covar_slot = 0, int max_iters = 100, double tolerance = 1e-4) : TransitionFunction(n_states, stateID, n_targets, targets), _covar_slot(covar_slot), _alpha(alpha), _gamma(gamma), _is_fixed_alpha(false), _max_iters(100), _tolerance(tolerance) {
     _valid_states = new bool[n_states];
     
     // set all to false
