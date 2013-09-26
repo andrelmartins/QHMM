@@ -49,15 +49,15 @@ public:
   }
 
   virtual bool validParams(Params const & params) const {
-    return params.length() == 2 && params[0] >= _tolerance && params[0] <= 1 - _tolerance && params[1] > 0 && params[1] < 1;
+    return params.length() == 2 && params[0] >= _tolerance && params[0] <= 1 - _tolerance && params[1] >= 0 && params[1] <= 1;
   }
 
   virtual Params * getParams() const {
     double pars[2] = { _alpha, _gamma };
     Params * result = new Params(2, pars);
     if (_is_fixed_alpha)
-      result->setFixed(1, true);
-    result->setFixed(2, true); // always fixed
+      result->setFixed(0, true);
+    result->setFixed(1, true); // always fixed
     return result;
   }
 
@@ -65,7 +65,7 @@ public:
     _alpha = params[0];
     _gamma = params[1];
     update_log_probs();
-    _is_fixed_alpha = params.isFixed(0);
+    _is_fixed_alpha = params.isFixed(0) || _gamma == 0.0;
   }
   
   virtual bool getOption(const char * name, double * out_value) {
