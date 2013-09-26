@@ -6,6 +6,7 @@
 #include "func_entry.hpp"
 #include <transitions/discrete.hpp>
 #include <transitions/autocorr.hpp>
+#include <transitions/acpmix.hpp>
 #include <emissions/poisson.hpp>
 #include <emissions/discrete.hpp>
 #include <emissions/geometric.hpp>
@@ -1227,6 +1228,7 @@ extern "C" {
     register_transition(new TransitionEntry<Discrete>("discrete", "rqhmm_base", false));
     register_transition(new TransitionEntry<AutoCorr>("autocorr", "rqhmm_base", false));
     register_transition(new TransitionEntry<AutoCorrCovar>("autocorr_covar", "rqhmm_base", true));
+    register_transition(new TransitionEntry<ACPMix>("acpmix", "rqhmm", true));
 
     // add our basic emission functions
     register_emission(new EmissionEntry<Poisson>("poisson", "rqhmm_base", false));
