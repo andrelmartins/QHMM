@@ -471,7 +471,7 @@ SEXP em_trace_column_name(ParamRecord * rec, int position) {
     snprintf(tmp, size + 1, "T.%d.%d", 
 	     rec->stateID + 1, rec->paramIndex(position) + 1);
     result = mkChar(tmp);
-    delete tmp;
+    delete[] tmp;
   } else {
     int paramIndex = rec->paramIndex(position) + 1;
     int size = snprintf(NULL, 0, "S.%d.%d.%d", 
@@ -480,7 +480,7 @@ SEXP em_trace_column_name(ParamRecord * rec, int position) {
     snprintf(tmp, size + 1, "S.%d.%d.%d", 
 	     rec->stateID + 1, rec->slotID + 1, paramIndex);
     result = mkChar(tmp);
-    delete tmp;
+    delete[] tmp;
   }
   return result;
 }
