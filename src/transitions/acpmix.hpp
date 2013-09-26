@@ -214,6 +214,8 @@ private:
     double fx = 0;
     double gx = 0;
 
+    piter->reset();
+
     do {
       // NOTE: assume all states in the group have the save _covar_slot
 
