@@ -498,6 +498,10 @@ print.qhmm <- function(object, ...) {
 
 summary.qhmm <- function(object, digits = 3, nsmall = 0L, ...) {
   param.cat <- function(param.vec) {
+    if (length(param.vec) == 0) {
+      cat(" N/A")
+      return()
+    }
     is.fixed = attr(param.vec, "fixed")
     for (i in 1:length(param.vec)) {
       valStr = format(param.vec[i], digits = digits, nsmall = nsmall)
