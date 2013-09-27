@@ -17,4 +17,9 @@ double QHMM_log_gamma_cdf_lower(const double x, const double shape, const double
 double QHMM_log_gamma_cdf_upper(const double x, const double shape, const double scale);
 
 
+typedef double qhmmfn(int n, double *x, void *params);
+
+double QHMM_fminimizer(qhmmfn func, int n, double * x0, void * params, int maxit, double tol, int * out_fail);
+
+
 #endif
