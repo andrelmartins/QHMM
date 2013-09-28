@@ -84,18 +84,18 @@ public:
     if (!strcmp(name, "maxIters")) {
       int iters = (int) value;
       if (iters <= 0) {
-	log_msg("invalid maxIters: %d : should be > 0\n",
-		iters);
-	return false;
+        log_msg("invalid maxIters: %d : should be > 0\n",
+                iters);
+        return false;
       }
       _max_iters = iters;
       return true;
     }
     if (!strcmp(name, "tolerance")) {
       if (value <= 0 || value > _alpha) {
-	log_msg("invalid tolerance: %g : should be > 0 & <= alpha = %g\n",
-		value, _alpha);
-	return false;
+        log_msg("invalid tolerance: %g : should be > 0 & <= alpha = %g\n",
+                value, _alpha);
+        return false;
       }
       _tolerance = value;
       return true;
@@ -111,11 +111,11 @@ public:
     if (_valid_states[target]) {
       int target_idx = _rev_target_map[target];
       double log_prior = iter.covar_i(_covar_slot, target_idx);
-
+      
       if (target == _stateID)
-	return QHMM_logsum(_log_acor_self, log_prior + _log_prior_weight);
+        return QHMM_logsum(_log_acor_self, log_prior + _log_prior_weight);
       else
-	return QHMM_logsum(_log_acor_other, log_prior + _log_prior_weight);
+        return QHMM_logsum(_log_acor_other, log_prior + _log_prior_weight);
     } else
       return -std::numeric_limits<double>::infinity();
   }
@@ -123,55 +123,55 @@ public:
   virtual void updateParams(EMSequences * sequences, std::vector<TransitionFunction*> * group) {
     if (_is_fixed_alpha)
       return;
-
+    
     TransitionPosteriorIterator * piter = sequences->transition_iterator(*group);
     /* use Newton's method to fit alpha */
     double alpha = _alpha;
     bool hit_edge = false;
     for (int iters = _max_iters; iters > 0; --iters) {
       int sign;
-
+      
       /* compute function and derivative */
       double fx = 0;
       double gx = 0;
       
       compute_fx_gx(alpha, piter, group, &fx, &gx);
-
+      
       if (QHMM_isinf(gx) || QHMM_isinf(gx)) {
-	log_state_msg(_stateID, "alpha update failed: iter alpha: %g prev alpha: %g\n", alpha, _alpha);
-	delete piter;
-	return;
+        log_state_msg(_stateID, "alpha update failed: iter alpha: %g prev alpha: %g\n", alpha, _alpha);
+        delete piter;
+        return;
       }
-
+      
       if (fabs(fx) < _tolerance)
-	break;
-
+        break;
+      
       /* update */
       sign = ratio_sign(fx, gx);
       alpha = alpha - sign * exp(log(fabs(fx)) - log(fabs(gx)));
-
+      
       /* impose barriers */
       if (alpha < _tolerance) {
-	hit_edge = true;
-	alpha = _tolerance;
+        hit_edge = true;
+        alpha = _tolerance;
       }
       if (alpha > 1 - _tolerance) {
-	hit_edge = true;
-	alpha = 1 - _tolerance;
+        hit_edge = true;
+        alpha = 1 - _tolerance;
       }
     }
-
+    
     if (hit_edge)
       log_state_msg(_stateID, "alpha update hit edge\n");
-
+    
     // propagate parameters
     std::vector<TransitionFunction*>::iterator tf_it;
     for (tf_it = group->begin(); tf_it != group->end(); ++tf_it) {
       ACPMix * tf = (ACPMix*) (*tf_it)->inner();
-
+      
       tf->update_log_probs(alpha);
     }
-
+    
     delete piter;
   }
 
@@ -213,46 +213,46 @@ private:
   void compute_fx_gx(double alpha, TransitionPosteriorIterator * piter, std::vector<TransitionFunction*> * group, double * out_fx, double * out_gx) {
     double fx = 0;
     double gx = 0;
-
+    
     piter->reset();
-
+    
     do {
       // NOTE: assume all states in the group have the save _covar_slot
-
+      
       for (int tgt_idx = 0; tgt_idx < _n_targets; ++tgt_idx) {
-	double log_prior = piter->covar_i(_covar_slot, tgt_idx);
-	double prior = exp(log_prior);
-
-	for (unsigned int gidx = 0; gidx < group->size(); ++gidx) {
-	  double post = piter->posterior(gidx, tgt_idx);
-
-	  /* NOTE: Since this is intended to compute the ratio fx/gx
-	   *       I'm simplifying the expressions by dividing both by gamma.
-	   */
-	  ACPMix * gState = (ACPMix*) (*group)[gidx]->inner();
-
-	  bool is_self = gState->_stateID == gState->_targets[tgt_idx];
-	  if (is_self) {
-	    double denom = (_gamma * alpha + (1.0 - _gamma) * prior);
-	    fx += post / denom;
-	    gx -= post * _gamma / (denom * denom);
-	  } else {
-	    double denom = (_gamma * (1.0 - alpha) + (_n_targets - 1) * (1.0 - _gamma) * prior);
-	    fx -= post / denom;
-	    gx -= post * _gamma / (denom * denom);
-	  }
-
-	  if (QHMM_isinf(gx) || QHMM_isinf(gx)) {
-	    log_state_msg(gState->_stateID, "alpha iter failed: fx: %g gx:%g prior: %g post: %g\n", fx, gx, prior, post);
-	    *out_fx = fx;
-	    *out_gx = gx;
-	    
-	    return;
-	  }
-	}
+        double log_prior = piter->covar_i(_covar_slot, tgt_idx);
+        double prior = exp(log_prior);
+        
+        for (unsigned int gidx = 0; gidx < group->size(); ++gidx) {
+          double post = piter->posterior(gidx, tgt_idx);
+          
+          /* NOTE: Since this is intended to compute the ratio fx/gx
+           *       I'm simplifying the expressions by dividing both by gamma.
+           */
+          ACPMix * gState = (ACPMix*) (*group)[gidx]->inner();
+          
+          bool is_self = gState->_stateID == gState->_targets[tgt_idx];
+          if (is_self) {
+            double denom = (_gamma * alpha + (1.0 - _gamma) * prior);
+            fx += post / denom;
+            gx -= post * _gamma / (denom * denom);
+          } else {
+            double denom = (_gamma * (1.0 - alpha) + (_n_targets - 1) * (1.0 - _gamma) * prior);
+            fx -= post / denom;
+            gx -= post * _gamma / (denom * denom);
+          }
+          
+          if (QHMM_isinf(gx) || QHMM_isinf(gx)) {
+            log_state_msg(gState->_stateID, "alpha iter failed: fx: %g gx:%g prior: %g post: %g\n", fx, gx, prior, post);
+            *out_fx = fx;
+            *out_gx = gx;
+            
+            return;
+          }
+        }
       }
     } while (piter->next());
-
+    
     /* update output values */
     *out_fx = fx;
     *out_gx = gx;

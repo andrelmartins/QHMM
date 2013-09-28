@@ -13,7 +13,17 @@ class LogSum {
     static LogSum * createType(const int type, const int capacity, const bool optimize);
     
     virtual ~LogSum() { delete[] _values; }
-    
+  
+    double & operator[](unsigned int index) {
+      assert(index >= 0 && index < _count);
+      return _values[index];
+    }
+  
+    const double & operator[](unsigned int index) const {
+      assert(index >= 0 && index < _count);
+      return _values[index];
+    }
+  
     void store(const double logValue) {
       assert(_count < _length);
       _values[_count++] = logValue;

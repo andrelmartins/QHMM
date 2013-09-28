@@ -3,6 +3,7 @@
 
 #if defined(USE_RMATH)
 #include <Rmath.h>
+#include <R_ext/Applic.h>
 #elif defined(USE_GSL)
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sf_gamma.h>
@@ -58,11 +59,13 @@ double QHMM_fminimizer(qhmmfn func, int n, double * x0, void * params, int maxit
   int fncount = 0;
 
   nmmin(n, x0, xout, &fout, func, out_fail, tol, intol, params,
-	nm_alpha, nm_beta, nm_gamma, 0,
-	&fncount, maxit);
+        nm_alpha, nm_beta, nm_gamma, 0,
+        &fncount, maxit);
   
   for (int i = 0; i < n; ++i)
     x0[i] = xout[i];
+  
+  return fout;
 }
 
 #elif defined(USE_GSL)
