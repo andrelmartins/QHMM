@@ -6,7 +6,7 @@ const double LogSum::SUM_LOG_THRESHOLD = -10;
 
 class LogSum2 : public LogSum {
   public:
-    LogSum2(const int capacity, const bool optimize) : LogSum(capacity, optimize) {}
+    LogSum2(const unsigned int capacity, const bool optimize) : LogSum(capacity, optimize) {}
     
     virtual double compute() {
       assert(_count > 0);
@@ -37,7 +37,7 @@ class LogSum2 : public LogSum {
     }
 };
 
-LogSum * LogSum::create(const int capacity, const bool optimize) {
+LogSum * LogSum::create(const unsigned int capacity, const bool optimize) {
   // special case implementations
   if (capacity == 2)
     return new LogSum2(capacity, optimize);
@@ -45,7 +45,7 @@ LogSum * LogSum::create(const int capacity, const bool optimize) {
   return new LogSum(capacity, optimize);
 }
 
-LogSum * LogSum::createType(const int type, const int capacity, const bool optimize) {
+LogSum * LogSum::createType(const int type, const unsigned int capacity, const bool optimize) {
   if (capacity == 2 && type == 1)
     return new LogSum2(capacity, optimize);
 
