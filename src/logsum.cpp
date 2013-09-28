@@ -57,7 +57,7 @@ double LogSum::compute() {
 
   double * mptr = std::max_element(_values, _values + _count);
   double max = *mptr;
-  int i;
+  unsigned int i;
   double * dptr;
   double expsum = 0;
 
