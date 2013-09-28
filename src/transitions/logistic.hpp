@@ -110,7 +110,7 @@ public:
     if (target == _targets[0])
       log_num = 0;
     else {
-      int idx = _rev_target_map[target];
+      int idx = _rev_target_map[target] - 1;
       log_num = _betas[idx*2] + _betas[idx*2 + 1] * x;
     }
 
