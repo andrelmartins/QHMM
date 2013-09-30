@@ -62,7 +62,7 @@ std::vector<block_t> * path_blocks(const std::vector<int> * path, const std::vec
         // good block
         block_t block;
         block.start = block_start;
-        block.end = it - path->begin();
+        block.end = it - path->begin() - 1;
         result->push_back(block);
         in_block = false;
         seen_mid = false;
