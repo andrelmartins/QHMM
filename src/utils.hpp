@@ -11,7 +11,7 @@ typedef struct {
 /*
  path_blocks: find contiguous sub-sequences of block states in path
               if start, end and middle block sets are given, then a block must start with one of the start states,
-              be filled with any sequence of middle states and end with one of the end states
+              be filled with any sequence of middle states and end with one or more of the end states
  */
 std::vector<block_t> * path_blocks(const std::vector<int> * path, const std::vector<int> * block_states);
 std::vector<block_t> * path_blocks(const std::vector<int> * path, const std::vector<int> * start_states, const std::vector<int> * middle_states, const std::vector<int> * end_states);
