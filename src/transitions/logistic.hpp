@@ -192,7 +192,7 @@ private:
     piter->reset();
     
     do {
-      double x = data->piter->covar(data->covar_slot);
+      double x = piter->covar(data->covar_slot);
       double sum;
       
       logsum->clear();
