@@ -58,7 +58,7 @@ class FunctionTable {
       return _funcs[state]->setOption(name, value);
     }
   
-    virtual void makeGroup(int * idxs, int length, int slot = 0) {
+    virtual void makeGroup(int * idxs, int length, int * slots = NULL, int n_slots = 0) {
       std::vector<T * > group;
       
       for (int i = 0; i < length; ++i) {
@@ -331,16 +331,19 @@ public:
   int n_states() { return _n_states; }
   int n_slots() { return _n_slots; }
   
-  virtual void makeGroup(int * idxs, int length, int slot) {
+  virtual void makeGroup(int * idxs, int length, int * slots, int n_slots) {
     std::vector<EmissionFunction * > group;
     
     for (int i = 0; i < length; ++i) {
-      EmissionFunction * f_i = _funcs[idxs[i]][slot];
-      group.push_back(f_i);
+      for (int j = 0; j < n_slots; ++j) {
+	int slot = slots[j];
+	EmissionFunction * f_i = _funcs[idxs[i]][slot];
+	group.push_back(f_i);
       
-      // remove from singletons
-      std::vector<EmissionFunction*>::iterator it = find(_singletons[slot].begin(), _singletons[slot].end(), f_i);
-      _singletons[slot].erase(it);
+	// remove from singletons
+	std::vector<EmissionFunction*>::iterator it = find(_singletons[slot].begin(), _singletons[slot].end(), f_i);
+	_singletons[slot].erase(it);
+      }
     }
     
     _groups.push_back(group);

@@ -42,6 +42,7 @@ std::vector<block_t> * path_blocks(const std::vector<int> * path, const std::vec
   std::vector<block_t> * result = new std::vector<block_t>();
   bool in_block = false;
   bool seen_mid = false;
+  bool seen_end = false;
   int block_start;
   std::vector<int>::const_iterator it;
   
@@ -52,20 +53,28 @@ std::vector<block_t> * path_blocks(const std::vector<int> * path, const std::vec
         continue;
       }
       
-      if (seen_mid && is_block_state(*it, end_states)) {
+      if ((seen_mid || seen_end) && is_block_state(*it, end_states)) {
+	seen_end = true;
+	continue;
+      }
+
+      if (seen_end) {
         // good block
         block_t block;
         block.start = block_start;
-        block.end = it - path->begin();
+        block.end = it - path->begin() - 1;
         result->push_back(block);
         in_block = false;
         seen_mid = false;
-        continue;
+        seen_end = false;
+        // let things go through so that we can start 
+        // matching a new start
       }
       
       // restart match
       if (is_block_state(*it, start_states)) {
         block_start = it - path->begin();
+        in_block = true;
         seen_mid = false;
         continue;
       }

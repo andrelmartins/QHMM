@@ -6,6 +6,8 @@
 #include "func_entry.hpp"
 #include <transitions/discrete.hpp>
 #include <transitions/autocorr.hpp>
+#include <transitions/acpmix.hpp>
+#include <transitions/logistic.hpp>
 #include <emissions/poisson.hpp>
 #include <emissions/discrete.hpp>
 #include <emissions/geometric.hpp>
@@ -15,6 +17,7 @@
 #include <hmm.hpp>
 #include <utils.hpp>
 #include <vector>
+#include <cstring>
 
 static std::vector<FuncEntry*> __emissions;
 static std::vector<FuncEntry*> __transitions;
@@ -349,11 +352,21 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
       
       for (int i = 0; i < n_groups; ++i) {
         SEXP group_i = VECTOR_ELT(emission_groups, i);
-        int * igrp = INTEGER(group_i);
-        int grp_slot = *igrp;
-        int grp_len = Rf_length(group_i) - 1; // exclude slot indicator
+
+	if (IS_INTEGER(group_i)) {
+	  int * igrp = INTEGER(group_i);
+	  int grp_slot = *igrp;
+	  int grp_len = Rf_length(group_i) - 1; // exclude slot indicator
         
-        etable->makeGroup(igrp + 1, grp_len, grp_slot); // exclude slot indicator
+	  etable->makeGroup(igrp + 1, grp_len, &grp_slot, 1); // exclude slot indicator
+	} else {
+	  SEXP slots = VECTOR_ELT(group_i, 0);
+	  SEXP states = VECTOR_ELT(group_i, 1);
+	  int grp_len = Rf_length(states);
+	  int slot_len = Rf_length(slots);
+
+	  etable->makeGroup(INTEGER(states), grp_len, INTEGER(slots), slot_len);
+	}
       }
     }
     etable->commitGroups(); // turn remaining singletons into unitary groups
@@ -449,6 +462,90 @@ public:
   RQHMMData * data;
 };
 
+SEXP em_trace_column_name(ParamRecord * rec, int position) {
+  SEXP result;
+  if (rec->isTransition) {
+    int paramIndex = rec->paramIndex(position) + 1;
+    int size = snprintf(NULL, 0, "T.%d.%d", 
+			rec->stateID + 1, paramIndex);
+    char * tmp = new char[size + 1];
+    snprintf(tmp, size + 1, "T.%d.%d", 
+	     rec->stateID + 1, rec->paramIndex(position) + 1);
+    result = mkChar(tmp);
+    delete[] tmp;
+  } else {
+    int paramIndex = rec->paramIndex(position) + 1;
+    int size = snprintf(NULL, 0, "S.%d.%d.%d", 
+			rec->stateID + 1, rec->slotID + 1, paramIndex);
+    char * tmp = new char[size + 1];
+    snprintf(tmp, size + 1, "S.%d.%d.%d", 
+	     rec->stateID + 1, rec->slotID + 1, paramIndex);
+    result = mkChar(tmp);
+    delete[] tmp;
+  }
+  return result;
+}
+
+static SEXP convert_em_trace(std::vector<ParamRecord*> * trace) {
+  SEXP result;
+  SEXP row_names;
+  SEXP col_names;
+  // data frame with columns
+  // T.<state number>.<param index> for transitions
+  // E.<state number>.<slot number>.<param index> for emissions
+
+  /* compute number of columns */
+  int n_columns = 0;
+  int n_rows = 0;
+  for (unsigned int i = 0; i < trace->size(); ++i) {
+    ParamRecord * rec_i = (*trace)[i];
+
+    n_columns += rec_i->paramSize();
+    if (n_rows == 0 && rec_i->paramSize() > 0)
+      n_rows = rec_i->size();
+  }
+
+  if (n_columns == 0)
+    return R_NilValue;
+
+  /* allocate space */
+  PROTECT(result = NEW_LIST(n_columns));
+  PROTECT(col_names = NEW_CHARACTER(n_columns));
+  PROTECT(row_names = NEW_INTEGER(n_rows));
+  for (int i = 0; i < n_rows; ++i)
+    INTEGER(row_names)[i] = i + 1;
+  
+
+  /* fill in data frame */
+  int col = 0;
+  for (unsigned int i = 0; i < trace->size(); ++i) {
+    ParamRecord * rec_i = (*trace)[i];
+
+    if (rec_i->paramSize() > 0) {
+      for (int position = 0; position < rec_i->paramSize(); ++position) {
+	SEXP col_data;
+	/* create column name */
+	SET_STRING_ELT(col_names, col, em_trace_column_name(rec_i, position));
+
+	/* copy column data */
+	col_data = NEW_NUMERIC(n_rows);
+	for (int j = 0; j < n_rows; ++j)
+	  REAL(col_data)[j] = rec_i->value(j, position);
+	SET_VECTOR_ELT(result, col, col_data);
+
+	/* */
+	++col;
+      }
+    }
+  }
+  
+  setAttrib(result, R_RowNamesSymbol, row_names);
+  setAttrib(result, R_NamesSymbol, col_names);
+  setAttrib(result, R_ClassSymbol, mkString("data.frame"));
+  UNPROTECT(3);
+
+  return result;
+}
 
 static SEXP convert_block_vector(std::vector<block_t> * blocks) {
   SEXP result;
@@ -986,10 +1083,12 @@ extern "C" {
   
   SEXP rqhmm_em(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing, SEXP tolerance) {
     SEXP result;
+    SEXP res_names;
+    SEXP loglik;
     SEXP ptr;
     RQHMMData * data;
     std::vector<Iter*> iterators;
-    double loglik;
+    EMResult em_result;
 
     /* retrieve rqhmm pointer */
     PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
@@ -1002,7 +1101,7 @@ extern "C" {
 
     /* invoke */
     try {
-      loglik = data->hmm->em(iterators, REAL(tolerance)[0]);
+      em_result = data->hmm->em(iterators, REAL(tolerance)[0]);
     } catch (QHMMException & e) {
       REprint_exception(e);
     }
@@ -1012,10 +1111,23 @@ extern "C" {
       delete iterators[i];
 
     /* prepare result */
-    PROTECT(result = NEW_NUMERIC(1));
-    REAL(result)[0] = loglik;
+    PROTECT(result = NEW_LIST(2));
+    PROTECT(loglik = NEW_NUMERIC(1));
+    PROTECT(res_names = NEW_CHARACTER(2));
+    REAL(loglik)[0] = em_result.log_likelihood;
 
-    UNPROTECT(2);
+    SET_VECTOR_ELT(result, 0, loglik);
+    SET_VECTOR_ELT(result, 1, convert_em_trace(em_result.param_trace));
+
+    SET_STRING_ELT(res_names, 0, mkChar("loglik"));
+    SET_STRING_ELT(res_names, 1, mkChar("trace"));
+    
+    setAttrib(result, R_NamesSymbol, res_names);
+
+    /* more clean up */
+    HMM::delete_records(em_result.param_trace);
+
+    UNPROTECT(4);
 
     return result;
   }
@@ -1117,6 +1229,8 @@ extern "C" {
     register_transition(new TransitionEntry<Discrete>("discrete", "rqhmm_base", false));
     register_transition(new TransitionEntry<AutoCorr>("autocorr", "rqhmm_base", false));
     register_transition(new TransitionEntry<AutoCorrCovar>("autocorr_covar", "rqhmm_base", true));
+    register_transition(new TransitionEntry<ACPMix>("acpmix", "rqhmm", true));
+    register_transition(new TransitionEntry<Logistic>("logistic", "rqhmm", true));
 
     // add our basic emission functions
     register_emission(new EmissionEntry<Poisson>("poisson", "rqhmm_base", false));

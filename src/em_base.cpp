@@ -4,10 +4,14 @@
 
 EMSequences::EMSequences(HMM * hmm, std::vector<Iter*> & iters) {
   std::vector<Iter*>::iterator it;
+  _unitarySequences = true;
 
   for (it = iters.begin(); it != iters.end(); ++it) {
     EMSequence * seq = new EMSequence(hmm, (*it));
     _em_seqs.push_back(seq);
+
+    if ((*it)->length() > 1)
+      _unitarySequences = false;
   }
 }
 

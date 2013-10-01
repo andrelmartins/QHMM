@@ -3,6 +3,7 @@
 
 #if defined(USE_RMATH)
 #include <Rmath.h>
+#include <R_ext/Applic.h>
 #elif defined(USE_GSL)
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sf_gamma.h>
@@ -34,12 +35,37 @@ double QHMM_logdiff(const double ln_x1, const double ln_x2) {
   return(ln_x1 + log1p(-exp(ln_x2 - ln_x1)));
 }
 
+double QHMM_logsum(const double ln_x1, const double ln_x2) {
+  if (ln_x1 > ln_x2)
+    return(ln_x1 + log1p(exp(ln_x2 - ln_x1)));
+  return(ln_x2 + log1p(exp(ln_x1 - ln_x2)));
+}
+
 double QHMM_log_gamma_cdf_lower(const double x, const double shape, const double scale) {
   return pgamma(x, shape, scale, TRUE, TRUE);
 }
 
 double QHMM_log_gamma_cdf_upper(const double x, const double shape, const double scale) {
   return pgamma(x, shape, scale, FALSE, TRUE);
+}
+
+double QHMM_fminimizer(qhmmfn func, int n, double * x0, void * params, int maxit, double tol, int * out_fail) {
+  double * xout = new double[n];
+  double fout;
+  double intol = 1e-8;
+  double nm_alpha = 1;
+  double nm_beta = 0.5;
+  double nm_gamma = 2;
+  int fncount = 0;
+
+  nmmin(n, x0, xout, &fout, func, out_fail, tol, intol, params,
+        nm_alpha, nm_beta, nm_gamma, 0,
+        &fncount, maxit);
+  
+  for (int i = 0; i < n; ++i)
+    x0[i] = xout[i];
+  
+  return fout;
 }
 
 #elif defined(USE_GSL)
@@ -56,6 +82,12 @@ double QHMM_logdiff(const double ln_x1, const double ln_x2) {
   return(ln_x1 + gsl_log1p(-exp(ln_x2 - ln_x1)));
 }
 
+double QHMM_logsum(const double ln_x1, const double ln_x2) {
+  if (ln_x1 > ln_x2)
+    return(ln_x1 + gsl_log1p(exp(ln_x2 - ln_x1)));
+  return(ln_x2 + gsl_log1p(exp(ln_x1 - ln_x2)));
+}
+
 double QHMM_log_gamma(const double x) {
   return gsl_sf_lngamma(x);
 }
@@ -67,6 +99,17 @@ double QHMM_log_gamma_cdf_lower(const double x, const double shape, const double
 double QHMM_log_gamma_cdf_upper(const double x, const double shape, const double scale) {
   return log(gsl_sf_gamma_inc_Q(shape, x / scale));
 }
+
+double QHMM_fminimizer(qhmmfn func, int n, double * x0, void * params, int maxit, double tol, int * out_fail) {
+
+  // TODO: Implement GSL version ...
+  /* Implement this using GSL's nmsimplex2
+
+     - intermediate function that maps qhmmfn to the function form needed by GSL
+     - main optimization loop ...
+  */
+}
+
 
 #else
 
@@ -93,6 +136,13 @@ double QHMM_trigamma(const double k) {
 double QHMM_logdiff(const double ln_x1, const double ln_x2) {
   return(ln_x1 + log(1 - exp(ln_x2 - ln_x1)));
 }
+
+double QHMM_logsum(const double ln_x1, const double ln_x2) {
+  if (ln_x1 > ln_x2)
+    return(ln_x1 + log(1 + exp(ln_x2 - ln_x1)));
+  return(ln_x2 + log(1 + exp(ln_x1 - ln_x2)));
+}
+
 
 double QHMM_log_gamma(const double x) {
   return std::lgamma(x);

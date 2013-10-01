@@ -2,6 +2,8 @@
 # RQHMM: Quick Hidden Markov Model Package
 #
 
+is.num.vec <- function(obj) is.vector(obj, mode = "numeric")
+
 new.qhmm <- function(data.shape, valid.transitions, transition.functions, emission.functions, transition.groups = NULL, emission.groups = NULL, support.missing = FALSE, enable.debug = FALSE) {
   #
   # HMM structure validation
@@ -73,19 +75,45 @@ new.qhmm <- function(data.shape, valid.transitions, transition.functions, emissi
   # emission groups
   if (!is.null(emission.groups)) {
     stopifnot(is.list(emission.groups))
-    stopifnot(all(sapply(transition.groups, is.vector)))
+    stopifnot(all(sapply(transition.groups, function(grp) {
+      is.num.vec(grp) || (is.list(grp) && length(grp) == 2 &&
+        is.vector(grp[[1]]) && is.vector(grp[[2]]))
+    })))
 
-    emission.groups = lapply(emission.groups, as.integer)
-
+    emission.groups = lapply(emission.groups, function(grp) {
+      if (is.num.vec(grp))
+        as.integer(grp)
+      else
+        list(as.integer(grp[[1]]), as.integer(grp[[2]]))
+    })
+    
     # prefixed by slot number
-    valid.slot = sapply(emission.groups, function(grp) length(grp) > 1 && grp[1] > 0 && grp[1] <= n.slots)
+    valid.slot = sapply(emission.groups, function(grp) {
+      if (is.num.vec(grp))
+        length(grp) > 1 && grp[1] > 0 && grp[1] <= n.slots
+      else
+        length(grp) == 2 && all(grp[[1]] > 0 & grp[[1]] <= n.slots)
+    })
+    
     if (!all(valid.slot))
       stop("invalid emission groups: groups must be prefixed by valid slot numbers")
 
     # per slot number, a state can only appear in a single group
     for (slotId in 1:n.slots) {
-      groups = emission.groups[sapply(emission.groups, function(grp) grp[1] == slotId)]
-      group.states = lapply(groups, function(grp) grp[2:length(grp)])
+      groups = emission.groups[sapply(emission.groups, function(grp) {
+        if (is.num.vec(grp))
+          grp[1] == slotId
+        else
+          any(grp[[1]] == slotId)
+      })]
+      
+      group.states = lapply(groups, function(grp) {
+        if (is.num.vec(grp))
+          grp[2:length(grp)]
+        else
+          grp[[2]]
+      })
+      
       flat = do.call("c", group.states)
       
       # no duplicates
@@ -99,7 +127,12 @@ new.qhmm <- function(data.shape, valid.transitions, transition.functions, emissi
     }
     
     # transform group slot and state IDs from R 1-based to C 0-based
-    emission.groups = lapply(emission.groups, function(grp) as.integer(grp - 1))
+    emission.groups = lapply(emission.groups, function(grp) {
+      if (is.num.vec(grp))
+        as.integer(grp - 1)
+      else
+        list(as.integer(grp[[1]] - 1), as.integer(grp[[2]]) - 1)
+    })
   }
   
   # check if function names are valid
@@ -347,13 +380,13 @@ emission.test.qhmm <- function(emission.name, emission.params, values, covars = 
       set.emission.option.qhmm(hmm, 1, optName, options[[optName]])
   }
   
-  loglik = 0
+  result = NULL
   if (is.null(covars))
-    loglik = em.qhmm(hmm, list(values))
+    result = em.qhmm(hmm, list(values))
   else
-    loglik = em.qhmm(hmm, list(values), list(covars))
+    result = em.qhmm(hmm, list(values), list(covars))
   
-  return(list(loglik = loglik, params = get.emission.params.qhmm(hmm, 1)))
+  return(list(result = result, params = get.emission.params.qhmm(hmm, 1)))
 }
 
 transition.test.qhmm <- function(transition.name, transition.params, n.states, state.sequence, covars = NULL, options = NULL) {
@@ -400,18 +433,18 @@ transition.test.qhmm <- function(transition.name, transition.params, n.states, s
   }
   
   # run EM
-  loglik = 0
+  result = NULL
   if (is.null(covars))
-    loglik = em.qhmm(hmm, list(state.sequence))
+    result = em.qhmm(hmm, list(state.sequence))
   else
-    loglik = em.qhmm(hmm, list(state.sequence), list(covars))
+    result = em.qhmm(hmm, list(state.sequence), list(covars))
 
   # obtain transition matrix / parameter table
   tm = NULL
   for (i in 1:n.states)
     tm = rbind(tm, get.transition.params.qhmm(hmm, i))
 
-  return(list(loglik = loglik, params = tm))
+  return(list(result = result, params = tm))
 }
 
 path.blocks.qhmm <- function(path, states, in.sequence = FALSE) {
@@ -438,7 +471,9 @@ collect.params.qhmm <- function(hmm) {
     lapply(1:(hmm$n.emission.slots), function(slot)
            get.emission.params.qhmm(hmm, state, slot = slot)))
 
-  return(list(transitions = transitions, emissions = emissions))
+  return(list(transitions = transitions,
+              emissions = emissions,
+              initial.probs = get.initial.probs.qhmm(hmm)))
 }
 
 restore.params.qhmm <- function(hmm, saved) {
@@ -450,6 +485,11 @@ restore.params.qhmm <- function(hmm, saved) {
     for (slot in 1:(hmm$n.emission.slots))
       set.emission.params.qhmm(hmm, state, state.params[[slot]], slot = slot)
   }
+
+  # for purposes of backward compatibility
+  # some, in use, code did not same this value
+  if ("initial.probs" %in% names(saved))
+    set.initial.probs.qhmm(hmm, saved$initial.probs)
 }
 
 print.qhmm <- function(object, ...) {
@@ -458,6 +498,10 @@ print.qhmm <- function(object, ...) {
 
 summary.qhmm <- function(object, digits = 3, nsmall = 0L, ...) {
   param.cat <- function(param.vec) {
+    if (length(param.vec) == 0) {
+      cat(" N/A")
+      return()
+    }
     is.fixed = attr(param.vec, "fixed")
     for (i in 1:length(param.vec)) {
       valStr = format(param.vec[i], digits = digits, nsmall = nsmall)
@@ -469,10 +513,12 @@ summary.qhmm <- function(object, digits = 3, nsmall = 0L, ...) {
   }
   
   values = collect.params.qhmm(object)
+  init.probs = values$initial.probs
 
   for (state in 1:(object$n.states)) {
     targets = which(object$valid.transitions[state,] > 0)
     cat("( state", state, ") ->", targets, "\n")
+    cat("  initial prob:", values$initial.probs[state], "\n")
     cat("  transitions:")
     param.cat(values$transitions[[state]])
     cat("\n")

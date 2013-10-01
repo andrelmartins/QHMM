@@ -43,7 +43,7 @@ bool TransitionPosteriorIterator::next() {
   bool res = _iter->next();
   
   // try to move to next sequence(s)
-  while (!res && (++_seq_iter) != _seqs->end()) {
+  while (!res && _seq_iter != _seqs->end() && (++_seq_iter != _seqs->end())) {
     changed_sequence();
     res = _iter->next();
   }

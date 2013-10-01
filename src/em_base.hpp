@@ -21,7 +21,10 @@ public:
   // returns sequence set log-likelihood
   double updateFwBk();
   
+  bool unitarySequences() { return _unitarySequences; }
+
 private:
+  bool _unitarySequences;
   std::vector<EMSequence*> _em_seqs;
 };
 
