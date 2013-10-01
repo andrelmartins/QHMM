@@ -4,6 +4,7 @@
 #include <exception>
 #include <vector>
 #include <string>
+#include <omp.h>
 
 using namespace std;
 
@@ -38,5 +39,35 @@ public:
 private:
   string _msg;
 };
+
+/*
+class ThreadException {
+  exception_ptr Ptr;
+  mutex         Lock;
+public:
+  ThreadException(): Ptr(nullptr) {}
+  ~ThreadException(){ this->Rethrow(); }  
+  void Rethrow(){
+    if(this->Ptr) rethrow_exception(this->Ptr);
+  }
+  void CaptureException() { 
+    unique_lock<mutex> guard(this->Lock);
+    this->Ptr = std::current_exception(); 
+  }
+  template <typename Function, typename... Parameters>
+  void Run(Function f, Parameters... params)
+  {
+    try 
+    {
+      f(params...);
+    }
+    catch (...)
+    {
+        CaptureException();
+    }
+  }
+
+};
+*/
 
 #endif

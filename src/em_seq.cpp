@@ -1,5 +1,8 @@
 #include "em_seq.hpp"
+
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 EMSequence::EMSequence(HMM * hmm, Iter * iter) {
   /* keep pointer to main iterator and HMM */

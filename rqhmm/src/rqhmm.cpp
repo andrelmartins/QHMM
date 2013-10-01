@@ -19,6 +19,10 @@
 #include <vector>
 #include <cstring>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 static std::vector<FuncEntry*> __emissions;
 static std::vector<FuncEntry*> __transitions;
 
@@ -707,13 +711,18 @@ extern "C" {
     return ans;
   }
   
-  SEXP rqhmm_forward(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing) {
+  SEXP rqhmm_forward(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing, SEXP n_threads) {
     SEXP result;
     RQHMMData * data;
     Iter * iter;
     SEXP ptr;
     SEXP loglik;
     
+    /* set number of threads */
+    #ifdef _OPENMP
+      omp_set_num_threads(INTEGER(n_threads)[0]);
+    #endif
+
     /* retrieve rqhmm pointer */
     PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
     if (ptr == R_NilValue)
@@ -745,13 +754,18 @@ extern "C" {
     return result;
   }
   
-  SEXP rqhmm_backward(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing) {
+  SEXP rqhmm_backward(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing, SEXP n_threads) {
     SEXP result;
     RQHMMData * data;
     Iter * iter;
     SEXP ptr;
     SEXP loglik;
     
+    /* set number of threads */
+    #ifdef _OPENMP
+      omp_set_num_threads(INTEGER(n_threads)[0]);
+    #endif
+
     /* retrieve rqhmm pointer */
     PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
     if (ptr == R_NilValue)
@@ -783,12 +797,17 @@ extern "C" {
     return result;
   }
   
-  SEXP rqhmm_viterbi(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing) {
+  SEXP rqhmm_viterbi(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing, SEXP n_threads) {
     SEXP result;
     RQHMMData * data;
     Iter * iter;
     SEXP ptr;
     
+    /* set number of threads */
+    #ifdef _OPENMP
+      omp_set_num_threads(INTEGER(n_threads)[0]);
+    #endif
+
     /* retrieve rqhmm pointer */
     PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
     if (ptr == R_NilValue)
@@ -1038,7 +1057,7 @@ extern "C" {
     return result;
   }
   
-  SEXP rqhmm_posterior(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing) {
+  SEXP rqhmm_posterior(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing, SEXP n_threads) {
     SEXP result;
     RQHMMData * data;
     Iter * iter;
@@ -1046,6 +1065,11 @@ extern "C" {
     SEXP loglik;
     double * fw, * bk;
     
+    /* set number of threads */
+    #ifdef _OPENMP
+      omp_set_num_threads(INTEGER(n_threads)[0]);
+    #endif
+
     /* retrieve rqhmm pointer */
     PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
     if (ptr == R_NilValue)
@@ -1081,7 +1105,7 @@ extern "C" {
     return result;
   }
   
-  SEXP rqhmm_em(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing, SEXP tolerance) {
+  SEXP rqhmm_em(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing, SEXP tolerance, SEXP n_threads) {
     SEXP result;
     SEXP res_names;
     SEXP loglik;
@@ -1089,6 +1113,11 @@ extern "C" {
     RQHMMData * data;
     std::vector<Iter*> iterators;
     EMResult em_result;
+
+    /* set number of threads */
+    #ifdef _OPENMP
+      omp_set_num_threads(INTEGER(n_threads)[0]);
+    #endif
 
     /* retrieve rqhmm pointer */
     PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));

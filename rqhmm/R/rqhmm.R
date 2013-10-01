@@ -318,23 +318,23 @@ null.or.integer <- function(vec) {
   }
 }
 
-forward.qhmm <- function(hmm, emissions, covars = NULL, missing = NULL) {
-  .Call(rqhmm_forward, hmm, emissions, covars, null.or.integer(missing));
+forward.qhmm <- function(hmm, emissions, covars = NULL, missing = NULL, n_threads = 1) {
+  .Call(rqhmm_forward, hmm, emissions, covars, null.or.integer(missing), n_threads);
 }
 
-backward.qhmm <- function(hmm, emissions, covars = NULL, missing = NULL) {
-  .Call(rqhmm_backward, hmm, emissions, covars, null.or.integer(missing));
+backward.qhmm <- function(hmm, emissions, covars = NULL, missing = NULL, n_threads = 1) {
+  .Call(rqhmm_backward, hmm, emissions, covars, null.or.integer(missing), n_threads);
 }
 
-viterbi.qhmm <- function(hmm, emissions, covars = NULL, missing = NULL) {
-  .Call(rqhmm_viterbi, hmm, emissions, covars, null.or.integer(missing));
+viterbi.qhmm <- function(hmm, emissions, covars = NULL, missing = NULL, n_threads = 1) {
+  .Call(rqhmm_viterbi, hmm, emissions, covars, null.or.integer(missing), n_threads);
 }
 
-posterior.qhmm <- function(hmm, emissions, covars = NULL, missing = NULL) {
-  .Call(rqhmm_posterior, hmm, emissions, covars, null.or.integer(missing));
+posterior.qhmm <- function(hmm, emissions, covars = NULL, missing = NULL, n_threads = 1) {
+  .Call(rqhmm_posterior, hmm, emissions, covars, null.or.integer(missing), n_threads);
 }
 
-em.qhmm <- function(hmm, emission.lst, covar.lst = NULL, missing.lst = NULL, tolerance = 1e-5) {
+em.qhmm <- function(hmm, emission.lst, covar.lst = NULL, missing.lst = NULL, tolerance = 1e-5, n_threads = 1) {
   stopifnot(is.list(emission.lst) && (is.null(covar.lst) || is.list(covar.lst))
             && (is.null(missing.lst) || is.list(missing.lst)))
   if (!is.null(covar.lst))
@@ -346,7 +346,7 @@ em.qhmm <- function(hmm, emission.lst, covar.lst = NULL, missing.lst = NULL, tol
   }
   
   # do the actual call
-  .Call(rqhmm_em, hmm, emission.lst, covar.lst, missing.lst, tolerance)
+  .Call(rqhmm_em, hmm, emission.lst, covar.lst, missing.lst, tolerance, n_threads)
 }
 
 emission.test.qhmm <- function(emission.name, emission.params, values, covars = NULL, options = NULL) {

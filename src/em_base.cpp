@@ -1,6 +1,9 @@
 #include "em_base.hpp"
 #include "em_seq.hpp"
+
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 EMSequences::EMSequences(HMM * hmm, std::vector<Iter*> & iters) {
   std::vector<Iter*>::iterator it;
@@ -33,9 +36,15 @@ TransitionPosteriorIterator * EMSequences::transition_iterator(std::vector<Trans
 double EMSequences::updateFwBk() {
   std::vector<EMSequence*>::iterator it;
   double loglik = 0;
-  
+  int n_threads = 1;
+
+  #ifdef _OPENMP  
   omp_set_nested(1); // Allow nested OMP directives.
-  #pragma omp parallel for num_threads(4)
+  n_threads = omp_get_num_threads(); // Get number of threads (set elsewhere).
+  n_threads = (n_threads==1)?1:(n_threads/2); // Threads split between forward and backward during updates.
+  #endif
+
+  #pragma omp parallel for num_threads(n_threads)
   for (int i=0;i<_em_seqs.size();i++) {
 //    try {
       loglik += (_em_seqs[i])->updateFwBk();
