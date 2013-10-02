@@ -4,13 +4,23 @@
 #include <exception>
 #include <vector>
 #include <string>
-#include <omp.h>
 
 using namespace std;
 
 class QHMMException : public exception {
 
 public:
+  QHMMException(const QHMMException & other) {
+    this->is_transition = other.is_transition;
+    this->state = other.state;
+    this->slot = other.slot;
+    this->sequence_index = other.index;
+    this->evalue = other.evalue;
+    this->sequence_id = other.sequence_id;
+    this->stack = other.stack;
+    this->_msg = other._msg;
+  }
+
   QHMMException(string msg, string frame, bool is_transition, int state, int slot, int index, double value) : _msg(msg) {
     this->is_transition = is_transition;
     this->state = state;
@@ -39,35 +49,5 @@ public:
 private:
   string _msg;
 };
-
-/*
-class ThreadException {
-  exception_ptr Ptr;
-  mutex         Lock;
-public:
-  ThreadException(): Ptr(nullptr) {}
-  ~ThreadException(){ this->Rethrow(); }  
-  void Rethrow(){
-    if(this->Ptr) rethrow_exception(this->Ptr);
-  }
-  void CaptureException() { 
-    unique_lock<mutex> guard(this->Lock);
-    this->Ptr = std::current_exception(); 
-  }
-  template <typename Function, typename... Parameters>
-  void Run(Function f, Parameters... params)
-  {
-    try 
-    {
-      f(params...);
-    }
-    catch (...)
-    {
-        CaptureException();
-    }
-  }
-
-};
-*/
 
 #endif
