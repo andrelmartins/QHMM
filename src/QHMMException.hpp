@@ -10,11 +10,15 @@ using namespace std;
 class QHMMException : public exception {
 
 public:
+  QHMMException() {
+    _msg = "";
+  }
+
   QHMMException(const QHMMException & other) {
     this->is_transition = other.is_transition;
     this->state = other.state;
     this->slot = other.slot;
-    this->sequence_index = other.index;
+    this->sequence_index = other.sequence_index;
     this->evalue = other.evalue;
     this->sequence_id = other.sequence_id;
     this->stack = other.stack;
