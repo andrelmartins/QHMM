@@ -1,5 +1,5 @@
-#ifndef QHMMTHREADEXCEPTION_HPP
-#define QHMMTHREADEXCEPTION_HPP
+#ifndef QHMMTHREADHELPER_HPP
+#define QHMMTHREADHELPER_HPP
 
 #include "QHMMException.hpp"
 
@@ -28,8 +28,10 @@ public:
   void captureException(const QHMMException & other) {
     #pragma omp critical
     {
-      has_exception = true;
-      copy = other;
+      if (!has_exception) { // capture only first exception
+	has_exception = true;
+	copy = other;
+      }
     }
   }
 };
