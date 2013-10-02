@@ -711,18 +711,13 @@ extern "C" {
     return ans;
   }
   
-  SEXP rqhmm_forward(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing, SEXP n_threads) {
+  SEXP rqhmm_forward(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing) {
     SEXP result;
     RQHMMData * data;
     Iter * iter;
     SEXP ptr;
     SEXP loglik;
     
-    /* set number of threads */
-    #ifdef _OPENMP
-      omp_set_num_threads(INTEGER(n_threads)[0]);
-    #endif
-
     /* retrieve rqhmm pointer */
     PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
     if (ptr == R_NilValue)
@@ -754,18 +749,13 @@ extern "C" {
     return result;
   }
   
-  SEXP rqhmm_backward(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing, SEXP n_threads) {
+  SEXP rqhmm_backward(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing) {
     SEXP result;
     RQHMMData * data;
     Iter * iter;
     SEXP ptr;
     SEXP loglik;
     
-    /* set number of threads */
-    #ifdef _OPENMP
-      omp_set_num_threads(INTEGER(n_threads)[0]);
-    #endif
-
     /* retrieve rqhmm pointer */
     PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
     if (ptr == R_NilValue)
@@ -797,17 +787,12 @@ extern "C" {
     return result;
   }
   
-  SEXP rqhmm_viterbi(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing, SEXP n_threads) {
+  SEXP rqhmm_viterbi(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing) {
     SEXP result;
     RQHMMData * data;
     Iter * iter;
     SEXP ptr;
     
-    /* set number of threads */
-    #ifdef _OPENMP
-      omp_set_num_threads(INTEGER(n_threads)[0]);
-    #endif
-
     /* retrieve rqhmm pointer */
     PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
     if (ptr == R_NilValue)
@@ -1060,7 +1045,7 @@ extern "C" {
   SEXP rqhmm_posterior(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing, SEXP n_threads) {
     SEXP result;
     RQHMMData * data;
-    Iter * iter;
+    Iter * iter, * iterCopy;
     SEXP ptr;
     SEXP loglik;
     double * fw, * bk;
@@ -1078,22 +1063,40 @@ extern "C" {
     
     /* create data structures */
     iter = data->create_iterator(emissions, covars, missing);
+    iterCopy = iter->shallowCopy();
     fw = (double*) R_alloc(data->n_states * iter->length(), sizeof(double));
     bk = (double*) R_alloc(data->n_states * iter->length(), sizeof(double));
     PROTECT(result = allocMatrix(REALSXP, iter->length(), data->n_states));
     
     /* invoke forward, backward and posterior */
     double log_lik = 0;
-    try {
-      log_lik = data->hmm->forward((*iter), fw);
-      log_lik = data->hmm->backward((*iter), bk);
-      data->hmm->state_posterior((*iter), fw, bk, REAL(result));
-    } catch (QHMMException & e) {
-      REprint_exception(e);
+    #pragma omp parallel shared(log_lik)
+    #pragma omp sections
+    {
+      #pragma omp section
+      {
+	try {
+	  data->hmm->forward((*iter), fw);
+	} catch (QHMMException & e) {
+	  REprint_exception(e);
+	}
+      }
+
+      #pragma omp section
+      {
+	try {
+	  log_lik = data->hmm->backward((*iterCopy), bk);
+	} catch (QHMMException & e) {
+	  REprint_exception(e);
+	}
+      }
     }
+
+    data->hmm->state_posterior((*iter), fw, bk, REAL(result));
     
     /* clean up */
     delete iter;
+    delete iterCopy;
     
     /* prepare result */
     PROTECT(loglik = NEW_NUMERIC(1));
