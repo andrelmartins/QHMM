@@ -7,16 +7,16 @@
 #include <omp.h>
 #endif
 
-class QHMMThreadException {
+class QHMMThreadHelper {
   QHMMException copy;
   bool has_exception;
 
 public:
-  QHMMThreadException() { 
+  QHMMThreadHelper() { 
     has_exception = false; 
   }
 
-  ~QHMMThreadException(){
+  ~QHMMThreadHelper(){
     this->rethrow(); 
   }
 
