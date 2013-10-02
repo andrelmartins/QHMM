@@ -36,24 +36,15 @@ TransitionPosteriorIterator * EMSequences::transition_iterator(std::vector<Trans
 double EMSequences::updateFwBk() {
   std::vector<EMSequence*>::iterator it;
   double loglik = 0;
-  int n_threads = 1;
+  QHMMThreadHelper helper;
 
-  #ifdef _OPENMP  
-  omp_set_nested(1); // Allow nested OMP directives.
-  n_threads = omp_get_num_threads(); // Get number of threads (set elsewhere).
-  n_threads = (n_threads==1)?1:(n_threads/2); // Threads split between forward and backward during updates.
-  #endif
-
-  #pragma omp parallel for num_threads(n_threads)
-  for (int i=0;i<_em_seqs.size();i++) {
-//    try {
-      loglik += (_em_seqs[i])->updateFwBk();
-//    } catch (QHMMException & e) {
-//      int seq_id = it - _em_seqs.begin();
-//      e.sequence_id = seq_id;
-//      throw;
-//    }
+  #pragma omp parallel shared(helper, loglik)
+  {
+    #pragma omp for
+    for (unsigned int i = 0; i < _em_seqs.size(); ++i)
+      (_em_seqs[i])->updateFwBk(i, helper, loglik);
   }
-  
+
+  // helper will rethrow exceptions on exit
   return loglik;
 }

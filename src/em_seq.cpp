@@ -42,27 +42,34 @@ EMSequence::~EMSequence() {
     delete[] _local_loglik;
 }
 
-double EMSequence::updateFwBk() {
-  double loglik = 0;
-
-  #pragma omp num_treads(2)
+void EMSequence::updateFwBk(int seq_id, QHMMThreadHelper & helper, double & loglik) {
+  #pragma omp task shared(helper) untied
   {
-   #pragma omp sections 
-   {  
-     #pragma omp section
-       loglik = _hmm->forward(*_iter, _forward);
- 
-     #pragma omp section
-       loglik = _hmm->backward(*_iterCopy, _backward); // ideally should check both are eq
-   }
+    try {
+      _hmm->forward(*_iter, _forward);
+    } catch (QHMMException & e) {
+      e.sequence_id = seq_id;
+      helper.captureException(e);
+    }
   }
+ 
+  #pragma omp task shared(helper, loglik) untied
+  {
+    try {
+      #pragma omp critical
+      loglik += _hmm->backward(*_iterCopy, _backward);
+    } catch (QHMMException & e) {
+      e.sequence_id = seq_id;
+      helper.captureException(e);
+    }
+    // ideally should check both logliks are equal
 
-  /* we don't update the posterior here just in case all emissions
-   are fixed and we don't actually need it
-   */
-  _posterior_dirty = true; /* needs update */
-  _local_loglik_dirty = true; /* needs update */
-  return loglik;
+    /* we don't update the posterior here just in case all emissions
+       are fixed and we don't actually need it
+    */
+    _posterior_dirty = true; /* needs update */
+    _local_loglik_dirty = true; /* needs update */
+  }
 }
 
 void EMSequence::update_posterior() {

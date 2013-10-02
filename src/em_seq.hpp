@@ -1,6 +1,7 @@
 #ifndef EM_SEQ_HPP
 #define EM_SEQ_HPP
 
+#include "QHMMThreadHelper.hpp"
 #include "hmm.hpp"
 #include "iter.hpp"
 #include <vector>
@@ -13,7 +14,7 @@ public:
   ~EMSequence();
   
   // returns sequence log-likelihood
-  double updateFwBk();
+  void updateFwBk(int seq_id, QHMMThreadHelper & helper, double & loglik);
   
   // accessors
   const double * forward() { return _forward; }
