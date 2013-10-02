@@ -40,7 +40,7 @@ double EMSequences::updateFwBk() {
 
   #pragma omp parallel shared(helper, loglik)
   {
-    #pragma omp for
+    #pragma omp single
     for (unsigned int i = 0; i < _em_seqs.size(); ++i)
       (_em_seqs[i])->updateFwBk(i, helper, loglik);
   }
