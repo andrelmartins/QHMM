@@ -3,12 +3,12 @@ SRC:=rqhmm.cpp $(wildcard $(LIBSRC)/*.cpp)
 HPP=func_entry.hpp $(wildcard $(LIBSRC)/*.hpp)
 
 # define compile options
-CXX:=`R CMD config CXX`
+CXX:=$(shell R CMD config CXX)
 
 OPENMP_FLAG:=
 OPENMP_LIB:=
 
-ifeq ($(CXX), "g++")
+ifeq ($(CXX), g++)
   OPENMP_FLAG := -fopenmp
   OPENMP_LIB := -lgomp
 endif
