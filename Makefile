@@ -8,6 +8,6 @@ all:
 debug:
 	(cd rqhmm/src; make clean)
 	(cd src; rm -f *.o)
-	PKG_CXXFLAGS="-Wall -g -O0" R CMD INSTALL rqhmm
+	PKG_CXXFLAGS="-Wall -Wno-unknown-pragmas -g -O0" R CMD INSTALL rqhmm
 #	(cd rqhmm_extra/src; make clean)
 #	PKG_CXXFLAGS="-Wall -g -O0" R CMD INSTALL rqhmm_extra
