@@ -1,11 +1,12 @@
 #include "trans_post_iter.hpp"
 #include "em_seq.hpp"
 
-TransitionPosteriorIterator::TransitionPosteriorIterator(std::vector<TransitionFunction*> & group, const std::vector<EMSequence*> * seqs) : _iter(&((*seqs)[0]->iter())) {
+TransitionPosteriorIterator::TransitionPosteriorIterator(std::vector<TransitionFunction*> & group, const std::vector<EMSequence*> * seqs) {
   
   // initialize sequence iterator
   _seqs = seqs;
   _seq_iter = seqs->begin();
+  _iter = NULL;
   
   // initialize group information
   _group_size = group.size();
@@ -57,7 +58,15 @@ bool TransitionPosteriorIterator::next() {
 }
 
 void TransitionPosteriorIterator::changed_sequence() {
+#ifdef _OPENMP
+  // when using OpenMP multiple threads can be accessing the same underlying EMSequences
+  // since Iter is not thread safe, create a shallow copy for internal use
+  if (_iter != NULL)
+    delete _iter;
+  _iter = (&(*_seq_iter)->iter())->shallowCopy();
+#else
   _iter = &(*_seq_iter)->iter();
+#endif
   _iter->resetFirst();
   _fw = (*_seq_iter)->forward();
   _bk = (*_seq_iter)->backward();

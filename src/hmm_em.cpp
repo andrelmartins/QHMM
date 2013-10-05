@@ -95,6 +95,32 @@ EMResult HMM::em(std::vector<Iter*> & iters, double tolerance) {
       /* - transition functions */
       if (!skip_transitions) {
         std::vector<std::vector<TransitionFunction*> > tgroups = transition_groups();
+#ifdef _OPENMP
+        QHMMThreadHelper helper;
+        unsigned int n_groups = tgroups.size();
+        
+        #pragma omp parallel shared(helper)
+        {
+          #pragma omp single
+          {
+            std::vector<std::vector<TransitionFunction*> >::iterator tit;
+            for (tit = tgroups.begin(); tit != tgroups.end(); ++tit) {
+              std::vector<TransitionFunction*> group_i = *tit;
+              TransitionFunction * head = group_i[0];
+            
+              #pragma omp task shared(helper) untied
+              {
+                try {
+                  head->updateParams(sequences, &group_i);
+                } catch (QHMMException & e) {
+                  helper.captureException(e);
+                }
+              }
+            }
+          }
+        }
+        helper.rethrow();
+#else
         std::vector<std::vector<TransitionFunction*> >::iterator tit;
         for (tit = tgroups.begin(); tit != tgroups.end(); ++tit) {
           std::vector<TransitionFunction*> group_i = *tit;
@@ -102,6 +128,7 @@ EMResult HMM::em(std::vector<Iter*> & iters, double tolerance) {
           
           head->updateParams(sequences, &group_i);
         }
+#endif
         refresh_transition_table(); // refresh internal caches
       }
       
