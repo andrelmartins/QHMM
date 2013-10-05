@@ -4,6 +4,10 @@
 #include <cstdio>
 #include <cmath>
 
+#ifdef _OPENMP
+#include "QHMMThreadHelper.hpp"
+#endif
+
 std::vector<ParamRecord*> * HMM::init_records() const {
   std::vector<ParamRecord*> * result = new std::vector<ParamRecord*>();
 
