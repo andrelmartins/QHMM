@@ -546,6 +546,7 @@ new.emission.groups <- function(nstates, nslots) {
 
 
 ## States and slots are vectors of integers, representing the combinations of states and slots shared.
+## Note that this function is NOT exported and availiable ONLY to functions inside of rqhmm.
 add.emission.groups.slots.states <- function(emission_sharing_matrix, states, slots) {
   stopifnot(length(states) == length(slots))  ## States and slots indices must be shared.
   stopifnot(length(states) < 2) ## At least two states sharing emissions parameters.
@@ -560,16 +561,28 @@ add.emission.groups.slots.states <- function(emission_sharing_matrix, states, sl
 # group is defined in one of two ways: 
 # EITHER: an integer vector (slot number followed by two or more state numbers) 
 # OR:     a list with two integer vectors (slots) and (states)
-add.emission.groups <- function(emission_sharing_matrix, groups) {
- stopifnot(length(groups) < 2)
- if(!is.list(groups)) {
-  n_states <- length(groups)-1
-  return( add.emission.groups.slots.states(emission_sharing_matrix, states = groups[2:length(groups)], slots = rep(groups[1], n_states)) )
- }
- else {
-  stopifnot(!is.null(groups$slots))
-  stopifnot(!is.null(groups$states))
-  return( add.emission.groups.slots.states(emission_sharing_matrix, states= groups$states, slots= groups$slots)  )
- }
+add.emission.groups <- function(emission_sharing_matrix, group=NULL, states=NULL, slots=NULL) {
+  stopifnot(length(group) < 2)
+  if(!is.null(states) & !is.null(slots) & is.null(group)) {
+    return( add.emission.groups.slots.states(emission_sharing_matrix, states, slots) )
+  }
+  else if(is.null(states & is.null(slots) & !is.null(group))) {
+    if(!is.list(group)) {
+      n_states <- length(group)-1
+      return( add.emission.groups.slots.states(emission_sharing_matrix, states = group[2:length(group)], slots = rep(group[1], n_states)) )
+    }
+    else {
+      slots <- group[[1]]
+      states<- group[[2]]
+      n_slots <- length(slots)
+      n_states <- length(states)
+      slots <- c(sapply(slots, function(x) {rep(x, n_states)}))
+      states <- rep(states, n_slots)
+      return( add.emission.groups.slots.states(emission_sharing_matrix, states= states, slots= slots)  )
+    }
+  }
+  else {
+    stop("ERROR: Either (group) OR (states and slots) must be specified.  Not both.")
+  }
  
 }
