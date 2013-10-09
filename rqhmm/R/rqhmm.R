@@ -549,7 +549,7 @@ new.emission.groups <- function(nstates, nslots) {
 ## Note that this function is NOT exported and availiable ONLY to functions inside of rqhmm.
 add.emission.groups.slots.states <- function(emission_sharing_matrix, states, slots) {
   stopifnot(length(states) == length(slots))  ## States and slots indices must be shared.
-  stopifnot(length(states) < 2) ## At least two states sharing emissions parameters.
+  stopifnot(length(states) > 1) ## At least two states sharing emissions parameters.
   nextGroup <- max(emission_sharing_matrix)+1
   for(i in 1:length(states)) {
     emission_sharing_matrix[states[i], slots[i]] <- nextGroup
@@ -562,16 +562,17 @@ add.emission.groups.slots.states <- function(emission_sharing_matrix, states, sl
 # EITHER: an integer vector (slot number followed by two or more state numbers) 
 # OR:     a list with two integer vectors (slots) and (states)
 add.emission.groups <- function(emission_sharing_matrix, group=NULL, states=NULL, slots=NULL) {
-  stopifnot(length(group) < 2)
   if(!is.null(states) & !is.null(slots) & is.null(group)) {
     return( add.emission.groups.slots.states(emission_sharing_matrix, states, slots) )
   }
-  else if(is.null(states & is.null(slots) & !is.null(group))) {
+  else if(is.null(states) & is.null(slots) & !is.null(group)) {
     if(!is.list(group)) {
+      stopifnot(length(group) > 2)
       n_states <- length(group)-1
       return( add.emission.groups.slots.states(emission_sharing_matrix, states = group[2:length(group)], slots = rep(group[1], n_states)) )
     }
     else {
+      stopifnot(length(group) == 2)
       slots <- group[[1]]
       states<- group[[2]]
       n_slots <- length(slots)
