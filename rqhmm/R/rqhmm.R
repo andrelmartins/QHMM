@@ -546,7 +546,7 @@ new.emission.groups <- function(nstates, nslots) {
 
 
 ## States and slots are vectors of integers, representing the combinations of states and slots shared.
-add.emission.groups <- function(emission_sharing_matrix, states, slots) {
+add.emission.groups.slots.states <- function(emission_sharing_matrix, states, slots) {
   stopifnot(length(states) == length(slots))  ## States and slots indices must be shared.
   stopifnot(length(states) < 2) ## At least two states sharing emissions parameters.
   nextGroup <- max(emission_sharing_matrix)+1
@@ -556,3 +556,20 @@ add.emission.groups <- function(emission_sharing_matrix, states, slots) {
   return(emission_sharing_matrix)
 }
 
+## groups: 
+# group is defined in one of two ways: 
+# EITHER: an integer vector (slot number followed by two or more state numbers) 
+# OR:     a list with two integer vectors (slots) and (states)
+add.emission.groups <- function(emission_sharing_matrix, groups) {
+ stopifnot(length(groups) < 2)
+ if(!is.list(groups)) {
+  n_states <- length(groups)-1
+  return( add.emission.groups.slots.states(emission_sharing_matrix, states = groups[2:length(groups)], slots = rep(groups[1], n_states)) )
+ }
+ else {
+  stopifnot(!is.null(groups$slots))
+  stopifnot(!is.null(groups$states))
+  return( add.emission.groups.slots.states(emission_sharing_matrix, states= groups$states, slots= groups$slots)  )
+ }
+ 
+}
