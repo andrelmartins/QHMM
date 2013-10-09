@@ -72,6 +72,25 @@ class FunctionTable {
       
       _groups.push_back(group);
     }
+
+
+  // CGD: In this version, pairs of indx X slot are specified.  We assume that size( *idxs ) == size( *slots ).
+  //      This allows finer control over sharing slots from a single state into several different groups.
+  virtual void makeGroup(int * idxs, int length, int * slots = NULL) {
+      std::vector<T * > group;
+
+      for (int i = 0; i < length; ++i) {
+        T * f_i = _funcs[idxs[i]];
+        group.push_back(f_i);
+
+        // remove from singletons
+        typename std::vector<T*>::iterator it = find(_singletons.begin(), _singletons.end(), f_i);
+        _singletons.erase(it);
+      }
+
+      _groups.push_back(group);
+    }
+
   
     // turn remaining singletons to groups
     virtual void commitGroups() {
@@ -348,6 +367,25 @@ public:
     
     _groups.push_back(group);
   }
+
+  // CGD: In this version, pairs of indx X slot are specified.  We assume that size( *idxs ) == size( *slots ).
+  //      This allows finer control over sharing slots from a single state into several different groups.
+  virtual void makeGroup(int * idxs, int length, int * slots) {
+    std::vector<EmissionFunction * > group;
+    
+    for (int i = 0; i < length; ++i) {
+        int slot = slots[i];
+        EmissionFunction * f_i = _funcs[idxs[i]][slot];
+        group.push_back(f_i);
+     
+        // remove from singletons
+        std::vector<EmissionFunction*>::iterator it = find(_singletons[slot].begin(), _singletons[slot].end(), f_i);
+        _singletons[slot].erase(it);
+    }
+
+    _groups.push_back(group);
+  }
+
   
   // turn remaining singletons to groups
   virtual void commitGroups() {

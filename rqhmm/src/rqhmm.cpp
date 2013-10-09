@@ -255,7 +255,7 @@ void process_transition_groups(TransitionTable * ttable, SEXP groups) {
       int * igrp = INTEGER(group_i);
       int grp_len = Rf_length(group_i);
       
-      ttable->makeGroup(igrp, grp_len);
+      ttable->makeGroup(igrp, grp_len, NULL, 1);
     }
   }
   ttable->commitGroups(); // turn remaining singletons into unitary groups
@@ -327,7 +327,7 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
         int * igrp = INTEGER(group_i);
         int grp_len = Rf_length(group_i) - 1; // exclude slot indicator
         
-        etable->makeGroup(igrp + 1, grp_len); // exclude slot indicator
+        etable->makeGroup(igrp + 1, grp_len, NULL, 1); // exclude slot indicator
       }
     }
     etable->commitGroups(); // turn remaining singletons into unitary groups
