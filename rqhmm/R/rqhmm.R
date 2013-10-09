@@ -530,3 +530,29 @@ summary.qhmm <- function(object, digits = 3, nsmall = 0L, ...) {
     }
   }
 }
+
+##
+## CGD: Build a matrix specifying which emissions are shared.
+##      States (rows) X Slices (cols).  
+##
+## Matrix will have the following properties:
+##  * 0s specify no grouping.
+##  * Groups are specified as sequential integers (1:NGroups). 
+##  * Emission functions MUST be set the same within groups.
+##  * Slot dimensions MUST be the same.
+new.emission.sharing.matrix <- function(nstates, nslices) {
+  return(matrix(0, nrow=nstates, ncol=nslices))
+}
+
+
+## States and slices are vectors of integers, representing the combinations of states and slices shared.
+add.emission.sharing <- function(emission_sharing_matrix, states, slices) {
+  stopifnot(NROW(states) == NROW(slices))  ## States and slices indices must be shared.
+  stopifnot(NROW(states) < 2) ## At least two states sharing emissions parameters.
+  nextGroup <- max(emission_sharing_matrix)+1
+  for(i in 1:NROW(states)) {
+    emission_sharing_matrix[states[i], slices[i]] <- nextGroup
+  }
+  return(emission_sharing_matrix)
+}
+
