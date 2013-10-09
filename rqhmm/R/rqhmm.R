@@ -540,13 +540,13 @@ summary.qhmm <- function(object, digits = 3, nsmall = 0L, ...) {
 ##  * Groups are specified as sequential integers (1:NGroups). 
 ##  * Emission functions MUST be set the same within groups.
 ##  * Slot dimensions MUST be the same.
-new.emission.sharing.matrix <- function(nstates, nslots) {
+new.emission.groups <- function(nstates, nslots) {
   return(matrix(0, nrow=nstates, ncol=nslots))
 }
 
 
 ## States and slots are vectors of integers, representing the combinations of states and slots shared.
-add.emission.sharing <- function(emission_sharing_matrix, states, slots) {
+add.emission.groups <- function(emission_sharing_matrix, states, slots) {
   stopifnot(length(states) == length(slots))  ## States and slots indices must be shared.
   stopifnot(length(states) < 2) ## At least two states sharing emissions parameters.
   nextGroup <- max(emission_sharing_matrix)+1
