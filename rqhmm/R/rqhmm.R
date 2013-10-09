@@ -547,10 +547,10 @@ new.emission.sharing.matrix <- function(nstates, nslots) {
 
 ## States and slots are vectors of integers, representing the combinations of states and slots shared.
 add.emission.sharing <- function(emission_sharing_matrix, states, slots) {
-  stopifnot(NROW(states) == NROW(slots))  ## States and slots indices must be shared.
-  stopifnot(NROW(states) < 2) ## At least two states sharing emissions parameters.
+  stopifnot(length(states) == length(slots))  ## States and slots indices must be shared.
+  stopifnot(length(states) < 2) ## At least two states sharing emissions parameters.
   nextGroup <- max(emission_sharing_matrix)+1
-  for(i in 1:NROW(states)) {
+  for(i in 1:length(states)) {
     emission_sharing_matrix[states[i], slots[i]] <- nextGroup
   }
   return(emission_sharing_matrix)
