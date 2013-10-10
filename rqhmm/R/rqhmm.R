@@ -74,65 +74,63 @@ new.qhmm <- function(data.shape, valid.transitions, transition.functions, emissi
   
   # emission groups
   if (!is.null(emission.groups)) {
-    stopifnot(is.list(emission.groups))
-    stopifnot(all(sapply(transition.groups, function(grp) {
-      is.num.vec(grp) || (is.list(grp) && length(grp) == 2 &&
-        is.vector(grp[[1]]) && is.vector(grp[[2]]))
-    })))
-
-    emission.groups = lapply(emission.groups, function(grp) {
-      if (is.num.vec(grp))
-        as.integer(grp)
-      else
-        list(as.integer(grp[[1]]), as.integer(grp[[2]]))
-    })
+    stopifnot(is.matrix(emission.groups))
+    stopifnot(all(emission.groups >= 0))
+    stopifnot(dim(emission.groups) == c(n.states, n.slots))
     
-    # prefixed by slot number
-    valid.slot = sapply(emission.groups, function(grp) {
-      if (is.num.vec(grp))
-        length(grp) > 1 && grp[1] > 0 && grp[1] <= n.slots
-      else
-        length(grp) == 2 && all(grp[[1]] > 0 & grp[[1]] <= n.slots)
-    })
+    # coerce valid matrix to integer
+    storage.mode(emission.groups) <- "integer"
     
-    if (!all(valid.slot))
-      stop("invalid emission groups: groups must be prefixed by valid slot numbers")
-
-    # per slot number, a state can only appear in a single group
-    for (slotId in 1:n.slots) {
-      groups = emission.groups[sapply(emission.groups, function(grp) {
-        if (is.num.vec(grp))
-          grp[1] == slotId
-        else
-          any(grp[[1]] == slotId)
-      })]
+    if (max(emission.groups) == 0) {
+      # no groups
+      emission.groups = NULL
+    } else {
+      # validate group properties
+      for (i in 1:max(emission.groups)) {
+        # 1. groups must have more than one element
+        n.elems = sum(emission.groups == i)
+        if (n.elems < 2)
+          stop("invalid emission groups: group ", i, " only has ", n.elems, " members. Must have at least two.")
+        
+        # 2. all slots in a given group must have the same dimension
+        slots = which(apply(emission.groups, 2, function(col) any(col == i)))
+        if (length(unique(emission.slot.dims[slots])) != 1)
+          stop("invalid emission groups: group ", i, " spans slots of differing dimension")
+        
+        # 3. all state/slot pairs must share the same emission distribution
+        fnames = vector(mode="list", length = max(emission.groups))
+        for (i in 1:n.states) {
+          for (j in 1:n.slots) {
+            grp = emission.groups[i, j]
+            if (grp > 0)
+              fnames[[grp]] = c(fnames[[grp]], emission.functions[[i]][j])
+          }
+        }
+        bad = which(sapply(fnames, function(v) length(unique(v)) != 1))
+        if (length(bad) > 0)
+          stop("invalid emission groups: groups ", paste(bad, "", sep = " "), " each have inconsistent emission function names")
+      }
       
-      group.states = lapply(groups, function(grp) {
-        if (is.num.vec(grp))
-          grp[2:length(grp)]
-        else
-          grp[[2]]
+      # convert to list form
+      n.grps = max(emission.groups)
+      state.vecs = vector(mode = "list", length = n.grps)
+      slot.vecs = vector(mode = "list", length = n.grps)
+      for (i in 1:n.states) {
+        for (j in 1:n.slots) {
+          grp = emission.groups[i, j]
+          if (grp > 0) {
+            state.vecs[[grp]] = c(state.vecs[[grp]], i)
+            slot.vecs[[grp]] = c(slot.vecs[[grp]], j)
+          }
+        }
+      }
+      emission.groups = lapply(1:n.grps, function(grp) {
+        # transform group slot and state IDs from R 1-based to C 0-based
+        c.slots = as.integer(slot.vecs[[grp]] - 1)
+        c.states = as.integer(state.vecs[[grp]] - 1)
+        list(c.slots, c.states)
       })
-      
-      flat = do.call("c", group.states)
-      
-      # no duplicates
-      if (length(unique(flat)) != length(flat))
-        stop("invalid slot groups for slot ", slotId, ": a state appears in more than one group")
-      
-      # all valid state numbers
-      valid.states = is.finite(flat) & flat > 0 & flat <= n.states
-      if (!all(valid.states))
-        stop("in slot ", slotId, ", invalid state numbers in emission groups: ", do.call("paste", as.list(flat[!valid.states])))
     }
-    
-    # transform group slot and state IDs from R 1-based to C 0-based
-    emission.groups = lapply(emission.groups, function(grp) {
-      if (is.num.vec(grp))
-        as.integer(grp - 1)
-      else
-        list(as.integer(grp[[1]] - 1), as.integer(grp[[2]]) - 1)
-    })
   }
   
   # check if function names are valid
