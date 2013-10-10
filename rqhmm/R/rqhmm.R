@@ -550,8 +550,11 @@ new.emission.groups <- function(nstates, nslots) {
 add.emission.groups.slots.states <- function(emission_sharing_matrix, states, slots) {
   stopifnot(length(states) == length(slots))  ## States and slots indices must be shared.
   stopifnot(length(states) > 1) ## At least two states sharing emissions parameters.
-  nextGroup <- max(emission_sharing_matrix)+1
+  nextGroup <- max(emission_sharing_matrix) + 1
+  
   for(i in 1:length(states)) {
+    if (emission_sharing_matrix[states[i], slots[i]] > 0)
+      stop("invalid operation: (state:", states[i], " slot:", slots[i], ") already belongs to a group")
     emission_sharing_matrix[states[i], slots[i]] <- nextGroup
   }
   return(emission_sharing_matrix)
