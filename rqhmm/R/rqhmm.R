@@ -334,6 +334,11 @@ posterior.qhmm <- function(hmm, emissions, covars = NULL, missing = NULL, n_thre
   .Call(rqhmm_posterior, hmm, emissions, covars, null.or.integer(missing), as.integer(n_threads))
 }
 
+posterior.from.state.qhmm <- function(hmm, src.state, emissions, covars = NULL, missing = NULL, n_threads = 1) {
+  stopifnot(src.state >= 1 && src.state <= hmm$n.states)
+  .Call(rqhmm_posterior_from_state, hmm, as.integer(src.state), emissions, covars, null.or.integer(missing), as.integer(n_threads))
+}
+
 em.qhmm <- function(hmm, emission.lst, covar.lst = NULL, missing.lst = NULL, tolerance = 1e-5, n_threads = 1) {
   stopifnot(is.list(emission.lst) && (is.null(covar.lst) || is.list(covar.lst))
             && (is.null(missing.lst) || is.list(missing.lst)))

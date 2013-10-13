@@ -1107,6 +1107,101 @@ extern "C" {
     
     return result;
   }
+
+  SEXP rqhmm_posterior_from_state(SEXP rqhmm, SEXP state, SEXP emissions, SEXP covars, SEXP missing, SEXP n_threads) {
+    SEXP result;
+    SEXP row_names;
+    RQHMMData * data;
+    Iter * iter, * iterCopy;
+    SEXP ptr;
+    double * fw, * bk;
+
+    int sID = INTEGER(state)[0] - 1;
+    int n_targets;
+    const int * targets;
+    double * rptr;
+    double * local_loglik;
+    
+    /* set number of threads */
+    #ifdef _OPENMP
+      omp_set_num_threads(INTEGER(n_threads)[0]);
+    #endif
+
+    /* retrieve rqhmm pointer */
+    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
+    if (ptr == R_NilValue)
+      error("invalid rqhmm object");
+    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+    
+    /* get state targets */
+    n_targets = data->hmm->state_n_targets(sID);
+    targets = data->hmm->state_targets(sID);
+
+    /* create data structures */
+    iter = data->create_iterator(emissions, covars, missing);
+    iterCopy = iter->shallowCopy();
+    fw = (double*) R_alloc(data->n_states * iter->length(), sizeof(double));
+    bk = (double*) R_alloc(data->n_states * iter->length(), sizeof(double));
+    PROTECT(result = allocMatrix(REALSXP, n_targets, iter->length() - 1));
+    
+    /* invoke forward, backward and posterior */
+    double log_lik = 0;
+    #pragma omp parallel shared(log_lik)
+    #pragma omp sections
+    {
+      #pragma omp section
+      {
+	try {
+	  data->hmm->forward((*iter), fw);
+	} catch (QHMMException & e) {
+	  REprint_exception(e);
+	}
+      }
+
+      #pragma omp section
+      {
+	try {
+	  log_lik = data->hmm->backward((*iterCopy), bk);
+	} catch (QHMMException & e) {
+	  REprint_exception(e);
+	}
+      }
+    }
+
+    /* compute local loglik */
+    local_loglik = new double[iter->length()];
+    iter->resetFirst();
+    data->hmm->local_loglik(*iter, fw, bk, local_loglik);
+
+    iter->resetFirst();
+    iter->next(); /* place iterator at target of transition */
+    rptr = REAL(result);
+    int i = 1;
+    do {
+      data->hmm->transition_posterior(*iter, fw, bk, local_loglik[i],
+				      1, &sID, n_targets, rptr);
+
+      rptr += n_targets;
+      ++i;
+    } while (iter->next());
+    
+    /* clean up */
+    delete[] local_loglik;
+    delete iter;
+    delete iterCopy;
+    
+    /* prepare result */
+    PROTECT(row_names = NEW_INTEGER(n_targets));
+    for (i = 0; i < n_targets; ++i)
+      INTEGER(row_names)[i] = targets[i] + 1;
+
+    setAttrib(result, R_RowNamesSymbol, row_names);
+
+    UNPROTECT(3);
+    
+    return result;
+  }
+
   
   SEXP rqhmm_em(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing, SEXP tolerance, SEXP n_threads) {
     SEXP result;
