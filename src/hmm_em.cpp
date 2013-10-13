@@ -101,7 +101,6 @@ EMResult HMM::em(std::vector<Iter*> & iters, double tolerance) {
         std::vector<std::vector<TransitionFunction*> > tgroups = transition_groups();
 #ifdef _OPENMP
         QHMMThreadHelper helper;
-        unsigned int n_groups = tgroups.size();
         
         #pragma omp parallel shared(helper)
         {
