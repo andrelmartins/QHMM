@@ -316,6 +316,8 @@ class HMMImpl : public HMM {
           logsum->store(fw[i*_n_states + j] + bk[i*_n_states + j]);
         result[i] = logsum->compute();
       }
+
+      delete logsum;
     }
 
     void transition_posterior(Iter & iter_at_target, const double * const fw, const double * const bk, double loglik, int n_src, const int * const src, int n_tgt, double * result) const {
