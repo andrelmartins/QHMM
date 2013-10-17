@@ -305,6 +305,8 @@ class HMMImpl : public HMM {
         for (int j = 0; j < _n_states; ++j)
           matrix[j*iter.length() + i] = exp(fw[i*_n_states + j] + bk[i*_n_states + j] - logPx);
       }
+
+      delete logsum;
     }
 
     void local_loglik(Iter & iter, const double * const fw, const double * const bk, double * result) const {
