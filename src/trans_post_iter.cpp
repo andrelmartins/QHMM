@@ -29,6 +29,11 @@ TransitionPosteriorIterator::TransitionPosteriorIterator(std::vector<TransitionF
 TransitionPosteriorIterator::~TransitionPosteriorIterator() {
   delete[] _trans_post;
   delete[] _group_ids;
+#ifdef _OPENMP
+  // created in "change_sequence()
+  if (_iter != NULL)
+    delete _iter;
+#endif
 }
 
 void TransitionPosteriorIterator::reset() {
