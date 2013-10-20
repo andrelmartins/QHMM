@@ -43,14 +43,6 @@ class HMMImpl : public HMM {
     virtual int state_count() const {
       return _n_states;
     }
-
-    virtual int state_n_targets(int state) const {
-      return _logAkl->function(state)->n_targets();
-    }
-
-    virtual const int * state_targets(int state) const {
-      return _logAkl->function(state)->targets();
-    }
   
     virtual TransitionTable * transitions() const {
       return _logAkl;

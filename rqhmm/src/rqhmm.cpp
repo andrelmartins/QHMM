@@ -1125,8 +1125,8 @@ extern "C" {
     data = (RQHMMData*) R_ExternalPtrAddr(ptr);
     
     /* get state targets */
-    n_targets = data->hmm->state_n_targets(sID);
-    targets = data->hmm->state_targets(sID);
+    n_targets = data->hmm->transitions()->state_target_count(sID);
+    targets = data->hmm->transitions()->state_targets(sID);
 
     /* create data structures */
     iter = data->create_iterator(emissions, covars, missing);

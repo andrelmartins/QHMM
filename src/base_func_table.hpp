@@ -169,6 +169,14 @@ public:
   }
   
   virtual void refresh() {}
+  
+  virtual int state_target_count(int state) const {
+    return _funcs[state]->n_targets();
+  }
+  
+  virtual const int * state_targets(int state) const {
+    return _funcs[state]->targets();
+  }
 };
 
 class EmissionTable {

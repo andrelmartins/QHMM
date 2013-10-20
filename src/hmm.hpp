@@ -34,8 +34,6 @@ class HMM {
 
     // properties
     virtual int state_count() const = 0;
-    virtual int state_n_targets(int state) const = 0;
-    virtual const int * state_targets(int state) const = 0;
   
     static void delete_records(std::vector<ParamRecord*> * ptr);
 protected:
