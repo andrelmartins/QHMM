@@ -52,6 +52,14 @@ class HMMImpl : public HMM {
       return _logAkl->function(state)->targets();
     }
   
+    virtual TransitionTable * transitions() const {
+      return _logAkl;
+    }
+  
+    virtual EmissionTable * emissions() const {
+      return _logEkb;
+    }
+  
     virtual bool valid_transition_params(int state, Params const & params) const {
       return _logAkl->validParams(state, params);
     }

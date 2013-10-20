@@ -15,6 +15,9 @@ class HMM {
   public:
     virtual ~HMM() {}
 
+    virtual TransitionTable * transitions() const = 0;
+    virtual EmissionTable * emissions() const = 0;
+  
     virtual bool valid_transition_params(int state, Params const & params) const = 0;
     virtual bool valid_emission_params(int state, int slot, Params const & params) const = 0;
   
