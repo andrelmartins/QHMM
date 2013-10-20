@@ -61,7 +61,7 @@ public:
   }
 };
 
-class Emissions : public FunctionTable<EmissionFunction> {
+class Emissions : public EmissionTable, private FunctionTable<EmissionFunction> {
 public:
   Emissions(int n_states) : FunctionTable<EmissionFunction>(n_states) {}
   virtual ~Emissions() {}
@@ -93,9 +93,38 @@ public:
   double operator() (Iter const & iter, int i) const {
     return _funcs[i]->log_probability(iter);
   }
+  
+  virtual void insert(EmissionFunction * func) {
+    FunctionTable<EmissionFunction>::insert(func);
+  }
+
+  virtual void insert(std::vector<EmissionFunction *> funcs) {
+    assert((int) funcs.size() == 1);
+    FunctionTable<EmissionFunction>::insert(funcs[0]);
+  }
+  
+  virtual void makeGroup(int * idxs, int length, int * slots = NULL, int n_slots = 0) {
+    FunctionTable<EmissionFunction>::makeGroup(idxs, length, slots, n_slots);
+  }
+  
+  virtual void makeGroupExt(int length, int * idxs, int * slots = NULL) {
+    FunctionTable<EmissionFunction>::makeGroupExt(length, idxs, slots);
+  }
+  
+  virtual void commitGroups() {
+    FunctionTable<EmissionFunction>::commitGroups();
+  }
+  
+  virtual const std::vector<std::vector<EmissionFunction*> > & groups() {
+    return FunctionTable<EmissionFunction>::groups();
+  }
+
+  virtual int n_states() const {
+    return _n_states;
+  };
 };
 
-class MultiEmissions {
+class MultiEmissions : public EmissionTable {
 public:
   MultiEmissions(int n_states, int n_slots) : _n_states(n_states), _n_slots(n_slots) {
     _funcs.reserve(n_states);
@@ -160,8 +189,8 @@ public:
     return log_prob;
   }
   
-  int n_states() { return _n_states; }
-  int n_slots() { return _n_slots; }
+  int n_states() const { return _n_states; }
+  int n_slots() const { return _n_slots; }
   
   virtual void makeGroup(int * idxs, int length, int * slots, int n_slots) {
     std::vector<EmissionFunction * > group;

@@ -178,4 +178,33 @@ public:
   virtual void refresh() {}
 };
 
+class EmissionTable {
+
+public:
+  virtual bool validSlotParams(int state, int slot, Params const & params) const  = 0;
+  
+  virtual Params * getSlotParams(int state, int slot) const = 0;
+  
+  virtual void setSlotParams(int state, int slot, Params const & params) = 0;
+  
+  virtual bool setSlotCovars(int state, int slot, int * idxs, int length) = 0;
+  
+  virtual bool getSlotOption(int state, int slot, const char * name, double * out_value) const = 0;
+  
+  virtual bool setSlotOption(int state, int slot, const char * name, double value) = 0;
+  
+  // groups
+  virtual void insert(std::vector<EmissionFunction *> funcs) = 0;
+  
+  virtual void makeGroup(int * idxs, int length, int * slots = NULL, int n_slots = 0) = 0;
+  
+  virtual void makeGroupExt(int length, int * idxs, int * slots = NULL) = 0;
+  
+  virtual void commitGroups() = 0;
+  
+  virtual const std::vector<std::vector<EmissionFunction*> > & groups() = 0;
+  
+  virtual int n_states() const = 0;
+};
+
 #endif

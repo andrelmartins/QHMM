@@ -3,7 +3,7 @@
 
 #include <vector>
 #include "iter.hpp"
-#include "func_table.hpp"
+#include "base_func_table.hpp"
 #include "param_record.hpp"
 
 typedef struct EMResult {
