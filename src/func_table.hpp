@@ -104,11 +104,11 @@ public:
   }
   
   virtual void makeGroup(int * idxs, int length, int * slots = NULL, int n_slots = 0) {
-    FunctionTable<EmissionFunction>::makeGroup(idxs, length, slots, n_slots);
+    FunctionTable<EmissionFunction>::makeGroup(idxs, length);
   }
   
   virtual void makeGroupExt(int length, int * idxs, int * slots = NULL) {
-    FunctionTable<EmissionFunction>::makeGroupExt(length, idxs, slots);
+    FunctionTable<EmissionFunction>::makeGroup(idxs, length);
   }
   
   virtual void commitGroups() {

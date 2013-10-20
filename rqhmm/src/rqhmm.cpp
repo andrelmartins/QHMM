@@ -255,7 +255,7 @@ void process_transition_groups(TransitionTable * ttable, SEXP groups) {
       int * igrp = INTEGER(group_i);
       int grp_len = Rf_length(group_i);
       
-      ttable->makeGroup(igrp, grp_len, NULL, 1);
+      ttable->makeGroup(igrp, grp_len);
     }
   }
   ttable->commitGroups(); // turn remaining singletons into unitary groups

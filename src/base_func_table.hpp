@@ -58,7 +58,7 @@ public:
     return _funcs[state]->setOption(name, value);
   }
   
-  virtual void makeGroup(int * idxs, int length, int * slots = NULL, int n_slots = 0) {
+  virtual void makeGroup(int * idxs, int length) {
     std::vector<T * > group;
     
     for (int i = 0; i < length; ++i) {
@@ -71,13 +71,6 @@ public:
     }
     
     _groups.push_back(group);
-  }
-  
-  
-  // CGD: In this version, pairs of index X slot are specified.  We assume that size( *idxs ) == size( *slots ).
-  //      This allows finer control over sharing slots from a single state into several different groups.
-  virtual void makeGroupExt(int length, int * idxs, int * slots = NULL) {
-    makeGroup(idxs, length);
   }
   
   // turn remaining singletons to groups
