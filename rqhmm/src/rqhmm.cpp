@@ -177,7 +177,7 @@ public:
   void set_transition_covars(int state, int * idxs, int length) {
     int * shifted_copy = valid_covar_slots_copy(idxs, length);
     
-    bool result = hmm->set_transition_covars(state, shifted_copy, length);
+    bool result = hmm->transitions()->setCovars(state, shifted_copy, length);
     delete shifted_copy;
     if (!result)
       error("covar slots not valid for state: %d", state + 1);
@@ -186,7 +186,7 @@ public:
   void set_emission_covars(int state, int slot, int * idxs, int length) {
     int * shifted_copy = valid_covar_slots_copy(idxs, length);
     
-    bool result = hmm->set_emission_covars(state, slot, shifted_copy, length);
+    bool result = hmm->emissions()->setSlotCovars(state, slot, shifted_copy, length);
     delete shifted_copy;
     if (!result)
       error("covar slots not valid for state: %d [slot: %d]", state + 1, slot + 1);
@@ -820,7 +820,7 @@ extern "C" {
 
     aux.init(rqhmm, state, R_NilValue);
 
-    Params * params = aux.hmm->get_transition_params(aux.stateID);
+    Params * params = aux.hmm->transitions()->getParams(aux.stateID);
 
     /* convert parameters into result vector */
     if (params != NULL) {
@@ -866,11 +866,11 @@ extern "C" {
     
     for (; !aux.is_finished(); aux.next()) {
       /* check if valid */
-      bool is_valid = aux.hmm->valid_transition_params(aux.stateID, params_obj);
+      bool is_valid = aux.hmm->transitions()->validParams(aux.stateID, params_obj);
       if (!is_valid)
         error("param vector not valid for state: %d", aux.stateID + 1);
       else
-        aux.hmm->set_transition_params(aux.stateID, params_obj);
+        aux.hmm->transitions()->setParams(aux.stateID, params_obj);
     }
 
     return R_NilValue;
@@ -882,7 +882,7 @@ extern "C" {
     
     aux.init(rqhmm, state, slot);
 
-    Params * params = aux.hmm->get_emission_params(aux.stateID, aux.slotID);
+    Params * params = aux.hmm->emissions()->getSlotParams(aux.stateID, aux.slotID);
 
     /* convert parameters into result vector */
     if (params != NULL) {
@@ -915,11 +915,11 @@ extern "C" {
 
     for (; !aux.is_finished(); aux.next()) {
       /* check if valid */
-      bool is_valid = aux.hmm->valid_emission_params(aux.stateID, aux.slotID, params_obj);
+      bool is_valid = aux.hmm->emissions()->validSlotParams(aux.stateID, aux.slotID, params_obj);
       if (!is_valid)
         error("param vector not valid for state: %d slot: %d", aux.stateID + 1, aux.slotID + 1);
       else
-        aux.hmm->set_emission_params(aux.stateID, aux.slotID, params_obj);
+        aux.hmm->emissions()->setSlotParams(aux.stateID, aux.slotID, params_obj);
     }
 
     return R_NilValue;
@@ -957,7 +957,7 @@ extern "C" {
     
     for (int i = 0; i < Rf_length(name); ++i) {
       double value;
-      bool res = aux.hmm->get_transition_option(aux.stateID, CHAR(STRING_ELT(name, i)), &value);
+      bool res = aux.hmm->transitions()->getOption(aux.stateID, CHAR(STRING_ELT(name, i)), &value);
       if (res)
         REAL(result)[i] = value;
       else
@@ -978,7 +978,7 @@ extern "C" {
     PROTECT(result = NEW_LOGICAL(Rf_length(name)));
     
     for (int i = 0; i < Rf_length(name); ++i) {
-      bool res = aux.hmm->set_transition_option(aux.stateID, CHAR(STRING_ELT(name, i)), REAL(value)[i]);
+      bool res = aux.hmm->transitions()->setOption(aux.stateID, CHAR(STRING_ELT(name, i)), REAL(value)[i]);
       if (res)
         LOGICAL(result)[i] = TRUE;
       else
@@ -1000,7 +1000,7 @@ extern "C" {
     
     for (int i = 0; i < Rf_length(name); ++i) {
       double value;
-      bool res = aux.hmm->get_emission_option(aux.stateID, aux.slotID, CHAR(STRING_ELT(name, i)), &value);
+      bool res = aux.hmm->emissions()->getSlotOption(aux.stateID, aux.slotID, CHAR(STRING_ELT(name, i)), &value);
       if (res)
         REAL(result)[i] = value;
       else
@@ -1021,7 +1021,7 @@ extern "C" {
     PROTECT(result = NEW_LOGICAL(Rf_length(name)));
     
     for (int i = 0; i < Rf_length(name); ++i) {
-      bool res = aux.hmm->set_emission_option(aux.stateID, aux.slotID, CHAR(STRING_ELT(name, i)), REAL(value)[i]);
+      bool res = aux.hmm->emissions()->setSlotOption(aux.stateID, aux.slotID, CHAR(STRING_ELT(name, i)), REAL(value)[i]);
       if (res)
         LOGICAL(result)[i] = TRUE;
       else

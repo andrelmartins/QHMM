@@ -18,20 +18,7 @@ class HMM {
     virtual TransitionTable * transitions() const = 0;
     virtual EmissionTable * emissions() const = 0;
   
-    virtual bool valid_transition_params(int state, Params const & params) const = 0;
-    virtual bool valid_emission_params(int state, int slot, Params const & params) const = 0;
-  
-    virtual Params * get_transition_params(int state) const = 0;
-    virtual void set_transition_params(int state, Params const & params) = 0;
-    virtual Params * get_emission_params(int state, int slot) const = 0;
-    virtual void set_emission_params(int state, int slot, Params const & params) = 0;
     virtual void set_initial_probs(double * probs) = 0;
-    virtual bool set_transition_covars(int state, int * idxs, int length) = 0;
-    virtual bool set_emission_covars(int state, int slot, int * idxs, int length) = 0;
-    virtual bool get_emission_option(int state, int slot, const char * name, double * out_value) const = 0;
-    virtual bool set_emission_option(int state, int slot, const char * name, double value) = 0;
-    virtual bool get_transition_option(int state, const char * name, double * out_value) const = 0;
-    virtual bool set_transition_option(int state, const char * name, double value) = 0;
 
     virtual double forward(Iter & iter, double * matrix) const = 0;
     virtual double backward(Iter & iter, double * matrix) const = 0;

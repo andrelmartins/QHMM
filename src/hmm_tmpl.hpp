@@ -59,60 +59,12 @@ class HMMImpl : public HMM {
     virtual EmissionTable * emissions() const {
       return _logEkb;
     }
-  
-    virtual bool valid_transition_params(int state, Params const & params) const {
-      return _logAkl->validParams(state, params);
-    }
-  
-    virtual bool valid_emission_params(int state, int slot, Params const & params) const {
-      return _logEkb->validSlotParams(state, slot, params);
-    }
-
-    virtual Params * get_transition_params(int state) const {
-      return _logAkl->getParams(state);
-    }
-
-    virtual void set_transition_params(int state, Params const & params) {
-      _logAkl->setParams(state, params);
-    }
-
-    virtual Params * get_emission_params(int state, int slot) const {
-      return _logEkb->getSlotParams(state, slot);
-    }
-  
-    virtual void set_emission_params(int state, int slot, Params const & params) {
-      _logEkb->setSlotParams(state, slot, params);
-    }
 
     virtual void set_initial_probs(double * probs) {
       for (int i = 0; i < _n_states; ++i)
         _init_log_probs[i] = log(probs[i]);
     }
-  
-    virtual bool set_transition_covars(int state, int * idxs, int length) {
-      return _logAkl->setCovars(state, idxs, length);
-    }
-  
-    virtual bool set_emission_covars(int state, int slot, int * idxs, int length) {
-      return _logEkb->setSlotCovars(state, slot, idxs, length);
-    }
-  
-    virtual bool get_emission_option(int state, int slot, const char * name, double * out_value) const {
-      return _logEkb->getSlotOption(state, slot, name, out_value);
-    }
-  
-    virtual bool set_emission_option(int state, int slot, const char * name, double value) {
-      return _logEkb->setSlotOption(state, slot, name, value);
-    }
-  
-    virtual bool get_transition_option(int state, const char * name, double * out_value) const {
-      return _logAkl->getOption(state, name, out_value);
-    }
-  
-    virtual bool set_transition_option(int state, const char * name, double value) {
-      return _logAkl->setOption(state, name, value);
-    }
-  
+    
     double forward(Iter & iter, double * matrix) const {
       double * m_col, * m_col_prev;
       LogSum * logsum = LogSum::create(_n_states);
