@@ -72,6 +72,13 @@ class FunctionTable {
       
       _groups.push_back(group);
     }
+
+
+    // CGD: In this version, pairs of index X slot are specified.  We assume that size( *idxs ) == size( *slots ).
+    //      This allows finer control over sharing slots from a single state into several different groups.
+    virtual void makeGroupExt(int length, int * idxs, int * slots = NULL) {
+      makeGroup(idxs, length);
+    }
   
     // turn remaining singletons to groups
     virtual void commitGroups() {
@@ -336,18 +343,37 @@ public:
     
     for (int i = 0; i < length; ++i) {
       for (int j = 0; j < n_slots; ++j) {
-	int slot = slots[j];
-	EmissionFunction * f_i = _funcs[idxs[i]][slot];
-	group.push_back(f_i);
-      
-	// remove from singletons
-	std::vector<EmissionFunction*>::iterator it = find(_singletons[slot].begin(), _singletons[slot].end(), f_i);
-	_singletons[slot].erase(it);
+        int slot = slots[j];
+        EmissionFunction * f_i = _funcs[idxs[i]][slot];
+        group.push_back(f_i);
+        
+        // remove from singletons
+        std::vector<EmissionFunction*>::iterator it = find(_singletons[slot].begin(), _singletons[slot].end(), f_i);
+        _singletons[slot].erase(it);
       }
     }
     
     _groups.push_back(group);
   }
+
+  // CGD: In this version, pairs of index X slot are specified.  We assume that size( *idxs ) == size( *slots ).
+  //      This allows finer control over sharing slots from a single state into several different groups.
+  virtual void makeGroupExt(int length, int * idxs, int * slots) {
+    std::vector<EmissionFunction * > group;
+    
+    for (int i = 0; i < length; ++i) {
+        int slot = slots[i];
+        EmissionFunction * f_i = _funcs[idxs[i]][slot];
+        group.push_back(f_i);
+     
+        // remove from singletons
+        std::vector<EmissionFunction*>::iterator it = find(_singletons[slot].begin(), _singletons[slot].end(), f_i);
+        _singletons[slot].erase(it);
+    }
+
+    _groups.push_back(group);
+  }
+
   
   // turn remaining singletons to groups
   virtual void commitGroups() {

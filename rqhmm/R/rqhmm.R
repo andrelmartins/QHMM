@@ -74,65 +74,63 @@ new.qhmm <- function(data.shape, valid.transitions, transition.functions, emissi
   
   # emission groups
   if (!is.null(emission.groups)) {
-    stopifnot(is.list(emission.groups))
-    stopifnot(all(sapply(transition.groups, function(grp) {
-      is.num.vec(grp) || (is.list(grp) && length(grp) == 2 &&
-        is.vector(grp[[1]]) && is.vector(grp[[2]]))
-    })))
-
-    emission.groups = lapply(emission.groups, function(grp) {
-      if (is.num.vec(grp))
-        as.integer(grp)
-      else
-        list(as.integer(grp[[1]]), as.integer(grp[[2]]))
-    })
+    stopifnot(is.matrix(emission.groups))
+    stopifnot(all(emission.groups >= 0))
+    stopifnot(dim(emission.groups) == c(n.states, n.slots))
     
-    # prefixed by slot number
-    valid.slot = sapply(emission.groups, function(grp) {
-      if (is.num.vec(grp))
-        length(grp) > 1 && grp[1] > 0 && grp[1] <= n.slots
-      else
-        length(grp) == 2 && all(grp[[1]] > 0 & grp[[1]] <= n.slots)
-    })
+    # coerce valid matrix to integer
+    storage.mode(emission.groups) <- "integer"
     
-    if (!all(valid.slot))
-      stop("invalid emission groups: groups must be prefixed by valid slot numbers")
-
-    # per slot number, a state can only appear in a single group
-    for (slotId in 1:n.slots) {
-      groups = emission.groups[sapply(emission.groups, function(grp) {
-        if (is.num.vec(grp))
-          grp[1] == slotId
-        else
-          any(grp[[1]] == slotId)
-      })]
+    if (max(emission.groups) == 0) {
+      # no groups
+      emission.groups = NULL
+    } else {
+      # validate group properties
+      for (i in 1:max(emission.groups)) {
+        # 1. groups must have more than one element
+        n.elems = sum(emission.groups == i)
+        if (n.elems < 2)
+          stop("invalid emission groups: group ", i, " only has ", n.elems, " members. Must have at least two.")
+        
+        # 2. all slots in a given group must have the same dimension
+        slots = which(apply(emission.groups, 2, function(col) any(col == i)))
+        if (length(unique(emission.slot.dims[slots])) != 1)
+          stop("invalid emission groups: group ", i, " spans slots of differing dimension")
+        
+        # 3. all state/slot pairs must share the same emission distribution
+        fnames = vector(mode="list", length = max(emission.groups))
+        for (i in 1:n.states) {
+          for (j in 1:n.slots) {
+            grp = emission.groups[i, j]
+            if (grp > 0)
+              fnames[[grp]] = c(fnames[[grp]], emission.functions[[i]][j])
+          }
+        }
+        bad = which(sapply(fnames, function(v) length(unique(v)) != 1))
+        if (length(bad) > 0)
+          stop("invalid emission groups: groups ", paste(bad, "", sep = " "), " each have inconsistent emission function names")
+      }
       
-      group.states = lapply(groups, function(grp) {
-        if (is.num.vec(grp))
-          grp[2:length(grp)]
-        else
-          grp[[2]]
+      # convert to list form
+      n.grps = max(emission.groups)
+      state.vecs = vector(mode = "list", length = n.grps)
+      slot.vecs = vector(mode = "list", length = n.grps)
+      for (i in 1:n.states) {
+        for (j in 1:n.slots) {
+          grp = emission.groups[i, j]
+          if (grp > 0) {
+            state.vecs[[grp]] = c(state.vecs[[grp]], i)
+            slot.vecs[[grp]] = c(slot.vecs[[grp]], j)
+          }
+        }
+      }
+      emission.groups = lapply(1:n.grps, function(grp) {
+        # transform group slot and state IDs from R 1-based to C 0-based
+        c.slots = as.integer(slot.vecs[[grp]] - 1)
+        c.states = as.integer(state.vecs[[grp]] - 1)
+        list(c.slots, c.states)
       })
-      
-      flat = do.call("c", group.states)
-      
-      # no duplicates
-      if (length(unique(flat)) != length(flat))
-        stop("invalid slot groups for slot ", slotId, ": a state appears in more than one group")
-      
-      # all valid state numbers
-      valid.states = is.finite(flat) & flat > 0 & flat <= n.states
-      if (!all(valid.states))
-        stop("in slot ", slotId, ", invalid state numbers in emission groups: ", do.call("paste", as.list(flat[!valid.states])))
     }
-    
-    # transform group slot and state IDs from R 1-based to C 0-based
-    emission.groups = lapply(emission.groups, function(grp) {
-      if (is.num.vec(grp))
-        as.integer(grp - 1)
-      else
-        list(as.integer(grp[[1]] - 1), as.integer(grp[[2]]) - 1)
-    })
   }
   
   # check if function names are valid
@@ -534,4 +532,64 @@ summary.qhmm <- function(object, digits = 3, nsmall = 0L, ...) {
       cat("\n")
     }
   }
+}
+
+##
+## CGD: Build a matrix specifying which emissions are shared.
+##      States (rows) X Slices (cols).  
+##
+## Matrix will have the following properties:
+##  * 0s specify no grouping.
+##  * Groups are specified as sequential integers (1:NGroups). 
+##  * Emission functions MUST be set the same within groups.
+##  * Slot dimensions MUST be the same.
+new.emission.groups <- function(nstates, nslots) {
+  return(matrix(0, nrow=nstates, ncol=nslots))
+}
+
+
+## States and slots are vectors of integers, representing the combinations of states and slots shared.
+## Note that this function is NOT exported and availiable ONLY to functions inside of rqhmm.
+add.emission.groups.slots.states <- function(emission_sharing_matrix, states, slots) {
+  stopifnot(length(states) == length(slots))  ## States and slots indices must be shared.
+  stopifnot(length(states) > 1) ## At least two states sharing emissions parameters.
+  nextGroup <- max(emission_sharing_matrix) + 1
+  
+  for(i in 1:length(states)) {
+    if (emission_sharing_matrix[states[i], slots[i]] > 0)
+      stop("invalid operation: (state:", states[i], " slot:", slots[i], ") already belongs to a group")
+    emission_sharing_matrix[states[i], slots[i]] <- nextGroup
+  }
+  return(emission_sharing_matrix)
+}
+
+## groups: 
+# group is defined in one of two ways: 
+# EITHER: an integer vector (slot number followed by two or more state numbers) 
+# OR:     a list with two integer vectors (slots) and (states)
+add.emission.groups <- function(emission_sharing_matrix, group=NULL, states=NULL, slots=NULL) {
+  if(!is.null(states) & !is.null(slots) & is.null(group)) {
+    return( add.emission.groups.slots.states(emission_sharing_matrix, states, slots) )
+  }
+  else if(is.null(states) & is.null(slots) & !is.null(group)) {
+    if(!is.list(group)) {
+      stopifnot(length(group) > 2)
+      n_states <- length(group)-1
+      return( add.emission.groups.slots.states(emission_sharing_matrix, states = group[2:length(group)], slots = rep(group[1], n_states)) )
+    }
+    else {
+      stopifnot(length(group) == 2)
+      slots <- group[[1]]
+      states<- group[[2]]
+      n_slots <- length(slots)
+      n_states <- length(states)
+      slots <- c(sapply(slots, function(x) {rep(x, n_states)}))
+      states <- rep(states, n_slots)
+      return( add.emission.groups.slots.states(emission_sharing_matrix, states= states, slots= slots)  )
+    }
+  }
+  else {
+    stop("ERROR: Either (group) OR (states and slots) must be specified.  Not both.")
+  }
+ 
 }

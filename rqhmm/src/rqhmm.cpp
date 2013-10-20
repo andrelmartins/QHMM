@@ -126,10 +126,10 @@ public:
       get_dims(missing, Nm, Lm);
 
       if (Lm != L)
-	error("missing length must match emissions length: %d != %d\n", Lm, L);
+        error("missing length must match emissions length: %d != %d\n", Lm, L);
       if (Nm != emission_slots)
-	error("missing don't match data shape: n.rows = %d, required = %d", Nm, emission_slots);
-
+        error("missing don't match data shape: n.rows = %d, required = %d", Nm, emission_slots);
+      
       mptr = INTEGER(missing);
     }
     
@@ -255,7 +255,7 @@ void process_transition_groups(TransitionTable * ttable, SEXP groups) {
       int * igrp = INTEGER(group_i);
       int grp_len = Rf_length(group_i);
       
-      ttable->makeGroup(igrp, grp_len);
+      ttable->makeGroup(igrp, grp_len, NULL, 1);
     }
   }
   ttable->commitGroups(); // turn remaining singletons into unitary groups
@@ -324,10 +324,11 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
       
       for (int i = 0; i < n_groups; ++i) {
         SEXP group_i = VECTOR_ELT(emission_groups, i);
-        int * igrp = INTEGER(group_i);
-        int grp_len = Rf_length(group_i) - 1; // exclude slot indicator
+        SEXP group_i_states = VECTOR_ELT(group_i, 1);
+        int * igrp = INTEGER(group_i_states);
+        int grp_len = Rf_length(group_i);
         
-        etable->makeGroup(igrp + 1, grp_len); // exclude slot indicator
+        etable->makeGroup(igrp, grp_len);
       }
     }
     etable->commitGroups(); // turn remaining singletons into unitary groups
@@ -356,21 +357,11 @@ RQHMMData * _create_hmm(SEXP data_shape, SEXP valid_transitions, SEXP transition
       
       for (int i = 0; i < n_groups; ++i) {
         SEXP group_i = VECTOR_ELT(emission_groups, i);
-
-	if (IS_INTEGER(group_i)) {
-	  int * igrp = INTEGER(group_i);
-	  int grp_slot = *igrp;
-	  int grp_len = Rf_length(group_i) - 1; // exclude slot indicator
+        SEXP group_i_slots = VECTOR_ELT(group_i, 0);
+        SEXP group_i_states = VECTOR_ELT(group_i, 1);
+        int group_i_length = Rf_length(group_i_states);
         
-	  etable->makeGroup(igrp + 1, grp_len, &grp_slot, 1); // exclude slot indicator
-	} else {
-	  SEXP slots = VECTOR_ELT(group_i, 0);
-	  SEXP states = VECTOR_ELT(group_i, 1);
-	  int grp_len = Rf_length(states);
-	  int slot_len = Rf_length(slots);
-
-	  etable->makeGroup(INTEGER(states), grp_len, INTEGER(slots), slot_len);
-	}
+        etable->makeGroupExt(group_i_length, INTEGER(group_i_states), INTEGER(group_i_slots));
       }
     }
     etable->commitGroups(); // turn remaining singletons into unitary groups
@@ -497,21 +488,21 @@ static SEXP convert_em_trace(std::vector<ParamRecord*> * trace) {
   // data frame with columns
   // T.<state number>.<param index> for transitions
   // E.<state number>.<slot number>.<param index> for emissions
-
+  
   /* compute number of columns */
   int n_columns = 0;
   int n_rows = 0;
   for (unsigned int i = 0; i < trace->size(); ++i) {
     ParamRecord * rec_i = (*trace)[i];
-
+    
     n_columns += rec_i->paramSize();
     if (n_rows == 0 && rec_i->paramSize() > 0)
       n_rows = rec_i->size();
   }
-
+  
   if (n_columns == 0)
     return R_NilValue;
-
+  
   /* allocate space */
   PROTECT(result = NEW_LIST(n_columns));
   PROTECT(col_names = NEW_CHARACTER(n_columns));
@@ -524,21 +515,21 @@ static SEXP convert_em_trace(std::vector<ParamRecord*> * trace) {
   int col = 0;
   for (unsigned int i = 0; i < trace->size(); ++i) {
     ParamRecord * rec_i = (*trace)[i];
-
+    
     if (rec_i->paramSize() > 0) {
       for (int position = 0; position < rec_i->paramSize(); ++position) {
-	SEXP col_data;
-	/* create column name */
-	SET_STRING_ELT(col_names, col, em_trace_column_name(rec_i, position));
-
-	/* copy column data */
-	col_data = NEW_NUMERIC(n_rows);
-	for (int j = 0; j < n_rows; ++j)
-	  REAL(col_data)[j] = rec_i->value(j, position);
-	SET_VECTOR_ELT(result, col, col_data);
-
-	/* */
-	++col;
+        SEXP col_data;
+        /* create column name */
+        SET_STRING_ELT(col_names, col, em_trace_column_name(rec_i, position));
+        
+        /* copy column data */
+        col_data = NEW_NUMERIC(n_rows);
+        for (int j = 0; j < n_rows; ++j)
+          REAL(col_data)[j] = rec_i->value(j, position);
+        SET_VECTOR_ELT(result, col, col_data);
+        
+        /* */
+        ++col;
       }
     }
   }
@@ -1075,20 +1066,20 @@ extern "C" {
     {
       #pragma omp section
       {
-	try {
-	  data->hmm->forward((*iter), fw);
-	} catch (QHMMException & e) {
-	  REprint_exception(e);
-	}
+        try {
+          data->hmm->forward((*iter), fw);
+        } catch (QHMMException & e) {
+          REprint_exception(e);
+        }
       }
-
+      
       #pragma omp section
       {
-	try {
-	  log_lik = data->hmm->backward((*iterCopy), bk);
-	} catch (QHMMException & e) {
-	  REprint_exception(e);
-	}
+        try {
+          log_lik = data->hmm->backward((*iterCopy), bk);
+        } catch (QHMMException & e) {
+          REprint_exception(e);
+        }
       }
     }
 
