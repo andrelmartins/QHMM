@@ -7,7 +7,7 @@
 #include "param_record.hpp"
 
 typedef struct EMResult {
-  double log_likelihood;
+  std::vector<double> * log_likelihood;
   std::vector<ParamRecord*> * param_trace;
 } EMResult;
 

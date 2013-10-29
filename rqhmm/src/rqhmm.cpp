@@ -542,6 +542,15 @@ static SEXP convert_em_trace(std::vector<ParamRecord*> * trace) {
   return result;
 }
 
+static SEXP convert_dbl_vector(std::vector<double> * vec) {
+  SEXP result = NEW_NUMERIC(vec->size());
+  
+  for (unsigned int i = 0; i < vec->size(); ++i)
+    REAL(result)[i] = (*vec)[i];
+  
+  return result;
+}
+
 static SEXP convert_block_vector(std::vector<block_t> * blocks) {
   SEXP result;
   std::vector<block_t>::iterator it;
@@ -1142,20 +1151,20 @@ extern "C" {
     {
       #pragma omp section
       {
-	try {
-	  data->hmm->forward((*iter), fw);
-	} catch (QHMMException & e) {
-	  REprint_exception(e);
-	}
+        try {
+          data->hmm->forward((*iter), fw);
+        } catch (QHMMException & e) {
+          REprint_exception(e);
+        }
       }
-
+      
       #pragma omp section
       {
-	try {
-	  log_lik = data->hmm->backward((*iterCopy), bk);
-	} catch (QHMMException & e) {
-	  REprint_exception(e);
-	}
+        try {
+          log_lik = data->hmm->backward((*iterCopy), bk);
+        } catch (QHMMException & e) {
+          REprint_exception(e);
+        }
       }
     }
 
@@ -1197,7 +1206,6 @@ extern "C" {
   SEXP rqhmm_em(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing, SEXP tolerance, SEXP n_threads) {
     SEXP result;
     SEXP res_names;
-    SEXP loglik;
     SEXP ptr;
     RQHMMData * data;
     std::vector<Iter*> iterators;
@@ -1230,11 +1238,9 @@ extern "C" {
 
     /* prepare result */
     PROTECT(result = NEW_LIST(2));
-    PROTECT(loglik = NEW_NUMERIC(1));
     PROTECT(res_names = NEW_CHARACTER(2));
-    REAL(loglik)[0] = em_result.log_likelihood;
 
-    SET_VECTOR_ELT(result, 0, loglik);
+    SET_VECTOR_ELT(result, 0, convert_dbl_vector(em_result.log_likelihood));
     SET_VECTOR_ELT(result, 1, convert_em_trace(em_result.param_trace));
 
     SET_STRING_ELT(res_names, 0, mkChar("loglik"));
@@ -1243,9 +1249,10 @@ extern "C" {
     setAttrib(result, R_NamesSymbol, res_names);
 
     /* more clean up */
+    delete em_result.log_likelihood;
     HMM::delete_records(em_result.param_trace);
 
-    UNPROTECT(4);
+    UNPROTECT(3);
 
     return result;
   }

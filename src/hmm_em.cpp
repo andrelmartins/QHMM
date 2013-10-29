@@ -69,6 +69,7 @@ EMResult HMM::em(std::vector<Iter*> & iters, double tolerance) {
 
   /* initialize result trace */
   result.param_trace = init_records();
+  result.log_likelihood = new std::vector<double>();
 
   /* initialize sequences & fw/bk memory
      (handles spliting by missing data)
@@ -87,6 +88,7 @@ EMResult HMM::em(std::vector<Iter*> & iters, double tolerance) {
       
       /* output cur_loglik & store current parameters */
       update_records(result.param_trace);
+      result.log_likelihood->push_back(cur_loglik);
       printf("[%d] loglik: %g\n", iter_count, cur_loglik);
       
       /* check log-lik */
@@ -161,6 +163,7 @@ EMResult HMM::em(std::vector<Iter*> & iters, double tolerance) {
   } catch (QHMMException & e) {
     // clean up memory
     delete sequences;
+    delete result.log_likelihood;
     delete_records(result.param_trace);
     
     e.stack.push_back("EM");
@@ -169,8 +172,6 @@ EMResult HMM::em(std::vector<Iter*> & iters, double tolerance) {
 
   /* clean up */
   delete sequences;
-
-  result.log_likelihood = cur_loglik;
-
+  
   return result;
 }
