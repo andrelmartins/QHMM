@@ -13,7 +13,7 @@
 class AutoCorr : public TransitionFunction {
   public:
     // first target in `targets` must the source state
-    AutoCorr(int n_states, int stateID, int n_targets, int * targets, double alpha = 0.5) : TransitionFunction(n_states, stateID, n_targets, targets) {
+    AutoCorr(int n_states, int stateID, int n_targets, int * targets, double alpha = 0.5) : TransitionFunction(n_states, stateID, n_targets, targets), _pseudoCount(0.0) {
       
       assert(stateID == _targets[0]);
       _log_probs = new double[n_states];
@@ -44,6 +44,27 @@ class AutoCorr : public TransitionFunction {
       _is_fixed = params.isAllFixed();
     }
   
+    virtual bool getOption(const char * name, double * out_value) {
+      if(!strcmp(name, "pseudo_count")) {
+        *out_value = _pseudoCount;
+        return true;
+      }
+      return false;
+    }
+  
+    virtual bool setOption(const char * name, double value) {
+      if (!strcmp(name, "pseudo_count")) {
+        if (value < 0) {
+          log_msg("invalid pseudo_count: %g : shoud be >= 0\n",
+                  value);
+          return false;
+        }
+        _pseudoCount = value;
+        return true;
+      }
+      return false;
+    }
+  
     virtual double log_probability(int target) const {
       return _log_probs[target];
     }
@@ -57,8 +78,8 @@ class AutoCorr : public TransitionFunction {
       return;
 
     // sufficient statistics are the self and total expected counts
-    double expected_self_count = 0;
-    double expected_total_count = 0;
+    double expected_self_count = _pseudoCount;
+    double expected_total_count = 2*_pseudoCount;
 
     TransitionPosteriorIterator * piter = sequences->transition_iterator(*group);
 
@@ -89,6 +110,7 @@ class AutoCorr : public TransitionFunction {
   private:
     double * _log_probs;
     bool _is_fixed;
+    double _pseudoCount;
   
     void update_log_probs(double alpha) {
       // set all to -Inf
