@@ -392,7 +392,7 @@ emission.test.qhmm <- function(emission.name, emission.params, values, covars = 
   return(list(result = result, params = get.emission.params.qhmm(hmm, 1)))
 }
 
-transition.test.qhmm <- function(transition.name, transition.params, n.states, state.sequence, covars = NULL, options = NULL) {
+transition.test.qhmm <- function(transition.name, transition.params, n.states, state.sequence, covars = NULL, options = NULL, self.first = FALSE) {
   stopifnot(n.states > 0)
   stopifnot(length(state.sequence) > 1)
 
@@ -405,8 +405,24 @@ transition.test.qhmm <- function(transition.name, transition.params, n.states, s
   }
 
   tm = NULL
-  for (i in 1:n.states)
-    tm = rbind(tm, 1:n.states)
+  if (self.first) {
+    for (i in 1:n.states) {
+      row = rep(0, n.states)
+      row[i] = 1
+      k = 2
+      for (j in 1:n.states) {
+        if (j != i) {
+          row[j] = k
+          k = k + 1
+        }
+      }
+      
+      tm = rbind(tm, row)
+    }
+  } else {
+    for (i in 1:n.states)
+      tm = rbind(tm, 1:n.states)
+  }
   
   hmm <- new.qhmm(list(1, covar.shape), tm, rep(transition.name, n.states), as.list(rep("discrete", n.states)))
 
@@ -431,8 +447,10 @@ transition.test.qhmm <- function(transition.name, transition.params, n.states, s
     optNames = names(options)
     stopifnot(!is.null(optNames))
 
-    for (optName in optNames)
-      set.transition.option.qhmm(hmm, 1:n.states, optName, options[[optName]])
+    for (optName in optNames) {
+      for (state in 1:n.states)
+        set.transition.option.qhmm(hmm, state, optName, options[[optName]])
+    }
   }
   
   # run EM
