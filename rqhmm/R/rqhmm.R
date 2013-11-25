@@ -392,7 +392,7 @@ emission.test.qhmm <- function(emission.name, emission.params, values, covars = 
   return(list(result = result, params = get.emission.params.qhmm(hmm, 1)))
 }
 
-transition.test.qhmm <- function(transition.name, transition.params, n.states, state.sequence, covars = NULL, options = NULL, self.first = FALSE) {
+transition.test.qhmm <- function(transition.name, transition.params, n.states, state.sequence, covars = NULL, covars.slots = NULL, options = NULL, self.first = FALSE) {
   stopifnot(n.states > 0)
   stopifnot(length(state.sequence) > 1)
 
@@ -402,6 +402,8 @@ transition.test.qhmm <- function(transition.name, transition.params, n.states, s
       covar.shape = 1
     else
       covar.shape = dim(covars)[1]
+    if (!is.null(covars.slots))
+      covar.shape = rep(covar.shape / length(covars.slots), length(covars.slots))
   }
 
   tm = NULL
@@ -439,8 +441,11 @@ transition.test.qhmm <- function(transition.name, transition.params, n.states, s
   set.initial.probs.qhmm(hmm, init)
 
   # set transition params & options
-  for (i in 1:n.states)
+  for (i in 1:n.states) {
     set.transition.params.qhmm(hmm, i, transition.params)
+    if (!is.null(covars.slots))
+      set.transition.covars.qhmm(hmm, i, covars.slots[i])
+  }
   
   if (!is.null(options)) {
     stopifnot(is.list(options))
