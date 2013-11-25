@@ -170,7 +170,7 @@ class AutoCorr : public TransitionFunction {
       if (_n_targets > 1) {
         double other = log(1 - alpha);
         for (int i = 1; i < _n_targets; ++i)
-          _log_probs[_targets[i]] = other + _log_outgoing_weights[i];
+          _log_probs[_targets[i]] = other + _log_outgoing_weights[_targets[i]];
       }
     }
 };
@@ -227,5 +227,160 @@ class AutoCorrCovar : public TransitionFunction {
     const double _log_base;
     bool * _valid_states;
 };
+
+// Simple Auto-correlation transition function with covariate weights
+//
+// Parameters: alpha   :: self-transition probability
+//             (outgoing) target weights taken from *covariates*
+//
+// Covariates dimensions must match number of target states and appear in that order.
+// Covariates must also be in log-space and sum to one (after exp), ignoring self-weight.
+class AutoCorrWCovar : public TransitionFunction {
+  public:
+    // first target in `targets` must the source state
+    AutoCorrWCovar(int n_states, int stateID, int n_targets, int * targets, double alpha = 0.5, int covar_slot = 0) : TransitionFunction(n_states, stateID, n_targets, targets), _pseudoCount(0.0), _covar_slot(covar_slot) {
+      
+      assert(stateID == _targets[0]);
+      _log_probs = new double[n_states];
+
+      update_log_probs(alpha);
+
+      _is_fixed = false;
+      
+      // create reverse target map
+      _rev_target_map = new int[n_states];
+      // set all to -1
+      for (int i = 0; i < n_states; ++i)
+        _rev_target_map[i] = -1;
+      // set targets
+      for (int i = 0; i < n_targets; ++i)
+        _rev_target_map[targets[i]] = i;
+    }
+    
+    ~AutoCorrWCovar() {
+      delete[] _log_probs;
+      delete[] _rev_target_map;
+    }
+  
+    virtual bool validParams(Params const & params) const {
+      return params.length() == 1 && params[0] >= 0 && params[0] <= 1;
+    }
+  
+    virtual Params * getParams() const {
+      double alpha = exp(_log_probs[_stateID]);
+      Params * result = new Params(1, &alpha);
+
+      if (_is_fixed)
+        result->setFixed(0, true);
+      return result;
+    }
+
+    virtual void setParams(Params const & params) {
+      update_log_probs(params[0]);
+      _is_fixed = params.isFixed(0);
+    }
+  
+    virtual bool getOption(const char * name, double * out_value) {
+      if(!strcmp(name, "pseudo_count")) {
+        *out_value = _pseudoCount;
+        return true;
+      }
+      return false;
+    }
+  
+    virtual bool setOption(const char * name, double value) {
+      if (!strcmp(name, "pseudo_count")) {
+        if (value < 0) {
+          log_msg("invalid pseudo_count: %g : shoud be >= 0\n",
+                  value);
+          return false;
+        }
+        _pseudoCount = value;
+        return true;
+      }
+      return false;
+    }
+  
+    virtual double log_probability(int target) const {
+      throw std::logic_error("called homogeneous version of transition log_probability on non-homogeneous class");
+    }
+    
+    virtual double log_probability(Iter const & iter, int target) const {
+      if (target == _stateID)
+        return _log_probs[target];
+
+      int target_idx = _rev_target_map[target];
+      if (target_idx != -1)
+        return _log_probs[target] + iter.covar_i(_covar_slot, target_idx);
+
+      return _log_probs[target];
+    }
+
+    virtual bool setCovarSlots(int * slots, int length) {
+      if (length != 1)
+        return false;
+      if (*slots < 0)
+        return false;
+      _covar_slot = *slots;
+      return true;
+    }
+    
+  virtual void updateParams(EMSequences * sequences, std::vector<TransitionFunction*> * group) {
+    if (_is_fixed)
+      return;
+
+    // sufficient statistics are the self and total expected counts
+    double expected_self_count = _pseudoCount;
+    double expected_total_count = 2*_pseudoCount;
+
+    TransitionPosteriorIterator * piter = sequences->transition_iterator(*group);
+
+    // sum expected counts
+    do {
+      for (unsigned int gidx = 0; gidx < group->size(); ++gidx) {
+        expected_self_count += piter->posterior(gidx, 0);
+        
+        for (int tgt_idx = 0; tgt_idx < _n_targets; ++tgt_idx)
+          expected_total_count += piter->posterior(gidx, tgt_idx);
+      }
+    } while (piter->next());
+    
+    // estimate parameters
+    double alpha = expected_self_count / expected_total_count;
+    
+    std::vector<TransitionFunction*>::iterator tf_it;
+    for (tf_it = group->begin(); tf_it != group->end(); ++tf_it) {
+      AutoCorrWCovar * tf = (AutoCorrWCovar*) (*tf_it)->inner();
+      
+      tf->update_log_probs(alpha);
+    }
+    
+    delete piter;
+  }
+
+    
+  private:
+    double * _log_probs;
+    bool _is_fixed;
+    double _pseudoCount;
+    int _covar_slot;
+    int * _rev_target_map;
+  
+    void update_log_probs(double alpha) {
+      // set all to -Inf
+      for (int i = 0; i < _n_states; ++i)
+        _log_probs[i] = -std::numeric_limits<double>::infinity();
+      
+      // set actual probabilities
+      _log_probs[_targets[0]] = log(alpha); // self transition
+      
+      if (_n_targets > 1) {
+        double other = log(1 - alpha);
+        for (int i = 1; i < _n_targets; ++i)
+          _log_probs[_targets[i]] = other; // + covar weight
+      }
+    }
+};
+
 
 #endif
