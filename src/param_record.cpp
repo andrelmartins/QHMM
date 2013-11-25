@@ -11,20 +11,20 @@ void ParamRecord::init(Params * par) {
   if (par != NULL) {
     _size = par->length();
     
-    for (int i = 0; i < _size; ++i)
+    for (int i = 0; i < par->length(); ++i)
       if (par->isFixed(i))
-	--_size;
+        --_size;
     
     if (_size > 0) {
       _indexes = new int[_size];
       _records = new vdbl_ptr[_size];
 
       for (int i = 0, j = 0; i < par->length(); ++i)
-	if (!par->isFixed(i))
-	  _indexes[j++] = i;
+        if (!par->isFixed(i))
+          _indexes[j++] = i;
 
       for (int i = 0; i < _size; ++i)
-	_records[i] = new std::vector<double>();
+        _records[i] = new std::vector<double>();
     }
 
     delete par;
