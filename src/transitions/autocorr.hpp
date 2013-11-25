@@ -9,7 +9,7 @@
 
 // Simple Auto-correlation transition function
 //
-// Parameters: alpha   :: self-transition probability
+// Parameters: alpha   :: self-transition probability, [optional outgoing target weights]
 class AutoCorr : public TransitionFunction {
   public:
     // first target in `targets` must the source state
@@ -18,6 +18,12 @@ class AutoCorr : public TransitionFunction {
       assert(stateID == _targets[0]);
       _log_probs = new double[n_states];
 
+      // initialize outgoing weights (default: 1/(n - 1))
+      _log_outgoing_weights = new double[n_targets];
+      for (int i = 0; i < n_targets; ++i)
+        _log_outgoing_weights[i] =  -log(n_targets - 1);
+      _has_outgoing_weights = false;
+
       update_log_probs(alpha);
 
       _is_fixed = false;
@@ -25,23 +31,62 @@ class AutoCorr : public TransitionFunction {
     
     ~AutoCorr() {
       delete[] _log_probs;
+      delete[] _log_outgoing_weights;
     }
   
     virtual bool validParams(Params const & params) const {
-      return params.length() == 1 && params[0] >= 0 && params[0] <= 1;
+      if (params.length() == 1 || params.length() == _n_targets) {
+        for (int i = 0; i < params.length(); ++i)
+          if (!(params[i] >= 0 && params[i] <= 1))
+            return false;
+        return true;
+      } else return false;
     }
   
     virtual Params * getParams() const {
       double alpha = exp(_log_probs[_stateID]);
-      Params * result = new Params(1, &alpha);
+      Params * result;
+      
+      if (_has_outgoing_weights) {
+        double * params = (double*) malloc(_n_targets * sizeof(double));
+        params[0] = alpha;
+        for (int i = 0, j = 1; i < _n_targets; ++i) {
+          if (i != _stateID) {
+            params[j] = exp(_log_outgoing_weights[i]);
+            ++j;
+          }
+        }
+        
+        result = new Params(_n_targets, params);
+        for (int i = 1; i < _n_targets; ++i)
+          result->setFixed(i, true);
+      } else
+        result = new Params(1, &alpha);
+
       if (_is_fixed)
         result->setFixed(0, true);
       return result;
     }
 
     virtual void setParams(Params const & params) {
+      if (params.length() > 1) { /* copy/log weights */
+        for (int i = 0, j = 1; i < _n_targets; ++i) {
+          if (i != _stateID) {
+            _log_outgoing_weights[i] = log(params[j]);
+            ++j;
+          }
+        }
+        _has_outgoing_weights = true;
+      } else {
+        /* reset outgoing weights */
+        for (int i = 0; i < _n_targets; ++i)
+        _log_outgoing_weights[i] =  -log(_n_targets - 1);
+        
+        _has_outgoing_weights = false;
+      }
+      
       update_log_probs(params[0]);
-      _is_fixed = params.isAllFixed();
+      _is_fixed = params.isFixed(0);
     }
   
     virtual bool getOption(const char * name, double * out_value) {
@@ -111,6 +156,8 @@ class AutoCorr : public TransitionFunction {
     double * _log_probs;
     bool _is_fixed;
     double _pseudoCount;
+    double * _log_outgoing_weights;
+    bool _has_outgoing_weights;
   
     void update_log_probs(double alpha) {
       // set all to -Inf
@@ -121,9 +168,9 @@ class AutoCorr : public TransitionFunction {
       _log_probs[_targets[0]] = log(alpha); // self transition
       
       if (_n_targets > 1) {
-        double other = log(1 - alpha) - log(_n_targets - 1);
+        double other = log(1 - alpha);
         for (int i = 1; i < _n_targets; ++i)
-          _log_probs[_targets[i]] = other;
+          _log_probs[_targets[i]] = other + _log_outgoing_weights[i];
       }
     }
 };
