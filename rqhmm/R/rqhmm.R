@@ -369,7 +369,7 @@ emission.test.qhmm <- function(emission.name, emission.params, values, covars = 
       covar.shape = dim(covars)[1]
   }
   hmm <- new.qhmm(list(values.shape, covar.shape), as.matrix(1), "discrete", list(emission.name))
-  set.transition.params.qhmm(hmm, 1, 1)
+  set.transition.params.qhmm(hmm, 1, 1, fixed = TRUE)
 
   if (!is.null(emission.params))
     set.emission.params.qhmm(hmm, 1, emission.params)
