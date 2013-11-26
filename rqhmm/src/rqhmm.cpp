@@ -15,6 +15,7 @@
 #include <emissions/direct.hpp>
 #include <emissions/fixed.hpp>
 #include <emissions/discrete_gamma.hpp>
+#include <emissions/negbinomial.hpp>
 #include <hmm.hpp>
 #include <utils.hpp>
 #include <vector>
@@ -1369,6 +1370,7 @@ extern "C" {
     register_emission(new EmissionEntry<DirectEmission>("direct", "rqhmm_base", false));
     register_emission(new EmissionEntry<FixedEmission>("fixed", "rqhmm_base", false));
     register_emission(new EmissionEntry<DiscreteGamma>("dgamma", "rqhmm_base", false));
+    register_emission(new EmissionEntry<NegativeBinomial>("neg_binomial", "rqhmm_base", false));
   }
   
   void attr_default R_unload_rqhmm(DllInfo * info) {
