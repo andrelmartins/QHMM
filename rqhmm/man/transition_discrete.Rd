@@ -28,3 +28,4 @@ pseudo_count \tab numeric (>= 0) \tab transition pseudo count used during EM \cr
 
 }
 \keyword{transitions}
+\keyword{qhmm}

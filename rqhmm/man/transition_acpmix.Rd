@@ -45,3 +45,5 @@ where \eqn{p_ij} is the prior of the transition from state \eqn{i} (the current 
 }
 \seealso{wacpmix, autocorr, autocorr_covar, autocorr_wcovar}
 \keyword{transitions}
+\keyword{qhmm}
+

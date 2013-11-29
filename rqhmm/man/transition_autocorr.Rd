@@ -34,3 +34,4 @@ pseudo_count \tab numeric (>= 0)  \tab transition pseudo count used during EM \c
 }
 \seealso{autocorr_covar, autocorr_wcovar}
 \keyword{transitions}
+\keyword{qhmm}

@@ -27,3 +27,4 @@ alpha \tab probability  \tab 1 \tab self-transition probability\cr
 }
 \seealso{autocorr, autocorr_wcovar}
 \keyword{transitions}
+\keyword{qhmm}

@@ -35,3 +35,4 @@ x \tab numeric \tab N \tab covariate used as input for the logistic functions\cr
 
 }
 \keyword{transitions}
+\keyword{qhmm}

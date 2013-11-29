@@ -46,3 +46,4 @@ where weights \eqn{w_{ij}} are the relative probability of going from state \eqn
 }
 \seealso{acpmix, autocorr, autocorr_covar, autocorr_wcovar}
 \keyword{transitions}
+\keyword{qhmm}

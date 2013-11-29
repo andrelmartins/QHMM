@@ -36,3 +36,4 @@ where \eqn{w_ij} is the weight of the transition from state \eqn{i} (the current
 }
 \seealso{autocorr, autocorr_covar}
 \keyword{transitions}
+\keyword{qhmm}
