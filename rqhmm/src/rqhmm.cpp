@@ -676,6 +676,62 @@ extern "C" {
     return fentry_exists(name, __emissions);
   }
   
+  SEXP attr_hidden fentry_table(std::vector<FuncEntry*> & table) {
+    SEXP result;
+    SEXP res_names;
+    SEXP col_pkg;
+    SEXP col_name;
+    SEXP col_covar;
+    unsigned int N;
+    int * covar_ptr;
+    
+    N = table.size();
+    
+    PROTECT(col_pkg = NEW_CHARACTER(N));
+    PROTECT(col_name = NEW_CHARACTER(N));
+    PROTECT(col_covar = NEW_LOGICAL(N));
+    
+    covar_ptr = LOGICAL(col_covar);
+    for (unsigned int i = 0; i < N; ++i) {
+      FuncEntry* entry = table[i];
+      
+      SET_STRING_ELT(col_pkg, i, mkChar(entry->package));
+      SET_STRING_ELT(col_name, i, mkChar(entry->name));
+      covar_ptr[i] = (entry->needs_covars ? 1 : 0);
+    }
+    
+    PROTECT(result = NEW_LIST(3));
+    PROTECT(res_names = NEW_CHARACTER(3));
+    
+    SET_VECTOR_ELT(result, 0, col_pkg);
+    SET_VECTOR_ELT(result, 1, col_name);
+    SET_VECTOR_ELT(result, 2, col_covar);
+    
+    SET_STRING_ELT(res_names, 0, mkChar("pkg"));
+    SET_STRING_ELT(res_names, 1, mkChar("name"));
+    SET_STRING_ELT(res_names, 2, mkChar("needs.covars"));
+    
+    setAttrib(result, R_NamesSymbol, res_names);
+
+    UNPROTECT(5);
+    
+    return result;
+  }
+  
+  SEXP rqhmm_list_distributions() {
+    SEXP result = R_NilValue;
+    SEXP res_names;
+    
+    PROTECT(result = NEW_LIST(2));
+    
+    SET_VECTOR_ELT(result, 0, fentry_table(__transitions));
+    SET_VECTOR_ELT(result, 1, fentry_table(__emissions));
+    
+    UNPROTECT(1);
+    
+    return result;
+  }
+  
   void rqhmm_finalizer(SEXP ptr) {
     RQHMMData * data;
     data = (RQHMMData*) R_ExternalPtrAddr(ptr);
@@ -1353,24 +1409,24 @@ extern "C" {
     RREGDEF(unregister_all);
     
     // add our basic transition functions
-    register_transition(new TransitionEntry<Discrete>("discrete", "rqhmm_base", false));
-    register_transition(new TransitionEntry<AutoCorr>("autocorr", "rqhmm_base", false));
-    register_transition(new TransitionEntry<AutoCorrCovar>("autocorr_covar", "rqhmm_base", true));
-    register_transition(new TransitionEntry<AutoCorrWCovar>("autocorr_wcovar", "rqhmm_base", true));
+    register_transition(new TransitionEntry<Discrete>("discrete", "rqhmm", false));
+    register_transition(new TransitionEntry<AutoCorr>("autocorr", "rqhmm", false));
+    register_transition(new TransitionEntry<AutoCorrCovar>("autocorr_covar", "rqhmm", true));
+    register_transition(new TransitionEntry<AutoCorrWCovar>("autocorr_wcovar", "rqhmm", true));
     register_transition(new TransitionEntry<ACPMix>("acpmix", "rqhmm", true));
     register_transition(new TransitionEntry<Logistic>("logistic", "rqhmm", true));
     register_transition(new TransitionEntry<WACPMix>("wacpmix", "rqhmm", true));
 
     // add our basic emission functions
-    register_emission(new EmissionEntry<Poisson>("poisson", "rqhmm_base", false));
-    register_emission(new EmissionEntry<PoissonCovar>("poisson_covar", "rqhmm_base", true));
-    register_emission(new EmissionEntry<PoissonScaledCovar>("poisson_scaled_covar", "rqhmm_base", true));
-    register_emission(new EmissionEntry<DiscreteEmissions>("discrete", "rqhmm_base", false));
-    register_emission(new EmissionEntry<Geometric>("geometric", "rqhmm_base", false));
-    register_emission(new EmissionEntry<DirectEmission>("direct", "rqhmm_base", false));
-    register_emission(new EmissionEntry<FixedEmission>("fixed", "rqhmm_base", false));
-    register_emission(new EmissionEntry<DiscreteGamma>("dgamma", "rqhmm_base", false));
-    register_emission(new EmissionEntry<NegativeBinomial>("neg_binomial", "rqhmm_base", false));
+    register_emission(new EmissionEntry<Poisson>("poisson", "rqhmm", false));
+    register_emission(new EmissionEntry<PoissonCovar>("poisson_covar", "rqhmm", true));
+    register_emission(new EmissionEntry<PoissonScaledCovar>("poisson_scaled_covar", "rqhmm", true));
+    register_emission(new EmissionEntry<DiscreteEmissions>("discrete", "rqhmm", false));
+    register_emission(new EmissionEntry<Geometric>("geometric", "rqhmm", false));
+    register_emission(new EmissionEntry<DirectEmission>("direct", "rqhmm", false));
+    register_emission(new EmissionEntry<FixedEmission>("fixed", "rqhmm", false));
+    register_emission(new EmissionEntry<DiscreteGamma>("dgamma", "rqhmm", false));
+    register_emission(new EmissionEntry<NegativeBinomial>("neg_binomial", "rqhmm", false));
   }
   
   void attr_default R_unload_rqhmm(DllInfo * info) {
