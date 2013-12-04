@@ -242,7 +242,7 @@ private:
             gx -= post * _gamma / (denom * denom);
           }
           
-          if (QHMM_isinf(gx) || QHMM_isinf(gx)) {
+          if (QHMM_isinf(fx) || QHMM_isinf(gx)) {
             log_state_msg(gState->_stateID, "alpha iter failed: fx: %g gx:%g prior: %g post: %g\n", fx, gx, prior, post);
             *out_fx = fx;
             *out_gx = gx;

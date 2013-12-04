@@ -158,6 +158,19 @@ new.qhmm <- function(data.shape, valid.transitions, transition.functions, emissi
   return(res)
 }
 
+distributions.qhmm <- function() {
+  dists <- .Call(rqhmm_list_distributions)
+  dists <- lapply(dists, as.data.frame)
+  
+  cat("Transitions:\n")
+  print(dists[[1]])
+  
+  cat("\nEmissions:\n")
+  print(dists[[2]])
+  
+  invisible(dists)
+}
+
 get.transition.params.qhmm <- function(hmm, state) {
   state = as.integer(state)
   stopifnot(length(state) == 1)
