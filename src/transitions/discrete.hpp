@@ -21,18 +21,30 @@ public:
     for (int i = 0; i < _n_targets; ++i)
       _log_probs[_targets[i]] = log_prob;
 
-    _is_fixed = false;
+    _all_fixed = false;
+    _is_fixed = new bool[n_targets];
+    for (int i = 0; i < n_targets; ++i)
+      _is_fixed[i] = false;
   }
 
   ~Discrete() {
     delete[] _log_probs;
+    delete[] _is_fixed;
   }
 
   virtual bool validParams(Params const & params) const {
     double sum = 0.0;
+    int fixedCount = 0;
 
-    for (int i = 0; i < params.length(); ++i)
+    for (int i = 0; i < params.length(); ++i) {
       sum = sum + params[i];
+      fixedCount += (params.isFixed(i) ? 1 : 0);
+    }
+    
+    if (fixedCount == params.length() - 1) {
+      log_msg("it is not valid to have only one free parameter (zero degrees of freedom)\n");
+      return false;
+    }
 
     return params.length() == _n_targets && same_probability(sum, 1.0);
   }
@@ -45,19 +57,24 @@ public:
 
     Params * result = new Params(_n_targets, probs);
 
-    if (_is_fixed)
-      for (int i = 0; i < _n_targets; ++i)
-        result->setFixed(i, true);
+    for (int i = 0; i < _n_targets; ++i)
+        result->setFixed(i, _is_fixed[i]);
 
     delete[] probs;
     return result;
   }
 
   virtual void setParams(Params const & params) {
-    for (int i = 0; i < _n_targets; ++i)
+    _fixedTotal = 0;
+    for (int i = 0; i < _n_targets; ++i) {
       _log_probs[_targets[i]] = log(params[i]);
+      if (params.isFixed(i)) {
+        _is_fixed[i] = true;
+        _fixedTotal += params[i];
+      }
+    }
 
-    _is_fixed = params.isAllFixed();
+    _all_fixed = params.isAllFixed();
   }
   
   virtual bool getOption(const char * name, double * out_value) {
@@ -90,7 +107,7 @@ public:
   }
 
   virtual void updateParams(EMSequences * sequences, std::vector<TransitionFunction*> * group) {
-    if (_is_fixed)
+    if (_all_fixed)
       return;
 
     // sufficient statistics are the per target expected counts
@@ -110,11 +127,14 @@ public:
     } while (piter->next());
 
     // estimate parameters
+    double scaleFactor = 1.0 - _fixedTotal;
     double normalization = 0;
     for (int i = 0; i < _n_targets; ++i)
-      normalization += expected_counts[i];
+      if (!_is_fixed[i])
+        normalization += expected_counts[i];
     for (int i = 0; i < _n_targets; ++i)
-      _log_probs[_targets[i]] = log(expected_counts[i] / normalization);
+      if (!_is_fixed[i])
+        _log_probs[_targets[i]] = log(expected_counts[i] / normalization * scaleFactor);
     
     // propagate to other elements in the group
     std::vector<TransitionFunction*>::iterator tf_it;
@@ -132,7 +152,9 @@ public:
 
 private:
   double * _log_probs;
-  bool _is_fixed;
+  bool _all_fixed;
+  bool * _is_fixed;
+  double _fixedTotal;
   double _pseudoCount;
 };
 
