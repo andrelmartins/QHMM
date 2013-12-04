@@ -9,7 +9,7 @@
 
 class NegativeBinomial : public EmissionFunction {
 public:
-  NegativeBinomial(int stateID, int slotID, double mean = 1.0, double dispersion = 1.0) : EmissionFunction(stateID, slotID), _mean(mean), _dispersion(dispersion), _fixedParams(false), _offset(0), _tolerance(1e-6), _maxIter(100), _tblSize(64) {
+  NegativeBinomial(int stateID, int slotID, double mean = 1.0, double dispersion = 1.0) : EmissionFunction(stateID, slotID), _mean(mean), _dispersion(dispersion), _fixedParams(false), _offset(0), _tolerance(1e-6), _maxIter(100), _tblSize(64), _momInit(false) {
 
     _logp_tbl = new double[_tblSize];
     update_logp_tbl();
@@ -66,6 +66,9 @@ public:
     } else if (!strcmp(name, "tblSize")) {
       *out_value = _tblSize;
       return true;
+    } else if (!strcmp(name, "momInit")) {
+      *out_value = (_momInit ? 1 : 0);
+      return true;
     }
     return false;
   }
@@ -99,6 +102,9 @@ public:
         _logp_tbl = new double[_tblSize];
         update_logp_tbl();
       }
+      return true;
+    } else if (!strcmp(name, "momInit")) {
+      _momInit = (value != 0.0);
       return true;
     }
     return false;
@@ -151,7 +157,7 @@ public:
     // update parameter
     // 1. estimate 'r' (dispersion)
     // 1.1 Apply Newton's method
-    double r_prev = r;
+    double r_prev = r_start_value(r, sum_Pzi, sum_Pzi_xi, sequences, group);
     double change;
     int i = 0;
     do {
@@ -174,7 +180,7 @@ public:
     } while (change > _tolerance && i < _maxIter);
 
     // 1.2 check for weirdness
-    if (r > 1000 || QHMM_isnan(r) || QHMM_isinf(r)) {
+    if (r > 1000 || QHMM_isnan(r) || QHMM_isinf(r)) {  // todo: fix magical value!!
       log_state_slot_msg(_stateID, _slotID, "dispersion update failed: %g (keeping old value: %g)\n", r, _dispersion);
       return;
     }
@@ -208,6 +214,7 @@ private:
   double _offset;
   int _maxIter;
   int _tblSize;
+  bool _momInit;
   
   // these are set in update_logp_tbl & copied by copy_logp_tbl
   double _A1; // := r [log(r) - log(r + m)]
@@ -236,6 +243,44 @@ private:
     other->_A3 = _A3;
     if (_tblSize > 0)
       memcpy(_logp_tbl, other->_logp_tbl, _tblSize * sizeof(double));
+  }
+  
+  double r_start_value(double prev_r, double sum_Pzi, double sum_Pzi_xi, EMSequences * sequences, std::vector<EmissionFunction*> * group) {
+    if (!_momInit)
+      return prev_r;
+    
+    // estimate variance
+    double mean = sum_Pzi_xi / sum_Pzi;
+    double sum_Pzi_sqdiff = 0.0;
+    
+    std::vector<EmissionFunction*>::iterator ef_it;
+    
+    for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
+      NegativeBinomial * ef = (NegativeBinomial*) (*ef_it)->inner();
+      PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
+      
+      do {
+        const double * post_j = post_it->posterior();
+        Iter & iter = post_it->iter();
+        iter.resetFirst();
+        
+        for (int j = 0; j < iter.length(); iter.next(), ++j) {
+          int x = (int) (iter.emission(ef->_slotID) + _offset);
+          
+          sum_Pzi_sqdiff += post_j[j] * (x - mean) * (x - mean);
+        }
+      } while (post_it->next());
+      
+      delete post_it;
+    }
+    
+    //
+    double var = sum_Pzi_sqdiff / sum_Pzi;
+    double r_est = fabs(mean / (var - mean));
+    
+    if (r_est > 1000) // todo: fix magical value!!
+      return 500;
+    return r_est;
   }
   
   double newton_ratio(double A, double B, double r, EMSequences * sequences, std::vector<EmissionFunction*> * group) {
