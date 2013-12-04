@@ -66,7 +66,7 @@ void ParamRecord::collect() {
 
   /* add parameters to record */
   for (int i = 0; i < _size; ++i) {
-    double val = (*par)[i];
+    double val = (*par)[_indexes[i]];
     _records[i]->push_back(val);
   }
 
