@@ -555,4 +555,122 @@ private:
   bool _is_fixed;
 };
 
+
+class PoissonScaled : public EmissionFunction {
+  public:
+    PoissonScaled(int stateID, int slotID, double lambda = 1.0) : EmissionFunction(stateID, slotID), _lambda(lambda), _scale_lambda(lambda), _scale(1.0), _log_scale_lambda(log(lambda)), _is_fixed(false) {}
+
+    virtual bool validParams(Params const & params) const {
+      return params.length() == 1 && params[0] > 0;
+    }
+
+    virtual Params * getParams() const {
+      Params * params = new Params(1, &_lambda);
+      params->setFixed(0, _is_fixed);
+      return params;
+    }
+
+    virtual void setParams(Params const & params) {
+      update_lambda(params[0]);
+      _is_fixed = params.isFixed(0);
+    }
+
+    virtual bool getOption(const char * name, double * out_value) {
+      if (!strcmp(name, "scale")) {
+        *out_value = (double) _scale;
+        return true;
+      }
+      return false;
+    }
+
+    virtual bool setOption(const char * name, double value) {
+      if (!strcmp(name, "scale")) {
+        if (value <= 0) {
+          log_msg("scale must be > 0: %g\n", value);
+          return false;
+        }
+        update_scale(value);
+        return true;
+      }
+      return false;
+    }
+    
+    virtual double log_probability(Iter const & iter) const {
+      int x = (int) iter.emission(_slotID); // cast to integer
+      
+      // log prob(x) = log( (scale*lambda)^x exp(-scale*lambda) / x!)
+      //             = x log(scale*lambda) - scale*lambda - log(x!)
+      if (x == 0)
+        return -_scale_lambda - LogFactorial::logFactorial(x);
+      else
+        return x * _log_scale_lambda - _scale_lambda - LogFactorial::logFactorial(x);
+    }
+
+    virtual void updateParams(EMSequences * sequences, std::vector<EmissionFunction*> * group) {
+      if (_is_fixed)
+        return;
+
+      // sufficient statistics are the sum of 'scaled' the state posteriors and the sum of the posterior times
+      // the observations
+      double sum_scale_Pzi = 0;
+      double sum_Pzi_xi = 0;
+      
+      std::vector<EmissionFunction*>::iterator ef_it;
+      
+      for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
+        PoissonScaled * ef = (PoissonScaled*) (*ef_it)->inner();
+        PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
+        double scale_i = ef->_scale;
+        
+        do {
+          const double * post_j = post_it->posterior();
+          Iter & iter = post_it->iter();
+          iter.resetFirst();
+          
+          for (int j = 0; j < iter.length(); iter.next(), ++j) {
+            int x = (int) iter.emission(ef->_slotID);
+            
+            sum_scale_Pzi += post_j[j] * scale_i;
+            sum_Pzi_xi += post_j[j] * x;
+          }
+        } while (post_it->next());
+        
+        delete post_it;
+      }
+      
+      // use expected counts to estimate parameter value
+      update_lambda(sum_Pzi_xi / sum_scale_Pzi);
+      
+      // propagate to other elements in the group
+      for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
+        PoissonScaled * ef = (PoissonScaled*) (*ef_it)->inner();
+        
+        if (ef != this)
+          ef->update_lambda(_lambda);
+      }
+    }
+
+  private:
+    double _lambda;
+    double _scale;
+    double _scale_lambda;
+    double _log_scale_lambda;
+    bool _is_fixed;
+        
+    void update_scale_lambda(double lambda, double scale) {
+      _scale = scale;
+      _lambda = lambda;
+      _scale_lambda = _scale * _lambda;
+      _log_scale_lambda = log(scale) + log(lambda);
+    }
+    
+    void update_scale(double scale) {
+      update_scale_lambda(scale, _lambda);
+    }
+    
+    void update_lambda(double lambda) {
+      update_scale_lambda(_scale, lambda);
+    }
+};
+
 #endif

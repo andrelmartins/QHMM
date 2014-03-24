@@ -1421,6 +1421,7 @@ extern "C" {
     register_emission(new EmissionEntry<Poisson>("poisson", "rqhmm", false));
     register_emission(new EmissionEntry<PoissonCovar>("poisson_covar", "rqhmm", true));
     register_emission(new EmissionEntry<PoissonScaledCovar>("poisson_scaled_covar", "rqhmm", true));
+    register_emission(new EmissionEntry<PoissonScaled>("poisson_scaled", "rqhmm", false));
     register_emission(new EmissionEntry<DiscreteEmissions>("discrete", "rqhmm", false));
     register_emission(new EmissionEntry<Geometric>("geometric", "rqhmm", false));
     register_emission(new EmissionEntry<DirectEmission>("direct", "rqhmm", false));
