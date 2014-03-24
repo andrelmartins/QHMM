@@ -52,3 +52,6 @@ emission.test.qhmm("dgamma", c(5, 1), xx)
 # equivalent to gamma
 emission.test.qhmm("dgamma", c(5, 1), xx, options = list(shift = 0.5))
 
+# add private scale factor
+ emission.test.qhmm("dgamma", c(5, 1), xx, options = list(shift = 0.5, scale_private = 2))
+emission.test.qhmm("dgamma", c(5, 1), xx, options = list(shift = 0.5, scale_private = 3))

@@ -9,7 +9,7 @@
 
 class DiscreteGamma : public EmissionFunction {
 public:
-  DiscreteGamma(int stateID, int slotID, double shape = 1.0, double scale = 2.0) : EmissionFunction(stateID, slotID), _shape(shape), _scale(scale), _fixedMean(false), _mean(shape * scale), _fixedParams(false), _offset(0), _shift(1.0), _tolerance(1e-6), _maxIter(100), _tblSize(64) {
+  DiscreteGamma(int stateID, int slotID, double shape = 1.0, double scale = 2.0) : EmissionFunction(stateID, slotID), _shape(shape), _scale(scale), _scale_private(1.0), _final_scale(scale), _fixedMean(false), _mean(shape * scale), _fixedParams(false), _offset(0), _shift(1.0), _tolerance(1e-6), _maxIter(100), _tblSize(64) {
 
     _logp_tbl = new double[_tblSize];
     update_logp_tbl();
@@ -28,7 +28,18 @@ public:
     for (int i = 0; i < params.length(); ++i)
       if (params[i] <= 0)
         return false;
-    // TODO: check "fixedness" is coherent
+    
+    if (params.length() == 3) {
+      double shape = params[0];
+      double scale = params[1];
+      double mean = params[2];
+      double aux = shape * scale;
+      
+      if (fabs(aux - mean) > 10*std::numeric_limits<double>::epsilon()) {
+        log_msg("shape * scale must be equal to mean: %g != %g\n", aux, mean);
+        return false;
+      }
+    }
     return true;
   }
   
@@ -50,15 +61,16 @@ public:
   }
   
   virtual void setParams(Params const & params) {
-    _shape = params[0];
-    _scale = params[1];
-    _fixedParams = params.isFixed(0) || params.isFixed(1); // TODO: fix hack in validParams ...
-    update_logp_tbl();
     if (params.length() == 3) {
       _mean = params[2];
+      _scale_private = 1.0; // overide private scale
+      
       _fixedMean = true;
     } else
       _fixedMean = false;
+    
+    _fixedParams = params.isFixed(0) || params.isFixed(1); // TODO: fix hack in validParams ...
+    update_shape_scale(params[0], params[1]);
   }
   
   virtual bool getOption(const char * name, double * out_value) {
@@ -76,6 +88,9 @@ public:
       return true;
     } else if (!strcmp(name, "tblSize")) {
       *out_value = _tblSize;
+      return true;
+    } else if (!strcmp(name, "scale_private")) {
+      *out_value = _scale_private;
       return true;
     }
     return false;
@@ -118,6 +133,17 @@ public:
         update_logp_tbl();
       }
       return true;
+    } else if (!strcmp(name, "scale_private")) {
+      if (_fixedMean) {
+        log_msg("scale_private is not a valid option with a fixed mean\n");
+        return false;
+      }
+      if (value <= 0) {
+        log_msg("scale_private must be > 0: %g\n", value);
+        return false;
+      }
+      update_scale_private(value);
+      return true;
     }
     return false;
   }
@@ -146,6 +172,8 @@ public:
     for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
       DiscreteGamma * ef = (DiscreteGamma*) (*ef_it)->inner();
       PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
+      double scale_i = ef->_scale_private;
+      double log_scale_i = log(scale_i);
       
       do {
         const double * post_j = post_it->posterior();
@@ -156,8 +184,8 @@ public:
           int x = (int) (iter.emission(ef->_slotID) + _offset);
           
           sum_Pzi += post_j[j];
-          sum_Pzi_xi += post_j[j] * x;
-          sum_Pzi_log_xi += post_j[j] * log(x);
+          sum_Pzi_xi += post_j[j] * x / scale_i;
+          sum_Pzi_log_xi += post_j[j] * (log(x) - log_scale_i);
         }
       } while (post_it->next());
       
@@ -173,6 +201,11 @@ public:
 
     // 1.1 Initial guess
     double shape = (3 - s + sqrt(pow(s - 3, 2) + 24 * s)) / (12 * s);
+    
+    if (QHMM_isinf(shape) || QHMM_isnan(shape) || shape <= 0) {
+      log_state_slot_msg(_stateID, _slotID, "initial shape guess failed: %g (starting with old value: %g)\n", shape, _shape);
+      shape = _shape;
+    }
     
     // 1.2 Apply Newton's method to refine estimate
     double ki;
@@ -215,6 +248,7 @@ public:
     else
       _scale = mean / _shape;
     
+    _final_scale = _scale_private * _scale;
     update_logp_tbl();
 
     // propagate to other elements in the group
@@ -224,6 +258,7 @@ public:
       if (ef != this) {
         ef->_shape = _shape;
         ef->_scale = _scale;
+        ef->_final_scale = _final_scale;
         ef->copy_logp_tbl(this);
       }
     }
@@ -240,9 +275,12 @@ private:
   double _tolerance;
   int _maxIter;
   int _tblSize;
+  
+  double _scale_private;
+  double _final_scale;
 
   double * _logp_tbl;
-
+  
   double logprob(int x) const {
     // TODO: double check this math: I think to be correct this need to have an open interval ...
     //       P(X = x) = p(x + (1 - shift) <= X < x + shift) = p(X < x + shift) - p(X < x + (shift - 1))
@@ -256,11 +294,11 @@ private:
     double x_high = x + _shift;
     
     if (x_low <= 0)
-      return QHMM_log_gamma_cdf_lower(x_high, _shape, _scale);
+      return QHMM_log_gamma_cdf_lower(x_high, _shape, _final_scale);
 
     // upper tail is more stable
-    return QHMM_logdiff(QHMM_log_gamma_cdf_upper(x_low, _shape, _scale), QHMM_log_gamma_cdf_upper(x_high, _shape, _scale));
-    // return logdiff(log_gamma_cdf_lower(x_high, _shape, _scale), log_gamma_cdf_lower(x_low, _shape, _scale));
+    return QHMM_logdiff(QHMM_log_gamma_cdf_upper(x_low, _shape, _final_scale), QHMM_log_gamma_cdf_upper(x_high, _shape, _final_scale));
+    // return logdiff(log_gamma_cdf_lower(x_high, _shape, _final_scale), log_gamma_cdf_lower(x_low, _shape, _final_scale));
   }
   
   void update_logp_tbl() {
@@ -271,6 +309,23 @@ private:
   void copy_logp_tbl(DiscreteGamma * other) {
     if (_tblSize > 0)
       memcpy(_logp_tbl, other->_logp_tbl, _tblSize * sizeof(double));
+  }
+  
+  void update_scale(double scale) {
+    _scale = scale;
+    _final_scale = scale * _scale_private;
+    update_logp_tbl();
+  }
+  
+  void update_scale_private(double value) {
+    _scale_private = value;
+    _final_scale = _scale * _scale_private;
+    update_logp_tbl();
+  }
+  
+  void update_shape_scale(double shape, double scale) {
+    _shape = shape;
+    update_scale(scale);
   }
 };
 
