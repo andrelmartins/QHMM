@@ -320,11 +320,7 @@ set.initial.probs.qhmm <- function(hmm, probs) {
   stopifnot(sum(probs) == 1)
   stopifnot(all(probs >= 0 & probs <= 1))
   
-  res = .Call(rqhmm_set_initial_probs, hmm, probs)
-  if (!res)
-    stop("invalid initial state probabilities")
-  
-  invisible(res)
+  invisible(.Call(rqhmm_set_initial_probs, hmm, probs))
 }
 
 null.or.integer <- function(vec) {
