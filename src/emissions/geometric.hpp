@@ -43,6 +43,7 @@ public:
         return false;
       }
       _base = base;
+      return true;
     }
     return false;
   }
