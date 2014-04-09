@@ -523,12 +523,17 @@ collect.params.qhmm <- function(hmm) {
 
 restore.params.qhmm <- function(hmm, saved) {
   for (state in 1:(hmm$n.states)) {
-    set.transition.params.qhmm(hmm, state, saved$transitions[[state]])
+    tparams = saved$transitions[[state]]
+    if (!is.null(tparams))
+      set.transition.params.qhmm(hmm, state, tparams)
 
     state.params = saved$emissions[[state]]
     
-    for (slot in 1:(hmm$n.emission.slots))
-      set.emission.params.qhmm(hmm, state, state.params[[slot]], slot = slot)
+    for (slot in 1:(hmm$n.emission.slots)) {
+      sparams = state.params[[slot]]
+      if (!is.null(sparams))
+        set.emission.params.qhmm(hmm, state, state.params[[slot]], slot = slot)
+    }
   }
 
   # for purposes of backward compatibility
