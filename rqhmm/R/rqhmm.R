@@ -258,7 +258,10 @@ set.transition.option.qhmm <- function(hmm, state, optName, value) {
     stop("mismatching lengths between optName and value")
   }
 
-  .Call(rqhmm_set_transition_option, hmm, state, optName, value)
+  res = .Call(rqhmm_set_transition_option, hmm, state, optName, value)
+  if (!res)
+    stop("invalid transition option or value")
+  invisible(res)
 }
 
 get.transition.option.qhmm <- function(hmm, state, optName) {
@@ -292,7 +295,10 @@ set.emission.option.qhmm <- function(hmm, state, optName, value, slot = 1) {
     stop("mismatching lengths between optName and value")
   }
   
-  .Call(rqhmm_set_emission_option, hmm, state, slot, optName, value)
+  res = .Call(rqhmm_set_emission_option, hmm, state, slot, optName, value)
+  if (!res)
+    stop("invalid emission option or value")
+  invisible(res)
 }
 
 get.emission.option.qhmm <- function(hmm, state, optName, slot = 1) {
@@ -314,7 +320,11 @@ set.initial.probs.qhmm <- function(hmm, probs) {
   stopifnot(sum(probs) == 1)
   stopifnot(all(probs >= 0 & probs <= 1))
   
-  invisible(.Call(rqhmm_set_initial_probs, hmm, probs))
+  res = .Call(rqhmm_set_initial_probs, hmm, probs)
+  if (!res)
+    stop("invalid initial state probabilities")
+  
+  invisible(res)
 }
 
 null.or.integer <- function(vec) {
