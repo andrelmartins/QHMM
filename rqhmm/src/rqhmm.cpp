@@ -68,6 +68,7 @@ public:
     
     this->n_states = n_states;
     this->supports_missing = false;
+    this->hmm = NULL; /* pre-initialization in case of early termination */
   }
   
   ~RQHMMData() {
@@ -286,14 +287,31 @@ RQHMMData * _create_hmm_transitions(SEXP data_shape, EType * emissions, SEXP val
   if (needs_covars) {
     NonHomogeneousTransitions * ttable = new NonHomogeneousTransitions(n_states);
     
-    fill_transitions(ttable, n_states, valid_transitions, transitions, with_debug);
+    try {
+      fill_transitions(ttable, n_states, valid_transitions, transitions, with_debug);
+    } catch (exception& e) {
+      delete data;
+      delete emissions;
+      delete ttable;
+      
+      error("QHMM::RuntimeException::%s\n", e.what());
+    }
+    
     process_transition_groups(ttable, transition_groups); 
 
     data->hmm = HMM::create(ttable, emissions, data->init_log_probs);
   } else {
     HomogeneousTransitions * ttable = new HomogeneousTransitions(n_states);
     
-    fill_transitions(ttable, n_states, valid_transitions, transitions, with_debug);
+    try {
+      fill_transitions(ttable, n_states, valid_transitions, transitions, with_debug);
+    } catch (exception& e) {
+      delete data;
+      delete emissions;
+      delete ttable;
+      
+      error("QHMM::RuntimeException::%s\n", e.what());
+    }
     process_transition_groups(ttable, transition_groups);
 
     data->hmm = HMM::create(ttable, emissions, data->init_log_probs);

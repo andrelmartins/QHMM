@@ -15,7 +15,9 @@ class AutoCorr : public TransitionFunction {
     // first target in `targets` must the source state
     AutoCorr(int n_states, int stateID, int n_targets, int * targets, double alpha = 0.5) : TransitionFunction(n_states, stateID, n_targets, targets), _pseudoCount(0.0) {
       
-      assert(stateID == _targets[0]);
+      if (stateID != _targets[0])
+        throw std::invalid_argument("AutoCorr: stateID != targets[0]");
+
       _log_probs = new double[n_states];
 
       // initialize outgoing weights (default: 1/(n - 1))
@@ -183,6 +185,9 @@ class AutoCorrCovar : public TransitionFunction {
   public:
     // first target in `targets` must the source state
   AutoCorrCovar(int n_states, int stateID, int n_targets, int * targets, int covar_slot = 0) : TransitionFunction(n_states, stateID, n_targets, targets), _covar_slot(covar_slot), _log_base(log(n_targets - 1)) {
+      if (stateID != _targets[0])
+        throw std::invalid_argument("AutoCorrCovar: stateID != targets[0]");
+    
       _valid_states = new bool[n_states];
       
       // set all to false
@@ -239,8 +244,9 @@ class AutoCorrWCovar : public TransitionFunction {
   public:
     // first target in `targets` must the source state
     AutoCorrWCovar(int n_states, int stateID, int n_targets, int * targets, double alpha = 0.5, int covar_slot = 0) : TransitionFunction(n_states, stateID, n_targets, targets), _pseudoCount(0.0), _covar_slot(covar_slot) {
-      
-      assert(stateID == _targets[0]);
+      if (stateID != _targets[0])
+        throw std::invalid_argument("AutoCorrWCovar: stateID != targets[0]");
+
       _log_probs = new double[n_states];
 
       update_log_probs(alpha);
