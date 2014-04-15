@@ -160,6 +160,7 @@ public:
     double r_prev = r_start_value(r, sum_Pzi, sum_Pzi_xi, sequences, group);
     double change;
     int i = 0;
+    int reductionFactor = 2; /* how much to reduce the starting dispersion */
     do {
       ++i;
       r = r_prev - newton_ratio(sum_Pzi, sum_Pzi_xi, r_prev, sequences, group);
@@ -171,8 +172,22 @@ public:
         r = _dispersion;
         break;
       } else if (r <= 0) {
+        /* we went to a very large value and then stepped back too much
+         * instead try to step back to a fraction of the current parameter
+         */
+        if (r_prev > _dispersion) {
+          log_state_slot_msg(_stateID, _slotID, "dispersion lower bound hit: %g (using %g)\n", r, _dispersion / reductionFactor);
+          r = _dispersion / reductionFactor;
+          r_prev = r;
+          reductionFactor = reductionFactor * reductionFactor;
+          continue;
+        }
+        
+        /* otherwise just clamp value by tolerance */
         log_state_slot_msg(_stateID, _slotID, "dispersion lower bound hit: %g (using %g)\n", r, _tolerance);
         r = _tolerance;
+        r_prev = _tolerance;
+        continue;
       }
 
       change = fabs(r - r_prev);
