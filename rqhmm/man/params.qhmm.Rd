@@ -6,6 +6,7 @@
 \alias{set.emission.params.qhmm}
 \alias{get.transition.params.qhmm}
 \alias{set.transition.params.qhmm}
+\alias{set.initial.probs.qhmm}
 
 \title{QHMM Parameter Functions}
 \description{Functions provide a way to manipulate QHMM instance parameters.}
@@ -14,6 +15,8 @@
 
 collect.params.qhmm(hmm)
 restore.params.qhmm(hmm, saved) 
+
+set.initial.probs.qhmm(hmm, probs)
 
 get.emission.params.qhmm(hmm, state, slot = 1)
 set.emission.params.qhmm(hmm, state, params, slot = 1, fixed = attr(params, "fixed"))
@@ -26,6 +29,7 @@ set.transition.params.qhmm(hmm, state, params, fixed = attr(params, "fixed"))
 \arguments{
   \item{hmm}{QHMM instance object}
   \item{saved}{result from \code{collect.params.qhmm}}
+  \item{probs}{numeric vector of initial state probabilities (fixed for now)}
   \item{state}{integer representing the HMM state number}
   \item{slot}{integer representing the HMM emission slot (track) number}
   \item{params}{numeric vector of parameter values (length depends on corresponding distribution)}
@@ -33,7 +37,7 @@ set.transition.params.qhmm(hmm, state, params, fixed = attr(params, "fixed"))
 }
 
 \value{
-  \code{set.*.params.qhmm} functions do not return anything, neither does the \code{restore.params.qhmm} function.
+  \code{set.*.params.qhmm} functions do not return anything, neither does the \code{restore.params.qhmm} nor the \code{set.initial.probs.qhmm} function.
   
   \code{get.*.params.qhmm} functions return a numeric vector with parameter values and, as an attribute "fixed", a logical vector of the same length indicating which paramters are currently set to "fixed".
   
