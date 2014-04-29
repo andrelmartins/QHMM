@@ -68,6 +68,13 @@ new.qhmm <- function(data.shape, valid.transitions, transition.functions, emissi
     if (!all(valid.states))
       stop("invalid state numbers in transition groups: ", do.call("paste", as.list(flat[!valid.states])))
     
+    # all states in the same transition group must have the same number of transitions
+    for (i in 1:length(transition.groups)) {
+      tcount = sapply(transition.groups[[i]], function(k) sum(valid.transitions[k,] > 0))
+      if (!length(unique(tcount)) == 1)
+        stop("invalid transition group ", i, ": all states in a group must have the same number of transitions")
+    }
+    
     # transform group state IDs from R 1-based to C 0-based
     transition.groups = lapply(transition.groups, function(grp) as.integer(grp - 1))
   }
