@@ -558,7 +558,7 @@ private:
 
 class PoissonScaled : public EmissionFunction {
   public:
-    PoissonScaled(int stateID, int slotID, double lambda = 1.0) : EmissionFunction(stateID, slotID), _lambda(lambda), _scale_lambda(lambda), _scale(1.0), _log_scale_lambda(log(lambda)), _is_fixed(false) {}
+    PoissonScaled(int stateID, int slotID, double lambda = 1.0) : EmissionFunction(stateID, slotID), _lambda(lambda), _scale(1.0), _scale_lambda(lambda), _log_scale_lambda(log(lambda)), _is_fixed(false) {}
 
     virtual bool validParams(Params const & params) const {
       return params.length() == 1 && params[0] > 0;

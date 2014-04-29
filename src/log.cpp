@@ -1,5 +1,6 @@
 #include "log.hpp"
 #include <cstdarg>
+#include <cstdio>
 
 #ifdef RQHMM
 #define R_USE_C99_IN_CXX
