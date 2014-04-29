@@ -371,6 +371,13 @@ em.qhmm <- function(hmm, emission.lst, covar.lst = NULL, missing.lst = NULL, tol
   .Call(rqhmm_em, hmm, emission.lst, covar.lst, missing.lst, tolerance, as.integer(n_threads))
 }
 
+stochastic.backtrace.qhmm <- function(hmm, emissions, covars = NULL, missing = NULL, fwdmatrix = NULL) {
+  if (is.null(fwdmatrix))
+    fwdmatrix = forward.qhmm(hmm, emissions, covars, missing)
+  
+  .Call(rqhmm_stochastic_backtrace, hmm, emissions, covars, missing, fwdmatrix)
+}
+
 emission.test.qhmm <- function(emission.name, emission.params, values, covars = NULL, options = NULL) {
   values = as.numeric(values) # for now all HMMs take numeric vectors as values
   values.shape = NULL

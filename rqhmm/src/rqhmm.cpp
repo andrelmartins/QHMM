@@ -899,6 +899,40 @@ extern "C" {
     return result;
   }
   
+  SEXP rqhmm_stochastic_backtrace(SEXP rqhmm, SEXP emissions, SEXP covars, SEXP missing, SEXP fwdmatrix) {
+    SEXP result;
+    RQHMMData * data;
+    Iter * iter;
+    SEXP ptr;
+    SEXP loglik;
+    
+    /* retrieve rqhmm pointer */
+    PROTECT(ptr = GET_ATTR(rqhmm, install("handle_ptr")));
+    if (ptr == R_NilValue)
+      error("invalid rqhmm object");
+    data = (RQHMMData*) R_ExternalPtrAddr(ptr);
+    
+    /* create data structures */
+    iter = data->create_iterator(emissions, covars, missing);
+    PROTECT(fwdmatrix = AS_NUMERIC(fwdmatrix));
+    PROTECT(result = NEW_INTEGER(iter->length()));
+    
+    /* invoke stochastic backtrace (RNG init is done internally, see math.cpp) */
+    data->hmm->stochastic_backtrace((*iter), REAL(fwdmatrix), INTEGER(result));
+
+    /* clean up */
+    delete iter;
+    
+    /* 0-based -> 1-based state numbers */
+    int * rptr = INTEGER(result);
+    for (int i = 0; i < iter->length(); ++i)
+      ++rptr[i];
+    
+    UNPROTECT(3);
+    
+    return result;
+  }
+  
   SEXP rqhmm_get_transition_params(SEXP rqhmm, SEXP state) {
     RQAux aux;
     SEXP result = R_NilValue;
