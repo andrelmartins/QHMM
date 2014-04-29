@@ -4,6 +4,7 @@
 #if defined(USE_RMATH)
 #include <Rmath.h>
 #include <R_ext/Applic.h>
+#include <R_ext/Random.h>
 #elif defined(USE_GSL)
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sf_gamma.h>
@@ -68,6 +69,18 @@ double QHMM_fminimizer(qhmmfn func, int n, double * x0, void * params, int maxit
   return fout;
 }
 
+void QHMM_rnd_prepare(void) {
+  GetRNGstate();
+}
+
+void QHMM_rnd_cleanup(void) {
+  PutRNGstate();
+}
+
+double QHMM_runif(void) {
+  return unif_rand();
+}
+
 #elif defined(USE_GSL)
 
 double QHMM_digamma(const double x) {
@@ -110,6 +123,20 @@ double QHMM_fminimizer(qhmmfn func, int n, double * x0, void * params, int maxit
   */
 }
 
+void QHMM_rnd_prepare(void) {
+  // TODO: seed random number generator
+  // TODO: initialize GSL random number generator
+}
+
+void QHMM_rnd_cleanup(void) {
+  // TODO: free GSL random number generator
+}
+
+double QHMM_runif(void) {
+  // TODO: Implement GSL version (use gsl's random number generators ...)
+  // TODO: fix this! Should be number in [0, 1] */
+  return drand48(); /* random number in [0, 1) */
+}
 
 #else
 
@@ -159,5 +186,18 @@ double QHMM_log_gamma_cdf_upper(const double x, const double shape, const double
   return log(gsl_sf_gamma_inc_Q(shape, x / scale));
 }
 */
+
+void QHMM_rnd_prepare(void) {
+  // TODO: seed random number generator
+}
+
+void QHMM_rnd_cleanup(void) {
+  // blank
+}
+
+double QHMM_runif(void) {
+  // TODO: fix this! Should be number in [0, 1] */
+  return drand48(); /* random number in [0, 1) */
+}
 
 #endif

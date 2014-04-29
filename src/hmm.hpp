@@ -29,6 +29,9 @@ class HMM {
 
     virtual struct EMResult em(std::vector<Iter*> & iters, double tolerance);
 
+    virtual void stochastic_backtrace(Iter & iter, double * fwdmatrix, int * path) = 0;
+
+
     template<typename TransTableT, typename EmissionTableT>
     static HMM * create(TransTableT * transitions, EmissionTableT * emissions, double * init_log_probs);
 

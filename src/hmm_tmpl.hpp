@@ -6,7 +6,7 @@
 #include "func_table.hpp"
 #include "hmm.hpp"
 
-#include <cmath>
+#include "math.hpp"
 
 template <typename InnerFwd, typename InnerBck, typename FuncAkl, typename FuncEkb>
 class HMMImpl : public HMM {
@@ -293,6 +293,72 @@ class HMMImpl : public HMM {
           *rptr = exp(fw_src[k] + log_trans + log_emission + bk_tgt[l] - loglik);
         }
       }
+    }
+    
+    void stochastic_backtrace(Iter & iter, double * fwdmatrix, int * path) {
+      int * pptr = path + iter.length() - 1;
+      double * probs = new double[_n_states];
+      double * m_col = fwdmatrix + (iter.length() - 1) * _n_states; /* last column */
+      int state;
+      
+      QHMM_rnd_prepare();
+      
+      /* sample last state */
+      probs = (double*) memcpy(probs, m_col, _n_states * sizeof(double));
+      state = sample_state(probs);
+      *pptr = state;
+      --pptr;
+      m_col -= _n_states;
+      
+      /* walk backwards */
+      iter.resetLast();
+      for (;pptr >= path; --pptr, m_col -= _n_states) {
+        /* compute sample probabilities */
+        for (int k = 0; k < _n_states; ++k)
+          probs[k] = exp(m_col[k] + (*_logAkl)(iter, k, state));
+        
+        /* sample state */
+        state = sample_state(probs);
+        *pptr = state;
+      }
+      
+      /* clean up */
+      QHMM_rnd_cleanup();
+      delete[] probs;
+    }
+    
+  private:
+  
+    void scale_to_one(double * vec, int len) {
+      double sum = 0;
+      int i;
+      
+      for (i = 0; i < len; ++i)
+        sum += vec[i];
+      for (i = 0; i < len; ++i)
+        vec[i] /= sum;
+    }
+  
+    int sample_state(double * probs) {
+      double u = QHMM_runif();
+      double acc;
+      int state;
+      
+      scale_to_one(probs, _n_states);
+      
+      acc = *probs;
+      state = 0;
+      while (u > acc) {
+        ++state;
+        ++probs;
+        acc += *probs;
+      }
+      
+      /* rounding errors */
+      if (state >= _n_states)
+        state = _n_states - 1;
+
+      return state;
     }
 };
 
