@@ -17,7 +17,7 @@ public:
     for (int i = 0; i < _n_states; ++i)
       _log_probs[i] = -std::numeric_limits<double>::infinity();
 
-    double log_prob = -log(_n_states);
+    double log_prob = -log(n_targets);
     for (int i = 0; i < _n_targets; ++i)
       _log_probs[_targets[i]] = log_prob;
 
