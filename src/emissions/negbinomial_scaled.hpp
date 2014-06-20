@@ -1,21 +1,25 @@
-#ifndef NEGBINOMIAL_HPP
-#define NEGBINOMIAL_HPP
+#ifndef NEGBINOMIALSCALED_HPP
+#define NEGBINOMIALSCALED_HPP
 
 #include <base_classes.hpp>
 #include <em_base.hpp>
 
 #include "../src/math.hpp"
 
-
-class NegativeBinomial : public EmissionFunction {
+/* Scaled version of NegativeBinomial:
+ * 
+ * mean' = scale * mean
+ * dispersion' = scale * dispersion
+ */
+class NegativeBinomialScaled : public EmissionFunction {
 public:
-  NegativeBinomial(int stateID, int slotID, double mean = 1.0, double dispersion = 1.0) : EmissionFunction(stateID, slotID), _mean(mean), _dispersion(dispersion), _fixedParams(false), _offset(0), _tolerance(1e-6), _maxIter(100), _tblSize(64), _momInit(false) {
+  NegativeBinomialScaled(int stateID, int slotID, double mean = 1.0, double dispersion = 1.0, double scale = 1.0) : EmissionFunction(stateID, slotID), _mean(mean), _dispersion(dispersion), _scale(scale), _fixedParams(false), _offset(0), _tolerance(1e-6), _maxIter(100), _tblSize(64), _momInit(false) {
 
     _logp_tbl = new double[_tblSize];
     update_logp_tbl();
   }
 
-  ~NegativeBinomial() {
+  ~NegativeBinomialScaled() {
     delete[] _logp_tbl;
   }
   
@@ -69,6 +73,9 @@ public:
     } else if (!strcmp(name, "momInit")) {
       *out_value = (_momInit ? 1 : 0);
       return true;
+    } else if (!strcmp(name, "scale")) {
+      *out_value = _scale;
+      return true;
     }
     return false;
   }
@@ -106,6 +113,13 @@ public:
     } else if (!strcmp(name, "momInit")) {
       _momInit = (value != 0.0);
       return true;
+    } else if (!strcmp(name, "scale")) {
+      if (value <= 0.0) {
+        log_msg("scale must be > 0: %g\n", value);
+        return false;
+      }
+      _scale = value;
+      return true;
     }
     return false;
   }
@@ -129,13 +143,14 @@ public:
     double r = _dispersion;
     
     // sufficient statistics
-    double sum_Pzi = 0;
+    double sum_Pzi;
+    double sum_Pzi_sj = 0; /* scaled counts */
     double sum_Pzi_xi = 0;
     
     std::vector<EmissionFunction*>::iterator ef_it;
     
     for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
-      NegativeBinomial * ef = (NegativeBinomial*) (*ef_it)->inner();
+      NegativeBinomialScaled * ef = (NegativeBinomialScaled*) (*ef_it)->inner();
       PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
       
       do {
@@ -147,6 +162,7 @@ public:
           int x = (int) (iter.emission(ef->_slotID) + _offset);
           
           sum_Pzi += post_j[j];
+          sum_Pzi_sj += post_j[j] * ef->_scale;
           sum_Pzi_xi += post_j[j] * x;
         }
       } while (post_it->next());
@@ -163,7 +179,7 @@ public:
     int reductionFactor = 2; /* how much to reduce the starting dispersion */
     do {
       ++i;
-      r = r_prev - newton_ratio(sum_Pzi, sum_Pzi_xi, r_prev, sequences, group);
+      r = r_prev - newton_ratio(sum_Pzi_sj, sum_Pzi_xi, r_prev, sequences, group);
       
       /* test boundary conditions */
       if (QHMM_isinf(r) || QHMM_isnan(r)) {
@@ -201,7 +217,7 @@ public:
     }
 
     // 2. estimate 'p'
-    double p = sum_Pzi_xi / (sum_Pzi * r + sum_Pzi_xi);
+    double p = sum_Pzi_xi / (sum_Pzi_sj * r + sum_Pzi_xi);
     
     // accept update
     _mean = (p * r) /  (1.0 - p);
@@ -211,7 +227,7 @@ public:
 
     // propagate to other elements in the group
     for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
-      NegativeBinomial * ef = (NegativeBinomial*) (*ef_it)->inner();
+      NegativeBinomialScaled * ef = (NegativeBinomialScaled*) (*ef_it)->inner();
       
       if (ef != this) {
         ef->_mean = _mean;
@@ -224,6 +240,7 @@ public:
 private:
   double _mean; // := m
   double _dispersion; // := r
+  double _scale;
   bool _fixedParams;
   double _tolerance;
   double _offset;
@@ -232,27 +249,27 @@ private:
   bool _momInit;
   
   // these are set in update_logp_tbl & copied by copy_logp_tbl
-  double _A1; // := r [log(r) - log(r + m)]
+  double _A1; // := r scale [log(r) - log(r + m)]
   double _A2; // := [log(m) - log(r + m)]
-  double _A3; // := log Gammafn(r)
+  double _A3; // := log Gammafn(scale r)
   double * _logp_tbl;
 
   double logprob(int x) const {
     // TODO: check if computing log GammaFn[r + x] is faster or slower than:
     //       log GamamFn[r] + sum_{a=1}^x log(r + a - 1)
-    return _A1 - _A3 + x * _A2 + QHMM_log_gamma(_dispersion + x) - QHMM_log_gamma(x + 1);// log(x!)
+    return _A1 - _A3 + x * _A2 + QHMM_log_gamma(_scale * _dispersion + x) - QHMM_log_gamma(x + 1);// log(x!)
   }
   
   void update_logp_tbl() {
-    _A1 = _dispersion * (log(_dispersion) - log(_dispersion + _mean));
+    _A1 = _dispersion * _scale * (log(_dispersion) - log(_dispersion + _mean));
     _A2 = log(_mean) - log(_dispersion + _mean);
-    _A3 = QHMM_log_gamma(_dispersion);
+    _A3 = QHMM_log_gamma(_scale * _dispersion);
     
     for (int i = 0; i < _tblSize; ++i)
       _logp_tbl[i] = logprob(i);
   }
 
-  void copy_logp_tbl(NegativeBinomial * other) {
+  void copy_logp_tbl(NegativeBinomialScaled * other) {
     other->_A1 = _A1;
     other->_A2 = _A2;
     other->_A3 = _A3;
@@ -271,7 +288,7 @@ private:
     std::vector<EmissionFunction*>::iterator ef_it;
     
     for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
-      NegativeBinomial * ef = (NegativeBinomial*) (*ef_it)->inner();
+      NegativeBinomialScaled * ef = (NegativeBinomialScaled*) (*ef_it)->inner();
       PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
       
       do {
@@ -291,21 +308,22 @@ private:
     
     //
     double var = sum_Pzi_sqdiff / sum_Pzi;
-    double r_est = fabs(mean / (var - mean)); // TODO Bug: Should be fabs(mean * mean / (var - mean))
+    double r_est = fabs(mean / (var - mean));  // TODO Bug: Should be fabs(mean * mean / (var - mean))
+    // todo: check that scale values cancel out ...
     
     if (r_est > 1000) // todo: fix magical value!!
       return 500;
     return r_est;
   }
   
-  double newton_ratio(double A, double B, double r, EMSequences * sequences, std::vector<EmissionFunction*> * group) {
+  double newton_ratio(double As, double B, double r, EMSequences * sequences, std::vector<EmissionFunction*> * group) {
     
     // constant terms
     double const_num = 0;
     double const_denom = 0;
        
-    const_num = -QHMM_digamma(r) + log(A * r) - log(A * r + B);
-    const_denom = -QHMM_trigamma(r) + B / (r * (A * r + B));
+    const_num = log(As * r) - log(As * r + B);
+    const_denom = B / (r * (As * r + B));
     
     // data dependent terms
     double sum_num = 0;
@@ -313,7 +331,7 @@ private:
     
     std::vector<EmissionFunction*>::iterator ef_it;
     for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
-      NegativeBinomial * ef = (NegativeBinomial*) (*ef_it)->inner();
+      NegativeBinomialScaled * ef = (NegativeBinomialScaled*) (*ef_it)->inner();
       PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
       
       do {
@@ -324,8 +342,8 @@ private:
         for (int j = 0; j < iter.length(); iter.next(), ++j) {
           double x = (iter.emission(ef->_slotID) + _offset);
           
-          sum_num += post_j[j] * QHMM_digamma(x + r);
-          sum_denom += post_j[j] * QHMM_trigamma(x + r);
+          sum_num += post_j[j] * ef->_scale * (QHMM_digamma(x + ef->_scale * r) - QHMM_digamma(ef->_scale * r));
+          sum_denom += post_j[j] * ef->_scale * ef->_scale * (QHMM_trigamma(x + ef->_scale * r) - QHMM_trigamma(ef->_scale * r));
         }
       } while (post_it->next());
       
@@ -335,8 +353,8 @@ private:
     // TODO: check if some trickery with the GammaFn can help here!
     
     // ratio
-    double f_r = sum_num/A + const_num;
-    double g_r = sum_denom/A + const_denom;
+    double f_r = sum_num/As + const_num;
+    double g_r = sum_denom/As + const_denom;
     
     return f_r / g_r;
   }
