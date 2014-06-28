@@ -41,7 +41,7 @@ public:
       fixedCount += (params.isFixed(i) ? 1 : 0);
     }
     
-    if (fixedCount == params.length() - 1) {
+    if (fixedCount == params.length() - 1 && params[0] != 1.0) { /* accept setting it to one */
       log_msg("it is not valid to have only one free parameter (zero degrees of freedom)\n");
       return false;
     }
