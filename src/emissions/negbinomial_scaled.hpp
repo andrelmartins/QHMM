@@ -173,7 +173,8 @@ public:
     // update parameter
     // 1. estimate 'r' (dispersion)
     // 1.1 Apply Newton's method
-    double r_prev = r_start_value(r, sum_Pzi, sum_Pzi_xi, sequences, group);
+    //double r_prev = r_start_value(r, sum_Pzi, sum_Pzi_xi, sequences, group);
+    double r_prev = r_start_value_alt(r, sequences, group);
     double change;
     int i = 0;
     int reductionFactor = 2; /* how much to reduce the starting dispersion */
@@ -314,6 +315,81 @@ private:
     if (r_est > 1000) // todo: fix magical value!!
       return 500;
     return r_est;
+  }
+  
+  /* alternative idea:
+   * 
+   * scale weighted average of r estimates:
+   * 
+   * e(r) = (sum_i s_i*r) / (sum_i s_i) = (sum_i r_i) / (sum_i s_i)
+   * where s_i is the scale factor of state i
+   * and r_i is the 'r' estimate for state i (naturally incorporates scale)
+   */
+  double r_start_value_alt(double prev_r, EMSequences * sequences, std::vector<EmissionFunction*> * group) {
+    if (!_momInit)
+      return prev_r;
+
+    double sum_scale = 0;
+    double sum_estimates = 0;
+    
+    std::vector<EmissionFunction*>::iterator ef_it;
+    
+    for (ef_it = group->begin(); ef_it != group->end(); ++ef_it) {
+      NegativeBinomialScaled * ef = (NegativeBinomialScaled*) (*ef_it)->inner();
+      PosteriorIterator * post_it = sequences->iterator(ef->_stateID, ef->_slotID);
+      
+      /* estimate mean */
+      double sum_Pzi_xi = 0;
+      double sum_Pzi = 0;
+      
+      do {
+        const double * post_j = post_it->posterior();
+        Iter & iter = post_it->iter();
+        iter.resetFirst();
+        
+        for (int j = 0; j < iter.length(); iter.next(), ++j) {
+          int x = (int) (iter.emission(ef->_slotID) + _offset);
+          
+          sum_Pzi += post_j[j];
+          sum_Pzi_xi += post_j[j] * x;
+          
+        }
+      } while (post_it->next());
+      
+      double mean = sum_Pzi_xi / sum_Pzi;
+      
+      /* estimate variance */
+      double sum_Pzi_sqdiff = 0;
+      post_it->reset();
+      
+      do {
+        const double * post_j = post_it->posterior();
+        Iter & iter = post_it->iter();
+        iter.resetFirst();
+        
+        for (int j = 0; j < iter.length(); iter.next(), ++j) {
+          int x = (int) (iter.emission(ef->_slotID) + _offset);
+          
+          sum_Pzi_sqdiff += post_j[j] * (x - mean) * (x - mean);
+        }
+      } while (post_it->next());
+      
+      /* save "r" estimate */
+      double var = sum_Pzi_sqdiff / sum_Pzi;
+      double r_est = fabs(mean * mean / (var - mean));
+      
+      sum_estimates += r_est;
+      sum_scale += ef->_scale;
+      
+      delete post_it;
+    }
+    
+    double r_weighted_est = sum_estimates / sum_scale;
+    
+    if (r_weighted_est > 1000) // todo: fix magical value!!
+      return 500;
+    
+    return r_weighted_est;
   }
   
   double newton_ratio(double As, double B, double r, EMSequences * sequences, std::vector<EmissionFunction*> * group) {
