@@ -9,7 +9,9 @@
 
 class SkewNormal : public EmissionFunction {
 public:
-  SkewNormal(int stateID, int slotID, double location = 0.0, double scale = 1.0, double skew = 1.0) : EmissionFunction(stateID, slotID), _location(location), _scale(scale), _skew(skew), _is_fixed(false), _maxIter(100), _tolerance(1e-6) {}
+  SkewNormal(int stateID, int slotID, double location = 0.0, double scale = 1.0, double skew = 1.0) : EmissionFunction(stateID, slotID), _location(location), _scale(scale), _skew(skew), _is_fixed(false), _maxIter(100), _tolerance(1e-6) {
+    update_consts();
+  }
   
   virtual bool validParams(Params const & params) const {
     return params.length() == 3 && params[1] > 0;
@@ -51,6 +53,7 @@ public:
       *out_value = _tolerance;
       return true;
     }
+    return false;
   }
   
   virtual bool setOption(const char * name, double value) {

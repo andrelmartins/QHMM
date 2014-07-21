@@ -9,7 +9,9 @@
 class Normal : public EmissionFunction {
 public:
 
-  Normal(int stateID, int slotID, double mean = 0.0, double var = 1.0) : EmissionFunction(stateID, slotID), _mean(mean), _var(var), _is_fixed_mean(false), _is_fixed_var(false) {}
+  Normal(int stateID, int slotID, double mean = 0.0, double var = 1.0) : EmissionFunction(stateID, slotID), _mean(mean), _var(var), _is_fixed_mean(false), _is_fixed_var(false) {
+    update_consts();
+  }
  
   virtual bool validParams(Params const & params) const {
     return params.length() == 2 && params[1] > 0;
