@@ -120,12 +120,12 @@ public:
      */
     
     /* optimization via L-BFGS-B */
-    lower[0] = R_NegInf;
+    lower[0] = -std::numeric_limits<double>::infinity();
     lower[1] = 0.01; /* cannot be zero */
-    lower[2] = R_NegInf;
-    upper[0] = R_PosInf;
-    upper[1] = R_PosInf;
-    upper[2] = R_PosInf;
+    lower[2] = -std::numeric_limits<double>::infinity();
+    upper[0] = std::numeric_limits<double>::infinity();
+    upper[1] = std::numeric_limits<double>::infinity();
+    upper[2] = std::numeric_limits<double>::infinity();
     nbd[0] = 0; /* unbounded */
     nbd[1] = 1; /* only lower bound */
     nbd[2] = 0; /* unbounded */
