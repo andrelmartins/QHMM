@@ -17,6 +17,7 @@
 #include <emissions/discrete_gamma.hpp>
 #include <emissions/negbinomial.hpp>
 #include <emissions/negbinomial_scaled.hpp>
+#include <emissions/normal.hpp>
 #include <hmm.hpp>
 #include <utils.hpp>
 #include <vector>
@@ -1482,6 +1483,7 @@ extern "C" {
     register_emission(new EmissionEntry<DiscreteGamma>("dgamma", "rqhmm", false));
     register_emission(new EmissionEntry<NegativeBinomial>("neg_binomial", "rqhmm", false));
     register_emission(new EmissionEntry<NegativeBinomialScaled>("neg_binomial_scaled", "rqhmm", false));
+    register_emission(new EmissionEntry<Normal>("normal", "rqhmm", false));
   }
   
   void attr_default R_unload_rqhmm(DllInfo * info) {
