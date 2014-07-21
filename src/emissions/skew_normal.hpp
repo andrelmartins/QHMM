@@ -174,18 +174,18 @@ public:
   int _maxIter;
   double _tolerance;
 
-  double _A;  // -log(sqrt(2 pi scale))
-  double _B;  // sqrt(2 scale)
+  double _A;  // -log(sqrt(2 pi) scale)
+  double _B;  // sqrt(2) scale
 
   void update_consts() {
-    _A = -log(sqrt(2.0 * M_PI * _scale));
-    _B = sqrt(2.0 * _scale);
+    _A = -log(sqrt(2.0 * M_PI) * _scale);
+    _B = sqrt(2.0) * _scale;
   }
 
   double log_pdf(double x) const {
     double diff = x - _location;
     
-    return _A - (diff * diff) / (2 * _scale);
+    return _A - (diff * diff) / (2 * _scale * _scale);
   }
 
   double log_skewed_2_cdf(double x) const {
@@ -206,10 +206,10 @@ public:
     double skew = params[3];
 
     double diff = x - location;
-    double A = -log(sqrt(2.0 * M_PI * scale));
-    double B = sqrt(2.0 * scale);
+    double A = -log(sqrt(2.0 * M_PI) * scale);
+    double B = sqrt(2.0) * scale;
 
-    double lpdf = A - (diff * diff) / (2 * scale);
+    double lpdf = A - (diff * diff) / (2 * scale * scale);
     double ls2cdf = log1p(erf(skew * (x - location) / B));
 
     return lpdf + ls2cdf;
