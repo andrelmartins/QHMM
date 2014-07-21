@@ -24,4 +24,11 @@ void QHMM_rnd_prepare(void);
 void QHMM_rnd_cleanup(void);
 double QHMM_runif(void);
 
+typedef double optimfn(int, double *, void *);
+typedef void optimgr(int, double *, double *, void *);
+
+void QHMM_lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd,
+            double *Fmin, optimfn fn, optimgr gr, int *fail, void *ex,
+            double factr, double pgtol, int *fncount, int *grcount,
+            int maxit, char *msg, int trace, int nREPORT);
 #endif

@@ -81,6 +81,17 @@ double QHMM_runif(void) {
   return unif_rand();
 }
 
+void QHMM_lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd,
+                 double *Fmin, optimfn fn, optimgr gr, int *fail, void *ex,
+                 double factr, double pgtol, int *fncount, int *grcount,
+                 int maxit, char *msg, int trace, int nREPORT) {
+
+  return lbfgsb(n, m, x, l, u, nbd,
+                Fmin, fn, gr, fail, ex,
+                factr, pgtol, fncount, grcount,
+                maxit, msg, trace, nREPORT);
+}
+
 #elif defined(USE_GSL)
 
 double QHMM_digamma(const double x) {
@@ -136,6 +147,13 @@ double QHMM_runif(void) {
   // TODO: Implement GSL version (use gsl's random number generators ...)
   // TODO: fix this! Should be number in [0, 1] */
   return drand48(); /* random number in [0, 1) */
+}
+
+void QHMM_lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd,
+                 double *Fmin, optimfn fn, optimgr gr, int *fail, void *ex,
+                 double factr, double pgtol, int *fncount, int *grcount,
+                 int maxit, char *msg, int trace, int nREPORT) {
+  // TODO: not implemented!
 }
 
 #else
@@ -198,6 +216,14 @@ void QHMM_rnd_cleanup(void) {
 double QHMM_runif(void) {
   // TODO: fix this! Should be number in [0, 1] */
   return drand48(); /* random number in [0, 1) */
+}
+
+
+void QHMM_lbfgsb(int n, int m, double *x, double *l, double *u, int *nbd,
+                 double *Fmin, optimfn fn, optimgr gr, int *fail, void *ex,
+                 double factr, double pgtol, int *fncount, int *grcount,
+                 int maxit, char *msg, int trace, int nREPORT) {
+  // TODO: not implemented!
 }
 
 #endif
