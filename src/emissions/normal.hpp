@@ -130,7 +130,13 @@ public:
         }
       }
       
-      sig2 = sum_Pzi_sdiff / sum_Pzi;
+      if (sum_Pzi_sdiff == 0.0) {
+        // single point degeneracy!
+        log_state_slot_msg(_stateID, _slotID, "degenerate variance, setting to 1\n");
+        sig2 = 1.0;
+      } else {
+        sig2 = sum_Pzi_sdiff / sum_Pzi;
+      }
     }
     
     // update values
