@@ -41,6 +41,7 @@ class AutoCorr : public TransitionFunction {
         for (int i = 0; i < params.length(); ++i)
           if (!(params[i] >= 0 && params[i] <= 1))
             return false;
+        // TODO: validate that sum of weights is 1 where n == _n_targets
         return true;
       } else return false;
     }
@@ -52,11 +53,8 @@ class AutoCorr : public TransitionFunction {
       if (_has_outgoing_weights) {
         double * params = (double*) malloc(_n_targets * sizeof(double));
         params[0] = alpha;
-        for (int i = 0, j = 1; i < _n_targets; ++i) {
-          if (i != _stateID) {
-            params[j] = exp(_log_outgoing_weights[i]);
-            ++j;
-          }
+        for (int i = 1; i < _n_targets; ++i) {
+          params[i] = exp(_log_outgoing_weights[i]);
         }
         
         result = new Params(_n_targets, params);
@@ -72,17 +70,14 @@ class AutoCorr : public TransitionFunction {
 
     virtual void setParams(Params const & params) {
       if (params.length() > 1) { /* copy/log weights */
-        for (int i = 0, j = 1; i < _n_targets; ++i) {
-          if (i != _stateID) {
-            _log_outgoing_weights[i] = log(params[j]);
-            ++j;
-          }
+        for (int i = 1; i < _n_targets; ++i) {
+          _log_outgoing_weights[i] = log(params[i]);
         }
         _has_outgoing_weights = true;
       } else {
         /* reset outgoing weights */
         for (int i = 0; i < _n_targets; ++i)
-        _log_outgoing_weights[i] =  -log(_n_targets - 1);
+          _log_outgoing_weights[i] =  -log(_n_targets - 1);
         
         _has_outgoing_weights = false;
       }
@@ -172,7 +167,7 @@ class AutoCorr : public TransitionFunction {
       if (_n_targets > 1) {
         double other = log(1 - alpha);
         for (int i = 1; i < _n_targets; ++i)
-          _log_probs[_targets[i]] = other + _log_outgoing_weights[_targets[i]];
+          _log_probs[_targets[i]] = other + _log_outgoing_weights[i];
       }
     }
 };
