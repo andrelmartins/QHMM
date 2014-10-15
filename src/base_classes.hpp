@@ -37,7 +37,7 @@ public:
       delete[] _targets;
   }
 
-  virtual bool validParams(Params const & params) const { return true; }
+  virtual bool validParams(Params const & params) const { return false; } // no valid params
   virtual Params * getParams() const { return NULL; }
   virtual void setParams(Params const & params) {};
   virtual bool setCovarSlots(int * slots, int length) { return false; } // default is no slots

@@ -9,6 +9,7 @@
 #include <transitions/acpmix.hpp>
 #include <transitions/logistic.hpp>
 #include <transitions/wacpmix.hpp>
+#include <transitions/unary.hpp>
 #include <emissions/poisson.hpp>
 #include <emissions/discrete.hpp>
 #include <emissions/geometric.hpp>
@@ -1457,8 +1458,6 @@ extern "C" {
   
   // R Entry points
   void attr_default R_init_rqhmm(DllInfo * info) {
-    Rprintf("rqhmm init called\n");
-    
     // register external routines
     RREGDEF(register_emission);
     RREGDEF(register_transition);
@@ -1472,6 +1471,7 @@ extern "C" {
     register_transition(new TransitionEntry<ACPMix>("acpmix", "rqhmm", true));
     register_transition(new TransitionEntry<Logistic>("logistic", "rqhmm", true));
     register_transition(new TransitionEntry<WACPMix>("wacpmix", "rqhmm", true));
+    register_transition(new TransitionEntry<Unary>("unary", "rqhmm", false));
 
     // add our basic emission functions
     register_emission(new EmissionEntry<Poisson>("poisson", "rqhmm", false));
