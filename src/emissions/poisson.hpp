@@ -638,6 +638,12 @@ class PoissonScaled : public EmissionFunction {
         delete post_it;
       }
       
+      // if no data was found, don't update the parameters
+      if (sum_scale_Pzi == 0) {
+        log_state_slot_msg(_stateID, _slotID, "no data, skipping update\n");
+        return;
+      }
+      
       // use expected counts to estimate parameter value
       update_lambda(sum_Pzi_xi / sum_scale_Pzi);
       
