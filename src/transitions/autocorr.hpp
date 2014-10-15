@@ -15,6 +15,9 @@ class AutoCorr : public TransitionFunction {
     // first target in `targets` must the source state
     AutoCorr(int n_states, int stateID, int n_targets, int * targets, double alpha = 0.5) : TransitionFunction(n_states, stateID, n_targets, targets), _pseudoCount(0.0) {
       
+      if (n_targets <= 1)
+        throw std::invalid_argument("AutoCorr: requires at least one outgoing transition (plus self transition)");
+      
       if (stateID != _targets[0])
         throw std::invalid_argument("AutoCorr: stateID != targets[0]");
 
