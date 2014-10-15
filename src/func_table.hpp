@@ -103,9 +103,12 @@ public:
     FunctionTable<EmissionFunction>::insert(funcs[0]);
   }
   
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Woverloaded-virtual"
   virtual void makeGroup(int * idxs, int length, int * slots = NULL, int n_slots = 0) {
     FunctionTable<EmissionFunction>::makeGroup(idxs, length);
   }
+#pragma clang diagnostic pop
   
   virtual void makeGroupExt(int length, int * idxs, int * slots = NULL) {
     FunctionTable<EmissionFunction>::makeGroup(idxs, length);

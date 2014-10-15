@@ -1,4 +1,5 @@
 #include "math.hpp"
+#include <cstdlib>
 #include <cmath>
 
 #if defined(USE_RMATH)
