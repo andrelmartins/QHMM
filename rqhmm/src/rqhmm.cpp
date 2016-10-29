@@ -174,7 +174,7 @@ public:
     for (int i = 0; i < length; ++i) {
       shifted_copy[i] = slots[i] - 1;
       if (shifted_copy[i] >= covar_slots) {
-        delete shifted_copy;
+        delete[] shifted_copy;
         error("invalid covar slot[%d]: %d > %d", i + 1, slots[i], covar_slots);
       }
     }
@@ -186,7 +186,7 @@ public:
     int * shifted_copy = valid_covar_slots_copy(idxs, length);
     
     bool result = hmm->transitions()->setCovars(state, shifted_copy, length);
-    delete shifted_copy;
+    delete[] shifted_copy;
     if (!result)
       error("covar slots not valid for state: %d", state + 1);
   }
@@ -195,7 +195,7 @@ public:
     int * shifted_copy = valid_covar_slots_copy(idxs, length);
     
     bool result = hmm->emissions()->setSlotCovars(state, slot, shifted_copy, length);
-    delete shifted_copy;
+    delete[] shifted_copy;
     if (!result)
       error("covar slots not valid for state: %d [slot: %d]", state + 1, slot + 1);
   }
